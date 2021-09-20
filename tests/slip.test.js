@@ -8,7 +8,8 @@ const originalData = {
   data: { idx: 12, val: null, when: new Date() },
   message: 'Hello!',
   isRead: false,
-  '|shed|': '|-|-|-|-|-|-|'
+  '|shed|': '|-|-|-|-|-|-|',
+  yaharr: [1, 2, { obj: 'with-one-field' }]
 };
 
 describe(

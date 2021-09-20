@@ -51,7 +51,7 @@ class Slip {
         theType = this.TYPES.date;
       } else if (Array.isArray(val)) {
         theType = this.TYPES.array;
-        // TODO
+        asStr = this.serialize(val, files[key]);
       } else if (val instanceof Buffer) {
         const isFile = Object.keys(files).includes(key);
         if (isFile) {
@@ -85,7 +85,7 @@ class Slip {
       let sz;
       if ([this.TYPES.boolean, this.TYPES.none].includes(theType)) {
         sz = '';
-      } else if ([this.TYPES.file, this.TYPES.slip].includes(theType)) {
+      } else if ([this.TYPES.file, this.TYPES.slip, this.TYPES.array].includes(theType)) {
         sz = `${asStr.byteLength}|`;
       } else {
         sz = `${asStr.length}|`;
@@ -109,10 +109,8 @@ class Slip {
     let toParse;
     if (buf instanceof Buffer) {
       toParse = buf.toString();
-    } else if (typeof buf === 'string') {
-      toParse = buf;
     } else {
-      throw new SlipError(`Expected a Buffer or a String, got ${buf.constructor.name}`);
+      throw new SlipError(`Expected a Buffer, got ${buf.constructor.name}`);
     }
 
     const result = {};
@@ -172,7 +170,7 @@ class Slip {
 
       let rawContent;
       let toAdd = contentSize;
-      if ([this.TYPES.file, this.TYPES.slip].includes(typeSymbol)) {
+      if ([this.TYPES.file, this.TYPES.slip, this.TYPES.array].includes(typeSymbol)) {
         rawContent = Buffer.alloc(contentSize);
         buf.copy(rawContent, 0, currentIndex, currentIndex + contentSize);
         toAdd = rawContent.toString().length;
@@ -186,6 +184,7 @@ class Slip {
       switch (typeSymbol) {
         case this.TYPES.date:
           const asDate = new Date(rawContent);
+          // TODO: check ISO format
           if (asDate.toString() === 'Invalid Date') {
             throw new SlipError(`Could not parse Date from ${rawContent}`);
           }
@@ -210,7 +209,7 @@ class Slip {
           result[key] = !!(+rawContent);
           break;
         case this.TYPES.array:
-          // TODO
+          result[key] = [...Object.values(this.deserialize(Buffer.from(rawContent)))];
           break;
         case this.TYPES.none:
           result[key] = null;
@@ -226,11 +225,12 @@ class Slip {
           throw new SlipError({ str: toParse });
         }
         result[key].name = this.unEscapeCharacters(rawFileName);
-        // fileName + ;
+        // fileName
         currentIndex += rawFileName.length;
         checkLength();
       }
 
+      // ;
       currentIndex++;
       checkLength();
     }
