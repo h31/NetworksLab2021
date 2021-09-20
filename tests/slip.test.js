@@ -1,4 +1,6 @@
 const Slip = require('../slip/index');
+const fs = require('fs');
+const path = require('path');
 
 const originalString = 'key|with|sticks>and>>arrows>and se;micolons';
 const originalData = {
@@ -35,6 +37,24 @@ describe(
       const serializedData = Slip.serialize(originalData);
       const deserializedData = Slip.deserialize(serializedData);
       expect(deserializedData).toEqual(originalData);
+    });
+
+    it('Should read data with attached files', done => {
+      fs.mkdir(path.join(__dirname, 'parsed-files'), { recursive: true }, () => {
+        const pathToFile = path.join(__dirname, 'original-files', 'good.jpg');
+        fs.readFile(pathToFile, { encoding: null }, (err, fData) => {
+          if (err) {
+            done(err);
+          }
+
+          const payload = { user: 'Barash', profileData: { created: new Date(2002, 11, 20), avatar: fData } };
+          const serializedData = Slip.serialize(payload, { profileData: { avatar: 'good.jpg' } });
+          const deserializedData = Slip.deserialize(serializedData);
+          expect(deserializedData.profileData.avatar.file.equals(fData)).toBeTruthy();
+          const pathToParsedFile = path.join(__dirname, 'parsed-files', deserializedData.profileData.avatar.name);
+          fs.writeFile(pathToParsedFile, deserializedData.profileData.avatar.file, () => done());
+        });
+      });
     });
   }
 );

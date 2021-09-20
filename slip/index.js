@@ -37,14 +37,12 @@ class Slip {
   }
 
   static serialize(obj, files = {}) {
-    let result = '';
-    const fileBuffers = [];
-    let totalFileSize = 0;
+    let result = null;
 
     Object.entries(obj).forEach(([key, val]) => {
       let asStr;
       let theType = this.TYPES[typeof val];
-      let extra = null;
+      let fileName = null;
       if (val == null) {
         asStr = '';
         theType = this.TYPES.none;
@@ -57,17 +55,15 @@ class Slip {
       } else if (val instanceof Buffer) {
         const isFile = Object.keys(files).includes(key);
         if (isFile) {
-          extra = { name: files[key], from: totalFileSize, to: totalFileSize + val.length };
-          totalFileSize += val.length;
+          fileName = files[key];
           theType = this.TYPES.file;
-          fileBuffers.push(val);
-          asStr = '';
+          asStr = val;
         } else {
           theType = this.TYPES.string;
           asStr = val.toString();
         }
       } else if (val.constructor.name === 'Object') {
-        asStr = this.serialize(val).toString();
+        asStr = this.serialize(val, files[key]);
         theType = this.TYPES.slip;
       } else {
         switch (typeof val) {
@@ -86,14 +82,27 @@ class Slip {
       }
 
       const escKey = this.escapeCharacters(key);
-      const sz = asStr.length;
-      const serializedExtra = extra
-        ? `|${this.escapeCharacters(extra.name)}|${extra.from}|${extra.to}`
-        : '';
-      result += `${escKey}|${theType}${sz}|${asStr}${serializedExtra};`;
+      let sz;
+      if ([this.TYPES.boolean, this.TYPES.none].includes(theType)) {
+        sz = '';
+      } else if ([this.TYPES.file, this.TYPES.slip].includes(theType)) {
+        sz = `${asStr.byteLength}|`;
+      } else {
+        sz = `${asStr.length}|`;
+      }
+      const serializedFileName = fileName ? this.escapeCharacters(fileName) : '';
+      const toConcat = [Buffer.from(`${escKey}|${theType}${sz}`), Buffer.from(asStr)];
+      if (result) {
+        toConcat.unshift(result);
+      }
+      if (serializedFileName) {
+        toConcat.push(Buffer.from(serializedFileName));
+      }
+      toConcat.push(Buffer.from(';'));
+      result = Buffer.concat(toConcat)
     });
 
-    return Buffer.concat([Buffer.from(result), ...fileBuffers]);
+    return result;
   }
 
   static deserialize(buf) {
@@ -108,38 +117,79 @@ class Slip {
 
     const result = {};
     let currentIndex = 0;
-    let parseUntil = buf.byteLength;
-    const filesToParse = [];
-    while (currentIndex < parseUntil) {
+
+    const checkLength = () => {
+      if (currentIndex > toParse.length) {
+        throw new SlipError({ idx: currentIndex, str: toParse });
+      }
+    };
+
+    while (currentIndex < toParse.length) {
       const rawKey = this.findBorder(toParse, currentIndex, '|');
       if (rawKey == null) {
-        throw new SlipError('Could not find a key');
+        throw new SlipError({ str: toParse });
       }
       if (rawKey.length === 0) {
         throw new SlipError('Key can\'t be empty');
       }
       // key + |
       currentIndex += rawKey.length + 1;
+      checkLength();
+
       const key = this.unEscapeCharacters(rawKey);
       const type = invert(this.TYPES)[toParse[currentIndex]];
       if (!type) {
-        throw new SlipError({ val: toParse[currentIndex], idx: currentIndex });
+        throw new SlipError({ str: toParse, idx: currentIndex });
       }
+      const typeSymbol = this.TYPES[type];
       // type
       currentIndex++;
-      const contentSizeBorder = toParse.indexOf('|', currentIndex);
-      const contentSizeStr = toParse.substring(currentIndex, contentSizeBorder);
-      const contentSize = parseInt(contentSizeStr);
-      if (Number.isNaN(contentSize) || contentSizeStr.includes('.')) {
-        throw new SlipError('')
-      }
-      // size + |
-      currentIndex += contentSizeStr.length + 1;
+      checkLength();
 
-      const rawContent = toParse.substring(currentIndex, currentIndex + contentSize);
-      switch (this.TYPES[type]) {
+      let contentSize;
+      if (typeSymbol === this.TYPES.boolean) {
+        contentSize = 1;
+      } else if (typeSymbol === this.TYPES.none) {
+        contentSize = 0;
+      } else {
+        const contentSizeBorder = toParse.indexOf('|', currentIndex);
+        if (contentSizeBorder === -1) { // no border found
+          throw new SlipError({ str: toParse });
+        }
+        if (contentSizeBorder === 0) { // no content size provided
+          throw new SlipError(`Content size is required for type ${type}`);
+        }
+
+        const contentSizeStr = toParse.substring(currentIndex, contentSizeBorder);
+        contentSize = parseInt(contentSizeStr);
+        if (Number.isNaN(contentSize) || contentSizeStr.includes('.')) {
+          throw new SlipError('Content size must be an Integer');
+        }
+        // size + |
+        currentIndex += contentSizeStr.length + 1;
+        checkLength();
+      }
+
+      let rawContent;
+      let toAdd = contentSize;
+      if ([this.TYPES.file, this.TYPES.slip].includes(typeSymbol)) {
+        rawContent = Buffer.alloc(contentSize);
+        buf.copy(rawContent, 0, currentIndex, currentIndex + contentSize);
+        toAdd = rawContent.toString().length;
+      } else {
+        rawContent = toParse.substring(currentIndex, currentIndex + contentSize);
+        if (rawContent.length < contentSize) {
+          throw new SlipError({ str: toParse });
+        }
+      }
+
+      switch (typeSymbol) {
         case this.TYPES.date:
-          result[key] = new Date(rawContent);
+          const asDate = new Date(rawContent);
+          if (asDate.toString() === 'Invalid Date') {
+            throw new SlipError(`Could not parse Date from ${rawContent}`);
+          }
+          result[key] = asDate;
           break;
         case this.TYPES.string:
           result[key] = rawContent;
@@ -148,9 +198,15 @@ class Slip {
           result[key] = +rawContent;
           break;
         case this.TYPES.slip:
-          result[key] = this.deserialize(rawContent);
+          result[key] = this.deserialize(Buffer.from(rawContent));
+          break;
+        case this.TYPES.file:
+          result[key] = { file: rawContent };
           break;
         case this.TYPES.boolean:
+          if (!['0', '1'].includes(rawContent)) {
+            throw new SlipError(`Boolean must be defined as 0 or 1, got ${rawContent}`);
+          }
           result[key] = !!(+rawContent);
           break;
         case this.TYPES.array:
@@ -161,26 +217,23 @@ class Slip {
           break;
       }
 
-      currentIndex += contentSize;
-      // has extra
-      if (toParse[currentIndex] === '|') {
-        currentIndex++;
-        const extra = this.findBorder(toParse, currentIndex, ';');
-        const rawFileName = this.findBorder(extra, 0, '|');
-        const fileName = this.unEscapeCharacters(rawFileName);
-        const [from, to] = extra.replace(`${rawFileName}|`, '').split('|').map(str => +str);
-        parseUntil -= (to - from);
-        filesToParse.push({ from, to, fileName, key });
-        // extra + ;
-        currentIndex += extra.length + 1;
+      currentIndex += toAdd;
+      checkLength();
+      // has file name
+      if (toParse[currentIndex] !== ';') {
+        const rawFileName = this.findBorder(toParse, currentIndex, ';');
+        if (rawFileName == null) {
+          throw new SlipError({ str: toParse });
+        }
+        result[key].name = this.unEscapeCharacters(rawFileName);
+        // fileName + ;
+        currentIndex += rawFileName.length;
+        checkLength();
       }
-    }
 
-    filesToParse.forEach(fileData => {
-      const fileBuf = Buffer.alloc(fileData.to - fileData.from);
-      buf.copy(fileBuf, 0, parseUntil + fileData.from, parseUntil + fileData.to);
-      result[fileData.key] = { name: fileData.fileName, file: fileBuf };
-    });
+      currentIndex++;
+      checkLength();
+    }
 
     return result;
   }
