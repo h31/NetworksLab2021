@@ -1,11 +1,12 @@
 class SlipError extends Error {
   constructor(data) {
     let message;
-    if (typeof data === 'string') {
+    if (!data) {
+      message = 'Unexpected end of input';
+    } else if (typeof data === 'string') {
       message = data;
     } else {
-      const theIdx = data.idx == null ? data.str.length : data.idx;
-      message = `Unexpected character (${data.str[theIdx] || 'end of input'}) at ${theIdx}`
+      message = `Unexpected token (${data.str[data.idx]}) at ${data.idx}`
     }
     super(message);
   }
