@@ -38,6 +38,20 @@ class Slip {
     return null;
   }
 
+  static getDate(dateStr) {
+    const isoFormat = /^(-\d{6})|(\d{4})-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+    if (!isoFormat.test(dateStr)) {
+      throw new SlipError('Dates must be in ISO format');
+    }
+
+    const date = new Date(dateStr);
+    if (date.toString() === 'Invalid Date') {
+      throw new SlipError(`Could not parse Date from ${dateStr}`);
+    }
+
+    return date;
+  }
+
   static serialize(obj, files = {}) {
     let result = null;
 
@@ -183,12 +197,7 @@ class Slip {
 
       switch (typeSymbol) {
         case this.TYPES.date:
-          const asDate = new Date(rawContentAsString);
-          // TODO: check ISO format
-          if (asDate.toString() === 'Invalid Date') {
-            throw new SlipError(`Could not parse Date from ${rawContentAsString}`);
-          }
-          result[key] = asDate;
+          result[key] = this.getDate(rawContentAsString);
           break;
         case this.TYPES.string:
           result[key] = rawContentAsString;

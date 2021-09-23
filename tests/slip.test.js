@@ -69,6 +69,16 @@ describe(
       expect(() => Slip.deserialize(Buffer.from(fileNameWithoutFile))).toThrow(
         'num is defined as number, but has a file name'
       );
+
+      const nonIsoDate = 'who|l2|me;dob|d10|2000-07-17;';
+      expect(() => Slip.deserialize(Buffer.from(nonIsoDate))).toThrow(
+        'Dates must be in ISO format'
+      );
+
+      const invalidDate = 'suggestedBy|l12|Münchhausen;whatSuggested|d24|1979-05-32T12:00:00.000Z';
+      expect(() => Slip.deserialize(Buffer.from(invalidDate))).toThrow(
+        'Could not parse Date from 1979-05-32T12:00:00.000Z'
+      );
     });
 
     it('Should read data with attached text files', done => {
