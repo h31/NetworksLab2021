@@ -30,14 +30,30 @@ describe('Pillow', () => {
     );
   });
 
+  it('Should rearrange errors properly', () => {
+    const rawErrors = {
+      data: ['This top-level field has errors'],
+      'data.isValid': ['This sub-field is invalid'],
+      'profile.account.email': ['Must be a valid email']
+    };
+    const pillowError = new PillowError(rawErrors);
+    expect(pillowError.errors).toEqual({
+      data: ['This top-level field has errors', 'isValid: This sub-field is invalid'],
+      profile: ['account.email: Must be a valid email']
+    })
+  });
+
   it('Should validate action-specific data and throw proper errors', () => {
     const logInPayload = {
       action: Pillow.actions.logIn,
-      data: { username: 'Davy Jones', message: 'Are you afraid of death?' }
+      data: { message: 'Are you afraid of death?' }
     };
     expect(() => Pillow.validateRequest(logInPayload)).toThrow(
       new PillowError({
-        data: ['These fields: message are not supported when action is log-in']
+        data: [
+          'These fields: message are not supported when action is log-in',
+          'username: this field is required when action is log-in'
+        ],
       })
     );
 
@@ -57,7 +73,7 @@ describe('Pillow', () => {
       action: Pillow.actions.sendMessage,
       data: {
         message: 'Call the Kraken!',
-        attachment: { file: Buffer.alloc(2), name: 'day-jones-theme.mp3' }
+        attachment: { file: Buffer.alloc(2), name: 'davy-jones-theme.mp3' }
       }
     };
     expect(Pillow.validateRequest(validPayload)).toEqual(validPayload);

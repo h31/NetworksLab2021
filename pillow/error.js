@@ -3,7 +3,23 @@ class PillowError extends Error {
 
   constructor(errors) {
     super();
-    this.errors = errors;
+    this.errors = this._rearrangeErrors(errors);
+  }
+
+  _rearrangeErrors(rawErrors) {
+    const result = { ...rawErrors };
+    Object.entries(rawErrors).forEach(([key, value]) => {
+      if (key.includes('.')) {
+        const splitKey = key.split('.');
+        const topLevelKey = splitKey[0];
+        if (!result[topLevelKey]) {
+          result[topLevelKey] = [];
+        }
+        result[topLevelKey].push(...(value.map(errMsg => `${splitKey.slice(1).join('.')}: ${errMsg}`)));
+        delete result[key];
+      }
+    });
+    return result;
   }
 }
 

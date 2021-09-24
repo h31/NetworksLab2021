@@ -1,5 +1,5 @@
 # Pillow
-**Pillow** is the request / response format <u>Toss-a-message</u> supports
+**Pillow** is the request / response format <u>Toss-a-Message</u> supports
 
 ## 1. Request
 

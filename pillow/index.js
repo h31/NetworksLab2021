@@ -1,5 +1,6 @@
 const PillowError = require('./error');
-const { difference, reverse, isEmpty, isEqual, startCase} = require('lodash');
+const { difference, reverse, isEmpty, isEqual } = require('lodash');
+const { capitalCamelCase } = require('../util/misc');
 
 class Pillow {
   static statusNames = {
@@ -166,7 +167,7 @@ class Pillow {
 
     const { action, data } = payload;
 
-    this[`validate${startCase(action).replace(/ /g, '')}`](
+    this[`validate${capitalCamelCase(action)}`](
       data,
       (key, val) => addErr(`data${key ? `.${key}` : ''}`, `${val} when action is ${action}`));
     checkFinish();
