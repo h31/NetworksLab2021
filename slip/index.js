@@ -218,7 +218,11 @@ class Slip {
           result[key] = !!(+rawContentAsString);
           break;
         case this.TYPES.array:
-          result[key] = [...Object.values(this.deserialize(rawContent))];
+          result[key] = Array.from(
+            Object.entries(this.deserialize(rawContent))
+              .sort(([keyA], [keyB]) => +keyA - +keyB)
+              .map(([_, value]) => value)
+          );
           break;
         case this.TYPES.none:
           result[key] = null;
@@ -240,11 +244,13 @@ class Slip {
         }
         const rawFileName = this.findBorder(asString, currentStrIndex, ';');
         if (rawFileName == null) {
-          throw new SlipError(`Expected a file name or ';', got ${asString[currentStrIndex]}`);
+          throw new SlipError(`Failed while extracting the file name for ${key}`);
         }
         result[key].name = this.unEscapeCharacters(rawFileName);
         // fileName
         changeIdx(0, rawFileName);
+      } else if (typeSymbol === this.TYPES.file) {
+        throw new SlipError(`${key} is defined as a File, but has no file name`);
       }
 
       // ;

@@ -70,6 +70,11 @@ describe(
         'num is defined as number, but has a file name'
       );
 
+      const fileWithoutFileName = 'str|l5|Hello;doc|f8|12345678;';
+      expect(() => Slip.deserialize(Buffer.from(fileWithoutFileName))).toThrow(
+        'doc is defined as a File, but has no file name'
+      );
+
       const nonIsoDate = 'who|l2|me;dob|d10|2000-07-17;';
       expect(() => Slip.deserialize(Buffer.from(nonIsoDate))).toThrow(
         'Dates must be in ISO format'
