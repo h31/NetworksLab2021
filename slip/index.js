@@ -106,7 +106,7 @@ class Slip {
       }
       const serializedFileName = fileName ? this.escapeCharacters(fileName) : '';
       
-      const toConcat = [Buffer.from(`${escKey}|${theType}${sz}`), Buffer.from(representation)];
+      const toConcat = [Buffer.from(`${escKey}|${theType}${sz}`), representation];
       if (result) {
         toConcat.unshift(result);
       }
@@ -121,13 +121,11 @@ class Slip {
   }
 
   static deserialize(payload) {
-    let asString;
-    if (payload instanceof Buffer) {
-      asString = payload.toString();
-    } else {
+    if (!(payload instanceof Buffer)) {
       throw new SlipError(`Expected a Buffer, got ${payload.constructor.name}`);
     }
 
+    const asString = payload.toString();
     const result = {};
     let currentBufIndex = 0;
     let currentStrIndex = 0;
