@@ -78,7 +78,7 @@ When sending a message, at least one of 'message' and 'attachment' must be provi
     <tbody>
         <tr>
             <td>action</td>
-            <td>always</td>
+            <td>unless there's a server error not caused by client request</td>
             <td>String</td>
             <td>One of ['send-message', 'log-in', 'log-out']</td>
         </tr>
