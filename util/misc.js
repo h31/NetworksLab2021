@@ -1,4 +1,5 @@
 const { startCase, padStart } = require('lodash');
+const fs = require('fs');
 
 function capitalCamelCase(str) {
   return startCase(str).replace(/ /g, '');
@@ -69,9 +70,16 @@ function useHandlers(
   }
 }
 
+function fileExists(path) {
+  return new Promise(resolve => {
+    fs.access(path, fs.constants.F_OK, err => { resolve(!err) });
+  });
+}
+
 module.exports = {
   capitalCamelCase,
   formatTime,
   wAmount,
-  useHandlers
+  useHandlers,
+  fileExists
 };

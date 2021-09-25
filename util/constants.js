@@ -10,7 +10,9 @@ const EVENTS = {
   end: 'end',
   lookup: 'lookup',
   ready: 'ready',
-  timeout: 'timeout'
+  timeout: 'timeout',
+
+  line: 'line',
 };
 
 const SOCKET_EVENTS = [
@@ -29,6 +31,11 @@ const SIGNALS = {
   SIGINT: 'SIGINT',
 };
 
+const ERRORS = {
+  ECONNREFUSED: 'ECONNREFUSED',
+  ECONNRESET: 'ECONNRESET'
+};
+
 const LOG_STATES = {
   skipped: 'Skipped',
   passedToHandle: 'Passed to handle',
@@ -40,10 +47,20 @@ const LOG_TYPES = {
   Event: 'Event',
 };
 
+const MESSAGES = {
+  askUsername: 'Please enter your username\n',
+  serverError: 'Server error, please try reconnecting in a few minutes\n',
+  strangeServerResponse: 'The server responded with invalid data; please make sure you are connected to the right server\n',
+  unknownError: 'Unknown error\n',
+  attach: 'Attach a file (or press Enter to send a message without attachments)\n'
+};
+
 module.exports = {
   EVENTS,
   SIGNALS,
+  ERRORS,
   LOG_STATES,
   LOG_TYPES,
-  SOCKET_EVENTS
+  SOCKET_EVENTS,
+  MESSAGES
 };
