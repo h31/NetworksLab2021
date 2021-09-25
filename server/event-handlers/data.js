@@ -43,6 +43,13 @@ function handle(rawData, { client, server, ev }) {
       throw err;
     }
     const actionToRespond = deserializedData.action;
+    TossLogger.log({
+      type: LOG_TYPES.Event,
+      name: ev,
+      state: LOG_STATES.error,
+      status: TossLogger.status.error,
+      comment: `Payload validation failed with ${Object.values(err.errors).flat().length} errors`
+    });
     client.err(actionToRespond, err.errors, Pillow.responseStatus.ERR_REQ_DATA.code);
     return;
   }

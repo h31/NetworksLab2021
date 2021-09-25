@@ -58,7 +58,7 @@ function useHandlers(
     }
   }
 
-  if (extractOne) {
+  if (extractOne != null) {
     executeHandler(extractOne, getHandler(extractOne));
   } else {
     handledEvents.forEach(ev => {
