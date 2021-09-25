@@ -3,44 +3,30 @@ const PillowError = require('../pillow/error');
 
 
 describe('Pillow', () => {
-  it('Should run primary validation and throw proper errors', () => {
+  it('Should run request shape validation and throw proper errors', () => {
     const messedUpFields = { data: { username: 'Jack Sparrow', isCaptain: true }, status: 100 };
+    // No error messages for 'data' fields since we don't know how to validate it without 'action'
     expect(() => Pillow.validateRequest(messedUpFields)).toThrow(
       new PillowError({
         action: ['This field is required'],
-        payload: ['Unsupported fields: status'],
-        data: ['Unsupported fields: isCaptain']
+        payload: ['status: This field is not supported']
       })
     );
 
     const messedUpTypes = { action: new Date(), data: 'The time has come!' };
     expect(() => Pillow.validateRequest(messedUpTypes)).toThrow(
       new PillowError({
-        action: 'Expected a String, got Date',
-        data: 'Expected an Object, got String'
+        action: ['Expected a String, got Date'],
+        data: ['Expected an Object, got String']
       })
     );
 
     const messedUpChoices = { action: 'find-the-chest', data: { whatWeHave: 'A drawing of a key' } };
     expect(() => Pillow.validateRequest(messedUpChoices)).toThrow(
       new PillowError({
-        action: ['Unsupported value: expected one of send-message, log-in, got find-the-chest'],
-        data: ['Unsupported fields: whatWeHave']
+        action: ['Unsupported value find-the-chest, expected one of log-in, send-message']
       })
     );
-  });
-
-  it('Should rearrange errors properly', () => {
-    const rawErrors = {
-      data: ['This top-level field has errors'],
-      'data.isValid': ['This sub-field is invalid'],
-      'profile.account.email': ['Must be a valid email']
-    };
-    const pillowError = new PillowError(rawErrors);
-    expect(pillowError.errors).toEqual({
-      data: ['This top-level field has errors', 'isValid: This sub-field is invalid'],
-      profile: ['account.email: Must be a valid email']
-    })
   });
 
   it('Should validate action-specific data and throw proper errors', () => {
@@ -51,8 +37,8 @@ describe('Pillow', () => {
     expect(() => Pillow.validateRequest(logInPayload)).toThrow(
       new PillowError({
         data: [
-          'These fields: message are not supported when action is log-in',
-          'username: this field is required when action is log-in'
+          'message: This field is not supported',
+          'username: This field is required'
         ],
       })
     );
