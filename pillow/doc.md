@@ -78,7 +78,12 @@ When sending a message, at least one of 'message' and 'attachment' must be provi
     <tbody>
         <tr>
             <td>action</td>
-            <td>unless there's a server error not caused by client request</td>
+            <td>
+                UNLESS (<br/>
+                &nbsp;&nbsp;there's a server error not caused by client request OR<br/>
+                &nbsp;&nbsp;the action could not be extracted from the request<br/>
+                )
+            </td>
             <td>String</td>
             <td>One of ['send-message', 'log-in', 'log-out']</td>
         </tr>
@@ -169,9 +174,8 @@ Overall, the statuses with codes above 199 represent that some error occurred
         <tr>
             <td>username</td>
             <td>
-                (status < 200) AND<br/>
-                (action == 'log-in' OR action == 'log-out') AND<br/>
-                (not responding to the client who's logging in / out)
+                status < 200;<br/>
+                for 'log-in' and 'log-out', - not sent to the client who's logging in / out
             </td>
             <td>String</td>
             <td></td>
