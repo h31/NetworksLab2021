@@ -1,22 +1,31 @@
 import socket
-import traceback
 
 
 class ServerClosed(Exception):
     pass
 
 
+keep_running = False
+
+
 class Client:
+
     def __init__(self):
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client_socket.connect(('192.168.137.146', 6666))
-        self.nickname = ""
+        try:
+            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.client_socket.connect(('192.168.137.146', 6666))
+            self.nickname = ""
+            global keep_running
+            keep_running = True
+        except TimeoutError:
+            print("В настоящее время сервер недоступен")
 
     def set_nickname(self, reason):
-        self.nickname = input(f"{reason}\nNickname:")
+        self.nickname = input(reason)
 
     def receive(self):
-        while True:
+        global keep_running
+        while keep_running:
             try:
                 # message = self.client_socket.recv(1024)
                 # message = message_data.decode_message(message)
@@ -34,10 +43,10 @@ class Client:
             #     self.client_socket.send(self.nickname.encode('ascii'))
             #     self.client_socket.send(encode_message('nickname response', self.nickname, self.nickname.encode('utf-8'), '')
             # if message['type'] == 'nickname taken':
-            #     self.set_nickname("Nickname already used.")
+            #     self.set_nickname("Данное имя пользователя уже используется. Введите другое имя пользователя:")
             #     self.client_socket.send(encode_message('nickname response', self.nickname, self.nickname.encode('utf-8'), '')
             # if message['type'] == 'invalid nickname':
-            #     self.set_nickname("Invalid nickname.")
+            #     self.set_nickname("Тут так не принято. Введите другое имя пользователя:")
             #     self.client_socket.send(encode_message('nickname response', self.nickname, self.nickname.encode('utf-8'), '')
             # elif message['type'] == 'server closed':
             #     raise ServerClosed
@@ -49,22 +58,23 @@ class Client:
                 break
             except:
                 print()
-                print(traceback.format_exc())
-                print("An error occurred")
+                print("В настоящее время сервер недоступен")
+                keep_running = False
                 self.client_socket.close()
                 break
 
     def write(self):
-        while True:
+        global keep_running
+        while keep_running:
             try:
-                message = input(f'{self.nickname}: ')
+                message = input(f'{self.nickname}:')
                 message += "\r\n"
                 # attached = False
                 # encmes = {}
                 # while not attached:
                 #     fp = input("Relative filepath:")
                 #     try:
-                #         encmes = message_data.encode_message("Client message", self.nickname, message, fp)
+                #         encoded_message = message_data.encode_message("Client message", self.nickname, message, fp)
                 #         attached = True
                 #     except FileNotFoundException:
                 #         print(f"File not found in {fp}")
@@ -73,8 +83,9 @@ class Client:
                 #         print()
                 #         print(traceback.format_exc())
 
-                # self.client_socket.send(encmes)
+                # self.client_socket.send(encoded_message)
                 self.client_socket.send(message.encode('utf-8'))
             except Exception:
-                print("Not today")
+                keep_running = False
+                print("Сервер недоступен")
                 break
