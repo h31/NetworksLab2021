@@ -1,15 +1,22 @@
-def encode_message(message_type, sender, text, fp):
+import pickle
+
+import matplotlib.pyplot as plt
+
+
+def encode_message(message_type, sender, text, fp=None):
     message = {"type": message_type, "sender": sender, "text": text}
-    if message_type == "Client message":
+    if message_type == "client message with file" and fp is not None:
         file = open(fp, 'r')
-        data = file.read()
+        data = plt.imread(file)
         message['filename'] = file
         message['attachment'] = data.encode('base64')
-    return message
+        file.close()
+    return pickle.dumps(message)
 
 
 def decode_message(message):
-    if message['type'] == "Client message":
+    message = pickle.loads(message)
+    if message['type'] == "client message with file":
         data = message['attachment'].decode('base64')
         file = open(
             f"./Downloads/{message['time'].strftime('%d%M%Y%H%m')} {message['filename']} by {message['sender']}.jpg",

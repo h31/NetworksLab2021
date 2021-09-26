@@ -1,11 +1,12 @@
+import pickle
 import socket
+import traceback
+
+import message_data
 
 
 class ServerClosed(Exception):
     pass
-
-
-keep_running = False
 
 
 class Client:
@@ -13,30 +14,21 @@ class Client:
     def __init__(self):
         try:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client_socket.connect(('192.168.137.146', 6666))
+            self.client_socket.connect(('localhost', 6666))
             self.nickname = ""
-            global keep_running
-            keep_running = True
+
         except TimeoutError:
-            print("В настоящее время сервер недоступен")
+            print("Сервер не отвечал некоторое время")
+            self.client_socket.close()
 
     def set_nickname(self, reason):
         self.nickname = input(reason)
 
     def receive(self):
-        global keep_running
-        while keep_running:
+        while True:
             try:
-                # message = self.client_socket.recv(1024)
-                # message = message_data.decode_message(message)
-                message = self.client_socket.recv(1024).decode('utf-8')
-                # message = json.loads(message)
-                print()
+                message = self.client_socket.recv(1024)
                 print(message)
-                if message == "Доброе пожаловать в чат. Введите пожалуйста свой никнейм:":
-                    self.set_nickname(message)
-                    response = self.nickname + "\r\n"
-                    self.client_socket.send(message.encode('utf-8'))
 
             # if message["type"] == 'nickname request':
             #     encode_message
@@ -56,36 +48,38 @@ class Client:
                 print("Server closed")
                 self.client_socket.close()
                 break
-            except:
+            except pickle.UnpicklingError:
                 print()
-                print("В настоящее время сервер недоступен")
-                keep_running = False
+                print("Сервер невнятно выразился")
                 self.client_socket.close()
                 break
 
     def write(self):
-        global keep_running
-        while keep_running:
+        while True:
             try:
                 message = input(f'{self.nickname}:')
                 message += "\r\n"
-                # attached = False
-                # encmes = {}
-                # while not attached:
-                #     fp = input("Relative filepath:")
-                #     try:
-                #         encoded_message = message_data.encode_message("Client message", self.nickname, message, fp)
-                #         attached = True
-                #     except FileNotFoundException:
-                #         print(f"File not found in {fp}")
-                #         pass
-                #     except:
-                #         print()
-                #         print(traceback.format_exc())
+                encoded_message = {}
+                attached = False
+                while not attached:
+                    fp = input("Relative filepath:")
+                    if fp == '':
+                        encoded_message = message_data.encode_message("client message without file", self.nickname,
+                                                                      message)
+                        break
+                    try:
+                        encoded_message = message_data.encode_message("client message with file", self.nickname,
+                                                                      message, fp)
+                        attached = True
+                    except FileNotFoundError:
+                        print(f"File not found in {fp}")
+                        pass
+                    except:
+                        print()
+                        print(traceback.format_exc())
 
-                # self.client_socket.send(encoded_message)
-                self.client_socket.send(message.encode('utf-8'))
+                self.client_socket.send(encoded_message)
             except Exception:
-                keep_running = False
                 print("Сервер недоступен")
+                print(traceback.format_exc())
                 break
