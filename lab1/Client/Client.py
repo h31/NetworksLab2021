@@ -1,5 +1,6 @@
 import socket, sys, threading, Serialization, base64
 from pathlib import Path
+from datetime import datetime
 from SocketConnection import SocketConnection
 
 # launch example: python Client.py Ivan_Ivanov
@@ -19,11 +20,11 @@ sock = SocketConnection(client_socket)
 message = {"nickname":sys.argv[1]}
 sock.send(Serialization.dump(message))
 dictionary = Serialization.load(sock.recv())
-if b'status' in dictionary:
-	if Serialization.bytesToStr(dictionary[b'status']) == "success":
+if "status" in dictionary:
+	if Serialization.bytesToStr(dictionary["status"]) == "success":
 		print("Connected")
 	else:
-		print("Connection failed")
+		print("Connection failed: choose a different nickname")
 		exit(3)
 else:
 	exit(3)
@@ -43,22 +44,26 @@ def getNonExistentName(file_name):
 			break
 	return name + extension
 
+def getLocalTime(utcTime):
+	return str(datetime.fromisoformat(utcTime).astimezone().strftime('%H:%M'))
+
 def getMessage():
 	while True:
 		dictionary = Serialization.load(sock.recv())
-		if dictionary == None: 
+		if dictionary == None: # socket is closed
 			print("\nDisconnected")
 			break
 		
-		if b'time' in dictionary and b'nickname' in dictionary and b'text' in dictionary:
-			print("<" + Serialization.bytesToStr(dictionary[b'time']) + "> [" 
-				+ Serialization.bytesToStr(dictionary[b'nickname']) + "] " 
-				+ Serialization.bytesToStr(dictionary[b'text']), end = "")
+		if "time" in dictionary and "nickname" in dictionary and "text" in dictionary:
+			time = getLocalTime(Serialization.bytesToStr(dictionary["time"]))
+			print("<" + time + "> [" 
+				+ Serialization.bytesToStr(dictionary["nickname"]) + "] " 
+				+ Serialization.bytesToStr(dictionary["text"]), end = "")
 		
-		if b'attachment' in dictionary and b'data' in dictionary:
-			file_name = getNonExistentName(Serialization.bytesToStr(dictionary[b'attachment']))
+		if "attachment" in dictionary and "data" in dictionary:
+			file_name = getNonExistentName(Serialization.bytesToStr(dictionary["attachment"]))
 			with open(file_name, "wb") as f:
-				f.write(base64.b64decode(dictionary[b'data']))
+				f.write(base64.b64decode(dictionary["data"]))
 			print(" (" + file_name + " attached)", end = "")
 		print()
 
@@ -70,7 +75,6 @@ while True:
 	text = input()
 	if text == "\q": break
 	
-	message = {}
 	message["text"] = text
 	
 	file_name = input("attachment: ")
@@ -82,8 +86,9 @@ while True:
 		else:
 			print("File not found")
 	
-	if not sock.send(Serialization.dump(message)):
-		break # sending failed => server is unavailable
+	if not sock.send(Serialization.dump(message)): # sending failed
+		print("\nDisconnected")
+		break
 
 sock.close()
 listenThread.join()

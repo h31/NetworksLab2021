@@ -69,7 +69,7 @@ def convertToDictionary(lastCharacterIndex):
 	global data, index
 	result = {}
 	while True:
-		key = getValue()
+		key = bytesToStr(getValue())
 		while not chr(data[index]) in ("{", "[", "\""):
 			index += 1
 		if chr(data[index]) == "{":
