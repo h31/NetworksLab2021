@@ -2,6 +2,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import org.json.JSONObject;
 
@@ -27,7 +28,7 @@ public class ServerStart {
 
     private class ClientHandler extends Thread {
         private Socket clientSocket;
-        private PrintWriter out;
+        //private PrintWriter out;
         private BufferedReader in;
         private String nicknameOfClient;
 
@@ -37,13 +38,18 @@ public class ServerStart {
 
 
         private void greetingUser() throws IOException {
-            out.println("Доброе пожаловать в чат! Введите пожалуйста свой никнейм: "); // personal
+            //out.println("Добро пожаловать в чат! Введите пожалуйста свой никнейм: "); // personal
+            Request request = new Request("blabla", "26.09.2021");
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+            objectOutputStream.writeObject(request);
+            objectOutputStream.close();
+
             nicknameOfClient = in.readLine();
-            /*JSONObject jsonObject = new JSONObject();
+            /*JSONObject jsonObject = new JSONObjeыct();
             jsonObject.put("msg", nicknameOfClient);
             out.println(jsonObject.toString());*/
             for (ClientHandler activeUser : userList) {
-                activeUser.out.println("Залогигнился в чат: " + nicknameOfClient);
+                //activeUser.out.println("Залогигнился в чат: " + nicknameOfClient);
             }
 
         }
@@ -53,7 +59,7 @@ public class ServerStart {
             System.out.println("Soedineniye ustanovleno");
 
             try {
-                out = new PrintWriter(clientSocket.getOutputStream(), true);
+                //out = new PrintWriter(clientSocket.getOutputStream(), true);
 
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
@@ -68,7 +74,7 @@ public class ServerStart {
                     out.println(jsonObject.toString());*/
 
                     for (ClientHandler activeUser : userList) {
-                        activeUser.out.println(nicknameOfClient + " сказал: вот это: " + message);
+                        //activeUser.out.println(nicknameOfClient + " сказал вот это: " + message);
                     }
                 }
 

@@ -1,7 +1,4 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
 
@@ -19,9 +16,10 @@ public class Client {
             client.startConnection(null, 6666);
            String resp = client.sendMessage();
             System.out.println(resp);
-        } catch (IOException e) {
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
+
     }
 
     public void startConnection(String ip, int port) throws IOException {
@@ -31,9 +29,9 @@ public class Client {
         scanner = new Scanner(System.in);
     }
 
-    public String sendMessage() throws IOException {
+    public String sendMessage() throws IOException, ClassNotFoundException {
         /*out.println(msg);*/
-        String scanned;
+        /*String scanned;
         System.out.print("Введите текст: ");
         while ((scanned = scanner.nextLine()) != null) {
             if (".".equals(scanned)) {
@@ -48,6 +46,13 @@ public class Client {
 
         String resp = "safuiufsaio";
         return resp;
+    }*/
+
+        ObjectInputStream objectInputStream = new ObjectInputStream(clientSocket.getInputStream());
+        while(true) {
+            Request request = (Request) objectInputStream.readObject();
+            System.out.println(request.toString());
+        }
     }
 
     public void stopConnection() throws IOException {
