@@ -1,15 +1,28 @@
-The sending (receiving) side encodes (decodes) the data using module "Serialization.py" (selfmade JSON).
+Серверный скрипт:
+1) обрабатывает каждого клиента в отдельном потоке  
+2) присваивается полученным сообщением время в формате UTC  
+3) помимо рассылки полученных сообщений, также уведомляет клиентов о подключении/отключении пользователей  
+4) не хранит историю переписки  
 
-File "Serialization.py" contains:
-1) the "dump" function for converting a dictionary into byte array;
-2) the "load" function for converting a byte array into dictionary.
+Клиентский скрипт:
+1) запускается с одним аргументом, соответствующим желаемому никнейму  
+2) способен одновременно отправлять и принимать сообщения  
+3) предлагает к каждому текстовому сообщению также добавить вложение в виде файла (полученные от собеседников файлы сохраняются в текущей директории)  
+4) при потере связи с сервером сразу же завершается  
+5) для отключения от сервера и завершения нужно ввести "\q"  
 
-Protocol:
-1) the Client sends his nickname to the Server: {"nickname":"Ivan"}
-2) the Server checks if the nickname isn't already taken, and returns a positive response, otherwise a negative one:
-{"status":"success"} / {"status":"error: this nickname is already taken"}
-3) after connecting to the Server, the Client sends messages with the field "text" or "text", "attachment" and "data" fields:
-{"text":"Hello"} / {"text":"Hello", "attachment":"1.jpg", "data":b"..."}
-4) the Server forwards each received message to all clients except the sender:
-{"time":"2021-09-26 12:34:56.789990+00:00", "nickname": "Ivan", "text":"Hello"} / {"time":"2021-09-26 12:34:56.789990+00:00", "nickname": "Ivan", "text":"Hello", "attachment":"1.jpg", "data":b"..."}  
-(the server specifies the time when the message is sent in utc format)
+Принимающая (отправляющая) сторона раскодирует (кодирует) данные с помощью модуля "Serialization.py" (самодельный JSON), который содержит следующие функции:
+1) "dump" для конвертации словаря в массив байт  
+2) "load" для конвертации массива байт в словарь  
+
+Описание протокола взаимодействия сервера и клиента:  
+1) после подключения клиент отправляет свой никнейм на сервер: {"nickname":"Ivan"}  
+2) сервер проверяет, не занят ли уже кем-нибудь другим полученный никнейм, и отвечает клиенту согласием или ошибкой:
+{"status":"success"} / {"status":"error: this nickname is already taken"}  
+3) после логина клиент отсылает сообщения с полем "text" или полями "text", "attachment" и "data":
+{"text":"Hello"} / {"text":"Hello", "attachment":"1.jpg", "data":b"..."}  
+4) сервер пересылает каждое полученное сообщение всем клиентам, кроме отправителя:  
+{"time":"12:34", "nickname": "Ivan", "text":"Hello"} / {"time":"12:34", "nickname": "Ivan", "text":"Hello", "attachment":"1.jpg", "data":b"..."}
+
+
+
