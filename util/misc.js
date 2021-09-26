@@ -1,5 +1,7 @@
 const { startCase, padStart } = require('lodash');
 const fs = require('fs');
+const childProcess = require('child_process');
+const { SAFE_MIME_TYPES } = require('./constants');
 
 function capitalCamelCase(str) {
   return startCase(str).replace(/ /g, '');
@@ -76,10 +78,30 @@ function fileExists(path) {
   });
 }
 
+async function getMimeType(path) {
+  const exists = await fileExists(path);
+  if (!exists) {
+    return null;
+  }
+
+  const isOnWindows = process.platform === 'win32';
+  const args = [`file --mime-type -b "${path}"`];
+  if (isOnWindows) {
+    args.push({ shell: 'sh', windowsHide: true });
+  }
+  return childProcess.execSync(...args).toString();
+}
+
+async function mimeTypeIsSafe(path) {
+  const mimeType = await getMimeType(path);
+  return !!mimeType && !!SAFE_MIME_TYPES.find(prefix => mimeType.startsWith(prefix));
+}
+
 module.exports = {
   capitalCamelCase,
   formatTime,
   wAmount,
   useHandlers,
-  fileExists
+  fileExists,
+  mimeTypeIsSafe
 };

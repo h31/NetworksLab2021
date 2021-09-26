@@ -1,5 +1,5 @@
 const net = require('net');
-const { useHandlers } = require('../util/misc');
+const { useHandlers, mimeTypeIsSafe } = require('../util/misc');
 const { SIGNALS, EVENTS, SOCKET_EVENTS, MESSAGES } = require('../util/constants');
 const TossMessenger = require('./toss-messenger');
 const Pillow = require('../pillow/index');
@@ -59,14 +59,17 @@ class TossClient extends net.Socket {
     this.rl.question(MESSAGES.attach, async answer => {
       let file;
       let fileName;
-      let fileErr = false;
+      let fileErr = null;
       if (answer) {
         try {
           file = await fs.promises.readFile(answer, { encoding: null });
+          const safe = await mimeTypeIsSafe(answer);
+          if (!safe) {
+            fileErr = 'Files of this type are not allowed to send';
+          }
           fileName = path.basename(answer);
         } catch {
-          TossMessenger.alertError(`Failed to read file at ${answer}`);
-          fileErr = true;
+          fileErr = `Failed to read file at ${answer}`;
         }
       }
 
@@ -82,6 +85,8 @@ class TossClient extends net.Socket {
           files.attachment = fileName;
         }
         this.req(Pillow.actions.sendMessage, toSend, files);
+      } else {
+        TossMessenger.alertError(fileErr);
       }
 
       this.rl.once(EVENTS.line, line => {

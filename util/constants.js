@@ -55,6 +55,20 @@ const MESSAGES = {
   attach: 'Attach a file (or press Enter to send a message without attachments)\n'
 };
 
+const SAFE_MIME_TYPES = [
+  'audio/',
+  'image/',
+  'text/plain', // .txt
+
+  'application/pdf',
+
+  'application/vnd.oasis.opendocument', // OpenDocument
+
+  'application/vnd.openxmlformats-officedocument', // MS Office
+  'application/msword', // Old MS Office Word
+  'application/vnd.ms-excel' // Old MS Office Excel
+];
+
 module.exports = {
   EVENTS,
   SIGNALS,
@@ -62,5 +76,6 @@ module.exports = {
   LOG_STATES,
   LOG_TYPES,
   SOCKET_EVENTS,
-  MESSAGES
+  MESSAGES,
+  SAFE_MIME_TYPES
 };
