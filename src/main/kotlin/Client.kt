@@ -62,6 +62,7 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
 
     private fun handleSent() {
         while (!socket.isClosed) {
+            //reading user input
             val text = scanner.nextLine()
             if (text.isBlank()) continue //no blank lines in msg!
             var msg = "msg: $text"
