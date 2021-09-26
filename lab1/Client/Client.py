@@ -47,11 +47,12 @@ def getNonExistentName(file_name):
 def getLocalTime(utcTime):
 	return str(datetime.fromisoformat(utcTime).astimezone().strftime('%H:%M'))
 
-def getMessage():
+def getMessage(disconnect_event):
 	while True:
 		dictionary = Serialization.load(sock.recv())
 		if dictionary == None: # socket is closed
 			print("\nDisconnected")
+			disconnect_event.set()
 			break
 		
 		if "time" in dictionary and "nickname" in dictionary and "text" in dictionary:
@@ -67,17 +68,20 @@ def getMessage():
 			print(" (" + file_name + " attached)", end = "")
 		print()
 
-listenThread = threading.Thread(target = getMessage)
+disconnect_event = threading.Event()
+listenThread = threading.Thread(target = getMessage, args=(disconnect_event,))
 listenThread.start()
 
 print("Enter \q to exit")
 while True:
-	text = input()
+	text = input("NEW MESSAGE:\n")
+	if disconnect_event.is_set(): break
 	if text == "\q": break
 	
 	message["text"] = text
 	
-	file_name = input("attachment: ")
+	file_name = input("ATTACHMENT (FILE NAME OR NOTHING):\n")
+	if disconnect_event.is_set(): break
 	if len(file_name) != 0:
 		if (Path.cwd() / file_name).exists():
 			message["attachment"] = file_name
