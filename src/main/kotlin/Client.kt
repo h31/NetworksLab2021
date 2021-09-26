@@ -36,14 +36,12 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
                 catch (ex: Exception) {
                     when(ex) {
                         is SocketException, is NullPointerException -> {
-
                             println("Server closed connection. Disconnected.")
                             exitProcess(0)
                         }
                         else -> throw ex
                     }
                 }
-
                 //parse the message!
                 val split = msg.split(colonAndSpaceRegex, 2)
                 val type = split.first().toString()
@@ -56,7 +54,6 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
                     "att" -> customMsg.att = value
                 }
             }
-
             //now customMsg have all the attributes. So we are...
             handleIncomingAtt(customMsg) //dealing with attachment if any exists...
             handleIncomingText(customMsg) //and showing the text message to the user
@@ -67,15 +64,13 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
         while (!socket.isClosed) {
             //reading user input
             val text = scanner.nextLine()
-            if (text == "") continue //no blank lines in msg!
+            if (text.isBlank()) continue //no blank lines in msg!
             var msg = "msg: $text"
-
             //quit scenario with "quit command"
-            if (text.toLowerCase() == "quit") {
+            if (text.lowercase(Locale.getDefault()) == "quit") {
                 println("See you later. Bye!")
                 exitProcess(0)
             }
-
             //check if message has any attachments - try to attach them if they exist
             msg = handleSentAtt(msg)
             //write the resulted message with parsed attachments
@@ -88,19 +83,17 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
     private fun handleIncomingAtt(customMsg: CustomMessage) {
         val att = customMsg.att
         val attname = customMsg.attname
-
         when {
             attname.isBlank() and att.isBlank() -> { /* can do something later, if there are any ideas */ }
             attname.isNotBlank() and att.isNotBlank() -> {
                 val directory = File(Paths.get("").toAbsolutePath().toString() + "/images")
                 if (!directory.exists()) directory.mkdir()
-
                 val file = File.createTempFile("media_", File(attname).extension, directory)
                 val decodedFile = Base64.getDecoder().decode(att)
                 file.writeBytes(decodedFile)
 
                 //also can be done while sending msg, but here we can generate tmp name for attachment and show it to user
-                customMsg.msg = customMsg.msg.replaceFirst("""att\|[^|]*\|""".toRegex(), "(file ${file.name} attached)")
+                customMsg.msg = customMsg.msg.replaceFirst(ATTACHMENT_STRING.toRegex(), "(file ${file.name} attached)")
             }
             else -> {
                 println("Incorrect message attachments - attachment can not be displayed.")
@@ -117,20 +110,17 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
         //check if there are any attachments (in "att|path/to/file.xxx|" format)
         var attname = ""
         var att = ""
-        val p = Pattern.compile("""att\|[^|]*\|""")
+        val p = Pattern.compile(ATTACHMENT_STRING)
         val matcher = p.matcher(msg)
         if (matcher.find()) { //if we found "att|...|" ...
-            var pathStr: String = matcher.group(0)
+            var pathStr = matcher.group(0)
             pathStr = pathStr.substring(4, pathStr.length - 1) //try to get the insides...
             val file = File(pathStr) //and check if it is a correct path to file
-
-
             //if path is correct...
             if (file.isFile) {
                 val inputStream = BufferedInputStream(FileInputStream(file))
                 val mimeType = URLConnection.guessContentTypeFromStream(inputStream)
                 inputStream.close()
-
                 //check its mimeType to be image or video. Everything else is non-positive!
                 if (mimeType != null && (mimeType.startsWith("image") || mimeType.startsWith("video"))) {
                     //encode the file to base64 string

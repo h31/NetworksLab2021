@@ -1,12 +1,13 @@
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import java.io.*
-import java.lang.Exception
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.system.exitProcess
 
 class Server constructor(port: Int) {
     private val  publicSocket: ServerSocket = ServerSocket(port)
@@ -28,7 +29,7 @@ class Server constructor(port: Int) {
                 val nickname = reader.readLine()
                 val date = Date()
                 val timeStr = sdf1.format(date)
-                val customMessage = CustomMessage(timeStr, "Server", "", "", "")
+                val customMessage = CustomMessage(timeStr, "Server")
                 when {
                     !nickname.matches(nicknameRegex) -> {
                         customMessage.msg = "Sorry, this nickname is incorrect. " +
@@ -41,7 +42,7 @@ class Server constructor(port: Int) {
                         writeAndFlush(writer, customMessage.toString())
                         closeAll(reader, writer, customSocket.socket)
                     }
-                    nickname.toLowerCase() == "server" -> {
+                    nickname.lowercase(Locale.getDefault()) == "server" -> {
                         customMessage.msg = "Sorry, any 'Server' nickname can not be taken. Choose another one."
                         writeAndFlush(writer, customMessage.toString())
                         closeAll(reader, writer, customSocket.socket)
@@ -94,9 +95,10 @@ class Server constructor(port: Int) {
             val date = Date()
             val timeStr = sdf1.format(date)
             customMsg.time = timeStr
+            customMsg.name = nickname
 
             //quit case - break out of loop, then close the stuff...
-            if (customMsg.msg == "quit") { break }
+            if (customMsg.msg.lowercase(Locale.getDefault()) == "quit") { break }
 
             //else - send this message to all active clients
             clientSockets.forEach { writeAndFlush(it.value.writer, customMsg.toString()) }
