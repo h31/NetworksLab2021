@@ -4,6 +4,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
 import org.json.JSONObject;
 
 public class ServerStart {
@@ -28,7 +29,7 @@ public class ServerStart {
 
     private class ClientHandler extends Thread {
         private Socket clientSocket;
-        //private PrintWriter out;
+        private PrintWriter out;
         private BufferedReader in;
         private String nicknameOfClient;
 
@@ -36,49 +37,66 @@ public class ServerStart {
             this.clientSocket = socket;
         }
 
+        private void greetingNewUser() throws IOException, ClassNotFoundException {
+
+
+            ServerRequest request = new ServerRequest("greeting",
+                    "Добро пожаловать в чат! Введите пожалуйста свой никнейм: ",
+                    new Date().toString());
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("msg", request.getMessage());
+            jsonObject.put("time", request.getTime());
+            out.println(request.toString());
+            System.out.println("object passed");
+
+
+            /*while (true) {
+                System.out.println("получили: " + in.readLine());
+            }*/
+
+        }
+
 
         private void greetingUser() throws IOException {
-            //out.println("Добро пожаловать в чат! Введите пожалуйста свой никнейм: "); // personal
-            Request request = new Request("blabla", "26.09.2021");
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
-            objectOutputStream.writeObject(request);
-            objectOutputStream.close();
 
             nicknameOfClient = in.readLine();
             /*JSONObject jsonObject = new JSONObjeыct();
             jsonObject.put("msg", nicknameOfClient);
             out.println(jsonObject.toString());*/
             for (ClientHandler activeUser : userList) {
-                //activeUser.out.println("Залогигнился в чат: " + nicknameOfClient);
+                activeUser.out.println("Залогигнился в чат: " + nicknameOfClient);
             }
 
         }
 
         @Override
         public void run() {
+            try {
+                out = new PrintWriter(clientSocket.getOutputStream(), true);
+                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             System.out.println("Soedineniye ustanovleno");
 
             try {
-                //out = new PrintWriter(clientSocket.getOutputStream(), true);
-
+                greetingNewUser();
+                /*out = new PrintWriter(clientSocket.getOutputStream(), true);
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
-                greetingUser();
-
+                //greetingUser();
                 while(true) {
                     String message = in.readLine();
                     System.out.println("Current thread: " + Thread.currentThread().getName() +
                             " Current client nickname: " + message);
-                    /*JSONObject jsonObject = new JSONObject();
+                    *//*JSONObject jsonObject = new JSONObject();
                     jsonObject.put("msg", message);
-                    out.println(jsonObject.toString());*/
-
+                    out.println(jsonObject.toString());*//*
                     for (ClientHandler activeUser : userList) {
-                        //activeUser.out.println(nicknameOfClient + " сказал вот это: " + message);
+                        activeUser.out.println(nicknameOfClient + " сказал вот это: " + message);
                     }
-                }
+                }*/
 
-            } catch (IOException e) {
+            } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }

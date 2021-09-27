@@ -50,7 +50,7 @@ public class Client {
 
         ObjectInputStream objectInputStream = new ObjectInputStream(clientSocket.getInputStream());
         while(true) {
-            Request request = (Request) objectInputStream.readObject();
+            ServerRequest request = (ServerRequest) objectInputStream.readObject();
             System.out.println(request.toString());
         }
     }
