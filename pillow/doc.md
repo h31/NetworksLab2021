@@ -18,7 +18,7 @@
             <td>action</td>
             <td>✓</td>
             <td>String</td>
-            <td>Must be one of ['send-message', 'log-in']</td>
+            <td>Must be one of ['send-message', 'log-in', 'chunks']</td>
         </tr>
         <tr>
             <td>data</td>
@@ -57,6 +57,12 @@
             <td>'send-message'</td>
             <td>Object</td>
             <td>Must have exactly two subfields: 'file' (a Byte Array) and 'name' (a String)</td>
+        </tr>
+        <tr>
+            <td>chunks</td>
+            <td>'chunks'</td>
+            <td>Number</td>
+            <td></td>
         </tr>
     </tbody>
 </table>
