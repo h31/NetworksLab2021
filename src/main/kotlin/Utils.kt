@@ -8,7 +8,7 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 import kotlin.system.exitProcess
 
-val attachmentRegex = Regex("""att\|.+\|""")
+const val ATTACHMENT_STRING = """att\|[^|]*\|"""
 val nicknameRegex = Regex("""[\w\d]+""")
 val colonAndSpaceRegex = Regex(":\\s")
 
