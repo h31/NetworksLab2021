@@ -3,15 +3,14 @@ import java.util.Date;
 
 public class ServerRequest implements Serializable {
 
-    public ServerRequest(String requestType, String message, String time) {
-        this.requestType = requestType;
-        this.message = message;
-        this.time = time;
-    }
-
-    private String requestType; // заменить на enum или что-то более осмысленное, {greeting, exception, exit}
+    private String requestType; // заменить на enum или что-то более осмысленное, {greeting, exception, exit, msg}
 
     private String message;
+
+    // file
+    // расширение файла
+
+    private String username;
 
     private String time;
 
@@ -39,12 +38,37 @@ public class ServerRequest implements Serializable {
         this.requestType = requestType;
     }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public ServerRequest(String requestType, String message, String username, String time) {
+        this.requestType = requestType;
+        this.message = message;
+        this.username = username;
+        this.time = time;
+    }
+
+    public ServerRequest(String requestType, String message, String time) {
+        this.requestType = requestType;
+        this.message = message;
+        this.time = time;
+    }
+
+    public ServerRequest() {
+    }
+
     @Override
     public String toString() {
-        return "ServerRequest{" +
-                "requestType='" + requestType + '\'' +
-                ", message='" + message + '\'' +
-                ", time='" + time + '\'' +
+        return "{" +
+                "'requestType':'" + requestType + '\'' +
+                ", 'message':'" + message + '\'' +
+                ", 'username':'" + username + '\'' +
+                ", 'time':'" + time + '\'' +
                 '}';
     }
 }

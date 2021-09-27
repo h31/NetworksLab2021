@@ -2,10 +2,10 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-
-import org.json.JSONObject;
+import java.util.stream.Collectors;
 
 public class ServerStart {
 
@@ -38,16 +38,24 @@ public class ServerStart {
         }
 
         private void greetingNewUser() throws IOException, ClassNotFoundException {
-
-
-            ServerRequest request = new ServerRequest("greeting",
+            ServerRequest response = new ServerRequest("greeting",
                     "Добро пожаловать в чат! Введите пожалуйста свой никнейм: ",
                     new Date().toString());
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("msg", request.getMessage());
-            jsonObject.put("time", request.getTime());
-            out.println(request.toString());
-            System.out.println("object passed");
+            out.println(response);
+            //System.out.println("Greeting object passed " + response);
+
+            ServerRequest responseAboutNewUser = new ServerRequest();
+
+            ServerRequest clientRequest;
+            while (true) {
+                clientRequest = parseRequest(in.readLine());
+                nicknameOfClient = clientRequest.getMessage();
+                responseAboutNewUser.setRequestType("message");
+                responseAboutNewUser.setMessage(nicknameOfClient + " <---- вот этот чувак залогинился в чат");
+                for (ClientHandler activeUser : userList) {
+                    activeUser.out.println(responseAboutNewUser);
+                }
+            }
 
 
             /*while (true) {
@@ -56,6 +64,18 @@ public class ServerStart {
 
         }
 
+        public ServerRequest parseRequest(String format) {
+            System.out.println(format);
+            String[] array = Arrays.asList(format.split("[({')|(':')|(', ')|('})]"))
+                    .stream().filter(str -> !str.isEmpty()).collect(Collectors.toList()).toArray(new String[0]);
+
+            ServerRequest serverRequest = new ServerRequest();
+            serverRequest.setTime(new Date().toString());
+            serverRequest.setMessage(array[3]);
+            serverRequest.setRequestType(array[1]);
+
+            return serverRequest;
+        }
 
         private void greetingUser() throws IOException {
 
@@ -81,6 +101,7 @@ public class ServerStart {
 
             try {
                 greetingNewUser();
+
                 /*out = new PrintWriter(clientSocket.getOutputStream(), true);
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 //greetingUser();
