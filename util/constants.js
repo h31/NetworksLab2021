@@ -13,6 +13,9 @@ const EVENTS = {
   timeout: 'timeout',
 
   line: 'line',
+
+  queue: 'queue',
+  proceedQueue: 'proceed-queue',
 };
 
 const SOCKET_EVENTS = [
@@ -69,6 +72,8 @@ const SAFE_MIME_TYPES = [
   'application/vnd.ms-excel' // Old MS Office Excel
 ];
 
+const QUEUE_STOPPER = '__STOP__';
+
 module.exports = {
   EVENTS,
   SIGNALS,
@@ -77,5 +82,6 @@ module.exports = {
   LOG_TYPES,
   SOCKET_EVENTS,
   MESSAGES,
-  SAFE_MIME_TYPES
+  SAFE_MIME_TYPES,
+  QUEUE_STOPPER
 };

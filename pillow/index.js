@@ -16,6 +16,7 @@ class Pillow {
     logIn: 'log-in',
     logOut: 'log-out',
     sendMessage: 'send-message',
+    chunks: 'chunks',
   };
 
   static requestShape = {
@@ -28,7 +29,7 @@ class Pillow {
         name: 'action',
         type: String,
         required: true,
-        choices: [this.actions.logIn, this.actions.sendMessage] // logOut can only be sent by the server
+        choices: [this.actions.logIn, this.actions.sendMessage, this.actions.chunks] // logOut can only be sent by the server
       },
       {
         name: 'data',
@@ -78,6 +79,18 @@ class Pillow {
       }
     ]
   };
+  static chunksShape = {
+    name: 'data',
+    type: Object,
+    required: true,
+    fields: [
+      {
+        name: 'chunks',
+        type: Number,
+        required: true
+      }
+    ]
+  };
 
   static isError(statusCode) {
     return statusCode >= this.SUCCESS_THRESHOLD;
@@ -97,6 +110,17 @@ class Pillow {
     const errors = checkShape(data, this.logInShape);
     if (!isEmpty(errors)) {
       throw new PillowError(errors);
+    }
+  }
+
+  static validateChunks(data) {
+    const errors = checkShape(data, this.chunksShape);
+    if (!isEmpty(errors)) {
+      throw new PillowError(errors);
+    }
+
+    if (`${data.chunks}`.includes('.') || data.chunks < 1) {
+      throw new PillowError({ data: ['chunks: must be a positive Integer'] });
     }
   }
 

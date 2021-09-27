@@ -1,4 +1,4 @@
-const { useHandlers } = require('../../util/misc');
+const { useHandlers, handleChunks, wAmount } = require('../../util/misc');
 const { LOG_STATES, LOG_TYPES } = require('../../util/constants');
 const path = require('path');
 const TossLogger = require('../toss-logger');
@@ -10,9 +10,14 @@ const SlipError = require('../../slip/error');
 
 
 function handle(rawData, { client, server, ev }) {
+  const { shouldContinueHandling, dataToHandle } = handleChunks(client, rawData);
+  if (!shouldContinueHandling) {
+    return;
+  }
+
   let deserializedData;
   try {
-    deserializedData = Slip.deserialize(rawData);
+    deserializedData = Slip.deserialize(dataToHandle);
   } catch (err) {
     const isSlipError = err instanceof SlipError;
     if (!isSlipError) {
@@ -48,7 +53,7 @@ function handle(rawData, { client, server, ev }) {
       name: ev,
       state: LOG_STATES.error,
       status: TossLogger.status.error,
-      comment: `Payload validation failed with ${Object.values(err.errors).flat().length} errors`
+      comment: `Payload validation failed with ${wAmount(Object.values(err.errors).flat().length, 'error')}`
     });
     client.err(actionToRespond, err.errors, Pillow.responseStatus.ERR_REQ_DATA.code);
     return;
@@ -62,7 +67,7 @@ function handle(rawData, { client, server, ev }) {
   );
   useHandlers(null, {
     makeExtraArgs: a => [{
-      client, server, data, action,
+      client, server, data, action: a,
       broadcast: (...args) => server.broadcast(a, ...args),
       respond: (...args) => client.res(a, ...args),
       err: (...args) => client.err(a, ...args)

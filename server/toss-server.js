@@ -1,5 +1,5 @@
 const net = require('net');
-const { useHandlers, wAmount }  = require('../util/misc');
+const { useHandlers, wAmount, useWriteQueue, sendChunks }  = require('../util/misc');
 const { SIGNALS, SOCKET_EVENTS, LOG_STATES, LOG_TYPES } = require('../util/constants');
 const TossLogger = require('./toss-logger');
 const Pillow = require('../pillow/index');
@@ -44,8 +44,11 @@ class TossServer extends net.Server {
     if (useTs) {
       client[TossServer._defaultCId] = (new Date()).getTime();
     }
+
     client.res = (...args) => this.res(client, ...args);
     client.err = (...args) => this.err(client, ...args);
+    useWriteQueue(client);
+
     this.clients.push(client);
     const connectionDescription = useTs
       ? `, ${TossServer._defaultCId} = ${client[TossServer._defaultCId]}` :
@@ -100,7 +103,16 @@ class TossServer extends net.Server {
       toSend.data = { ...data, time: new Date() };
     }
     const serializedData = Slip.serialize(toSend, files);
-    client.write(serializedData, cb);
+    sendChunks(
+      client,
+      serializedData,
+      chunks => Slip.serialize({
+        action: Pillow.actions.chunks,
+        data: { chunks },
+        status: Pillow.responseStatus.OK.code
+      }),
+      false, { cb }
+    );
   }
 
   err(client, action, errors, status, cb) {
@@ -154,7 +166,17 @@ class TossServer extends net.Server {
       if (data) {
         toSend.data = { ...data, time };
       }
-      c.write(Slip.serialize(toSend, { data: files }), err => checkFinish(c, err));
+      const serializedData = Slip.serialize(toSend, { data: files });
+      sendChunks(
+        c,
+        serializedData,
+        chunks => Slip.serialize({
+          action: Pillow.actions.chunks,
+          data: { chunks },
+          status: Pillow.responseStatus.OK.code
+        }),
+        false, { cb: err => checkFinish(c, err) }
+      );
     });
   }
 

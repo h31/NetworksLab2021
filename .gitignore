@@ -2,3 +2,4 @@
 node_modules
 tests/parsed-files
 attachments
+client-logs

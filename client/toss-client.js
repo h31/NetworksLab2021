@@ -1,19 +1,23 @@
 const net = require('net');
-const { useHandlers, mimeTypeIsSafe } = require('../util/misc');
-const { SIGNALS, EVENTS, SOCKET_EVENTS, MESSAGES } = require('../util/constants');
+const { useHandlers, mimeTypeIsSafe, sendChunks, useWriteQueue } = require('../util/misc');
+const { SIGNALS, EVENTS, SOCKET_EVENTS, MESSAGES, LOG_TYPES } = require('../util/constants');
 const TossMessenger = require('./toss-messenger');
 const Pillow = require('../pillow/index');
 const Slip = require('../slip/index');
 const fs = require('fs');
 const path = require('path');
+const log = require('./client-logger');
 
 
 class TossClient extends net.Socket {
-  rl = null;
   username = '';
+
+  rl = null;
   rlLoopStarted = false;
   isTyping = false;
   bufferedMessages = [];
+
+  logSuffix = null;
 
   constructor(
     { handlers = {}, handlersDir } = {},
@@ -22,13 +26,16 @@ class TossClient extends net.Socket {
   ) {
     super(options);
     this.rl = rl;
+    this.logSuffix = (new Date()).getTime();
     useHandlers(this, {
       handlers,
       handlersDir,
       makeExtraArgs: ev => [{ client: this, ev }],
       handledEvents: SOCKET_EVENTS,
-      catcherFunc: err => this.closeCompletely(err)
+      catcherFunc: err => this.closeCompletely(err),
+      log: async (ev, handler) => await log(handler ? 'handled' : 'skipped', ev, LOG_TYPES.Event, this.logSuffix)
     });
+    useWriteQueue(this);
 
     process.on(SIGNALS.SIGINT, () => this.closeCompletely());
     rl.on(EVENTS.close, () => this.closeCompletely());
@@ -41,57 +48,67 @@ class TossClient extends net.Socket {
     process.exit(error ? 1 : 0);
   }
 
-  req(action, data, files, cb) {
+  req(action, data, files) {
     const serializedData = Slip.serialize({ action, data }, { data: files });
-    return this.write(serializedData, cb);
+    sendChunks(
+      this,
+      serializedData,
+      chunks => Slip.serialize({ action: Pillow.actions.chunks, data: { chunks } }),
+      true
+    );
   }
 
   waitForInput(line) {
     this.isTyping = true;
     this.rl.prompt();
     this.rl.write(line);
-    this.rl.once(EVENTS.line, input => {
-      this.acceptInput(input);
+    this.rl.once(EVENTS.line, async input => {
+      await this.acceptInput(input);
     });
   }
 
-  acceptInput(input) {
-    this.rl.question(MESSAGES.attach, async answer => {
-      let file;
-      let fileName;
-      let fileErr = null;
-      if (answer) {
-        try {
-          file = await fs.promises.readFile(answer, { encoding: null });
-          const safe = await mimeTypeIsSafe(answer);
-          if (!safe) {
-            fileErr = 'Files of this type are not allowed to send';
-          }
-          fileName = path.basename(answer);
-        } catch {
-          fileErr = `Failed to read file at ${answer}`;
+  async askForAttachment() {
+    const answer = await new Promise(resolve => this.rl.question(MESSAGES.attach, input => resolve(input)));
+    let file;
+    let fileName;
+    let fileErr = null;
+    if (answer) {
+      try {
+        file = await fs.promises.readFile(answer, { encoding: null });
+        const safe = await mimeTypeIsSafe(answer);
+        if (!safe) {
+          fileErr = 'Files of this type are not allowed to send';
         }
+        fileName = path.basename(answer);
+      } catch {
+        fileErr = `Failed to read file at ${answer}`;
       }
+    }
 
-      this.isTyping = false;
-      this.bufferedMessages.forEach(bufMsg => TossMessenger.write(bufMsg.data, bufMsg.status, bufMsg.me));
-      this.bufferedMessages = [];
+    if (fileErr) {
+      TossMessenger.alertError(fileErr);
+      return this.askForAttachment();
+    }
 
-      if (!fileErr) {
-        const toSend = { message: input };
-        const files = {};
-        if (file) {
-          toSend.attachment = file;
-          files.attachment = fileName;
-        }
-        this.req(Pillow.actions.sendMessage, toSend, files);
-      } else {
-        TossMessenger.alertError(fileErr);
-      }
+    return { file, fileName };
+  }
 
-      this.rl.once(EVENTS.line, line => {
-        this.waitForInput(line);
-      });
+  async acceptInput(input) {
+    const { file, fileName } = await this.askForAttachment();
+    const toSend = { message: input };
+    const files = {};
+    if (file) {
+      toSend.attachment = file;
+      files.attachment = fileName;
+    }
+
+    this.isTyping = false;
+    this.bufferedMessages.forEach(bufMsg => TossMessenger.write(bufMsg.data, bufMsg.status, bufMsg.me));
+    this.bufferedMessages = [];
+
+    this.req(Pillow.actions.sendMessage, toSend, files);
+    this.rl.once(EVENTS.line, line => {
+      this.waitForInput(line);
     });
   }
 
