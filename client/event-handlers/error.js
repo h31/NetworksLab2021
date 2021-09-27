@@ -3,7 +3,7 @@ const SlipError = require('../../slip/error');
 const TossMessenger = require('../toss-messenger');
 
 
-function handle(error) {
+function handle(error, { client }) {
   let text;
   if (error instanceof SlipError) {
     text = MESSAGES.strangeServerResponse;
@@ -22,6 +22,9 @@ function handle(error) {
   }
 
   TossMessenger.alertError(text);
+
+  const commentEnding = error.code || error.message;
+  client.logger({ comment: `${error.constructor.name}: ${commentEnding}` })
 }
 
 module.exports = handle;

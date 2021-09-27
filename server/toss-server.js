@@ -1,6 +1,6 @@
 const net = require('net');
 const { useHandlers, wAmount, useWriteQueue, sendChunks }  = require('../util/misc');
-const { SIGNALS, SOCKET_EVENTS, LOG_STATES, LOG_TYPES, LOG_NAMES } = require('../util/constants');
+const { SIGNALS, SOCKET_EVENTS, LOG_STATES, LOG_TYPES } = require('../util/constants');
 const TossLogger = require('./toss-logger');
 const Pillow = require('../pillow/index');
 const Slip = require('../slip/index');
@@ -39,6 +39,14 @@ class TossServer extends net.Server {
     return `Handling ${wAmount(handling, 'connection')} now`;
   }
 
+  wrapChunks(chunks) {
+    return Slip.serialize({
+      action: Pillow.actions.chunks,
+      data: { chunks },
+      status: Pillow.responseStatus.OK.code
+    });
+  }
+
   registerClient(client) {
     const useTs = this._clientIndicator === TossServer._defaultCId;
     if (useTs) {
@@ -47,31 +55,9 @@ class TossServer extends net.Server {
 
     client.res = (...args) => this.res(client, ...args);
     client.err = (...args) => this.err(client, ...args);
-    useWriteQueue(
-      client,
-      (state, queueSize, err) => {
-        const waiting = `${queueSize ? wAmount(queueSize, 'item') : 'No items'} waiting to be sent`;
-        const text = state === err
-          ? `Last write resulted in an error: (${err.constructor.name}) ${err.message}`
-          : waiting;
-        let status;
-        if (err) {
-          status = TossLogger.status.error;
-        } else {
-          switch (state) {
-            case LOG_STATES.written:
-              status = TossLogger.status.success;
-              break;
-            case LOG_STATES.enqueued:
-              status = TossLogger.status.prefix;
-              break;
-            case LOG_STATES.stopped:
-              status = TossLogger.status.warn;
-          }
-        }
-        TossLogger.log({ status, state, comment: text });
-      }
-    );
+    client.logger = toLog => TossLogger.log(toLog);
+    client.sendChunks = (toSend, cb) => sendChunks(client, toSend, this.wrapChunks, false, { cb });
+    useWriteQueue(client);
 
     this.clients.push(client);
     const connectionDescription = useTs
@@ -104,7 +90,7 @@ class TossServer extends net.Server {
             status: TossLogger.status.error,
             comment: err.message
           });
-          client.write(Slip.serialize({
+          client.sendChunks(Slip.serialize({
             status: Pillow.responseStatus.ERR_SERVER.code,
             data: { errors: { _err: ['Server error'] } }
           }));
@@ -127,28 +113,16 @@ class TossServer extends net.Server {
       toSend.data = { ...data, time: new Date() };
     }
     const serializedData = Slip.serialize(toSend, files);
-    sendChunks(
-      client,
-      serializedData,
-      chunks => Slip.serialize({
-        action: Pillow.actions.chunks,
-        data: { chunks },
-        status: Pillow.responseStatus.OK.code
-      }),
-      false, {
-        cb,
-        log: chunks => TossLogger.log({
-          type: LOG_TYPES.Chunks,
-          name: LOG_NAMES.chunksSent,
-          comment: `Enqueued ${chunks} bytes of data to be sent`
-        })
-      }
-    );
+    client.sendChunks(serializedData, cb);
   }
 
   err(client, action, errors, status, cb) {
-    const serializedData = Slip.serialize({ action, data: { errors }, status });
-    client.write(serializedData, cb);
+    const toSend = { status, data: { errors } };
+    if (action) {
+      toSend.action = action;
+    }
+    const serializedData = Slip.serialize(toSend);
+    client.sendChunks(serializedData, cb);
   }
 
   broadcast(
@@ -198,22 +172,7 @@ class TossServer extends net.Server {
         toSend.data = { ...data, time };
       }
       const serializedData = Slip.serialize(toSend, { data: files });
-      sendChunks(
-        c,
-        serializedData,
-        chunks => Slip.serialize({
-          action: Pillow.actions.chunks,
-          data: { chunks },
-          status: Pillow.responseStatus.OK.code
-        }),
-        false, {
-          cb: err => checkFinish(c, err),
-          log: chunks => TossLogger.log({
-            type: LOG_TYPES.Chunks, name: LOG_NAMES.chunksSent,
-            comment: `Enqueued ${chunks} bytes of data to be sent to ${c[this._clientIndicator]}`
-          })
-        }
-      );
+      c.sendChunks(serializedData, err => checkFinish(c, err));
     });
   }
 

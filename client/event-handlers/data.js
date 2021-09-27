@@ -1,18 +1,11 @@
 const { useHandlers, handleChunks } = require('../../util/misc');
 const path = require('path');
 const Slip = require('../../slip/index');
-const log = require('../client-logger');
-const { LOG_TYPES, LOG_NAMES } = require('../../util/constants');
+const { LOG_TYPES, LOG_STATES } = require('../../util/constants');
 
 
 function handle(rawData, { client }) {
-  const { shouldContinueHandling, dataToHandle } = handleChunks(
-    client, rawData,
-    async (receivedChunks, chunksToReceive) => await log(
-      `Received ${receivedChunks}, ${chunksToReceive ? `${chunksToReceive} chunks to go` : 'no more to receive'}`,
-      LOG_NAMES.chunksReceived, LOG_TYPES.Chunks, client.logSuffix
-    )
-  );
+  const { shouldContinueHandling, dataToHandle } = handleChunks(client, rawData);
   if (!shouldContinueHandling) {
     return;
   }
@@ -27,7 +20,11 @@ function handle(rawData, { client }) {
     handlersDir,
     extractOne: action || '',
     defaultHandler: ({ data, status }) => client.displayMessage(data, status),
-    log: async (a, handler) => await log(handler ? 'handled' : 'skipped', a, LOG_TYPES.Action, client.logSuffix)
+    log: (a, handler) => client.logger({
+      type: LOG_TYPES.Action,
+      name: a,
+      state: handler ? LOG_STATES.passedToHandle : LOG_STATES.skipped,
+    })
   });
 }
 

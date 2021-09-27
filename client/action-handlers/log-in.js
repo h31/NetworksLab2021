@@ -3,6 +3,15 @@ const { MESSAGES } = require('../../util/constants');
 
 
 function handle({ data, client, status, action }) {
+  if (Pillow.isError(status)) {
+    client.displayMessage(data, status);
+    client.rl.question(MESSAGES.askUsername, answer => {
+      client.username = answer;
+      client.req(action, { username: answer });
+    });
+    return;
+  }
+
   client.displayMessage(
     {
       time: data.time,
@@ -12,13 +21,6 @@ function handle({ data, client, status, action }) {
     },
     status
   );
-  if (Pillow.isError(status)) {
-    client.rl.question(MESSAGES.askUsername, answer => {
-      client.username = answer;
-      client.req(action, { username: answer });
-    });
-    return;
-  }
   client.startRlLoop();
 }
 

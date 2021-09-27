@@ -1,7 +1,7 @@
 const { startCase, padStart } = require('lodash');
 const fs = require('fs');
 const childProcess = require('child_process');
-const { SAFE_MIME_TYPES, EVENTS, QUEUE_STOPPER, LOG_STATES } = require('./constants');
+const { SAFE_MIME_TYPES, EVENTS, QUEUE_STOPPER, LOG_STATES, LOG_TYPES, LOG_NAMES } = require('./constants');
 
 function capitalCamelCase(str) {
   return startCase(str).replace(/ /g, '');
@@ -97,7 +97,55 @@ async function mimeTypeIsSafe(path) {
   return !!mimeType && !!SAFE_MIME_TYPES.find(prefix => mimeType.startsWith(prefix));
 }
 
-function handleChunks(receiver, receivedChunk, log = () => {}) {
+function logReceivedChunks(receivedChunks, chunksToReceive, logger) {
+  const ending = chunksToReceive
+    ? `${wAmount(chunksToReceive, 'byte')} to go`
+    : 'nothing more to receive';
+  const comment = `Received ${wAmount(receivedChunks, 'byte')}, ${ending}`;
+  logger({
+    type: LOG_TYPES.Chunks,
+    name: LOG_NAMES.chunksReceived,
+    comment,
+    status: chunksToReceive ? 'prefix' : 'success',
+    state: chunksToReceive ? LOG_STATES.collectingChunks : LOG_STATES.doneChunks
+  });
+}
+
+function logSentChunks(chunks, logger) {
+  logger({
+    type: LOG_TYPES.Chunks,
+    name: LOG_NAMES.chunksSent,
+    status: 'prefix',
+    comment: `Enqueued ${wAmount(chunks, 'byte')} of data to be sent`
+  });
+}
+
+function logWriteQueue(state, queueSize, err, logger) {
+  const waiting = `${queueSize ? wAmount(queueSize, 'item') : 'No items'} waiting to be sent`;
+  const comment = err
+    ? `${err.constructor.name}: ${err.message}`
+    : waiting;
+  let status;
+  if (err) {
+    status = 'error';
+  } else {
+    switch (state) {
+      case LOG_STATES.stopped:
+        status = 'warn';
+        break;
+      case LOG_STATES.proceeded:
+      case LOG_STATES.enqueued:
+        status = 'prefix';
+        break;
+      case LOG_STATES.written:
+        status = 'success';
+        break;
+    }
+  }
+  logger({ state: err ? LOG_STATES.error : state, comment, status });
+}
+
+function handleChunks(receiver, receivedChunk) {
   let shouldContinueHandling = true;
   let dataToHandle = receivedChunk;
   if (receiver.chunksToReceive) {
@@ -110,24 +158,24 @@ function handleChunks(receiver, receivedChunk, log = () => {}) {
     dataToHandle = receiver.completeData;
     receiver.completeData = null;
   }
-  log(receivedChunk.byteLength, receiver.chunksToReceive);
+  logReceivedChunks(receivedChunk.byteLength, receiver.chunksToReceive, receiver.logger);
 
   return { shouldContinueHandling, dataToHandle };
 }
 
-function useWriteQueue(sock, log = () => {}) {
+function useWriteQueue(sock) {
   sock.writeQueue = [];
   sock.isWriting = false;
   sock.canProceed = true;
 
   sock.writeSafe = (...toWrite) => {
     sock.writeQueue.push(...toWrite);
-    log(LOG_STATES.enqueued, sock.writeQueue.length);
+    logWriteQueue(LOG_STATES.enqueued, sock.writeQueue.length, null, sock.logger);
     sock.emit(EVENTS.queue);
   }
 
   const afterWrite = err => {
-    log(LOG_STATES.written, sock.writeQueue.length, err);
+    logWriteQueue(LOG_STATES.written, sock.writeQueue.length, err, sock.logger);
     if (err) {
       sock.emit(EVENTS.error, err);
     } else {
@@ -140,7 +188,7 @@ function useWriteQueue(sock, log = () => {}) {
     if (sock.writeQueue.length && !sock.isWriting && sock.canProceed) {
       const writeArgs = sock.writeQueue.splice(0, 1)[0];
       if (writeArgs[0] === QUEUE_STOPPER) {
-        log(LOG_STATES.stopped, sock.writeQueue.length);
+        logWriteQueue(LOG_STATES.stopped, sock.writeQueue.length, null, sock.logger);
         sock.canProceed = false;
         return;
       }
@@ -161,7 +209,7 @@ function useWriteQueue(sock, log = () => {}) {
   });
 
   sock.on(EVENTS.proceedQueue, () => {
-    log(LOG_STATES.proceeded, sock.writeQueue.length);
+    logWriteQueue(LOG_STATES.proceeded, sock.writeQueue.length, null, sock.logger);
     sock.canProceed = true;
     sock.emit(EVENTS.queue);
   });
@@ -169,10 +217,10 @@ function useWriteQueue(sock, log = () => {}) {
 
 function sendChunks(
   sock, toSend, wrap, wait = false,
-  { writeFunc = 'writeSafe', cb = () => {}, log = () => {} } = {}
+  { writeFunc = 'writeSafe', cb = () => {} } = {}
 ) {
   const chunks = toSend.byteLength;
-  log(chunks);
+  logSentChunks(chunks, sock.logger);
   const toWrite = [[wrap(chunks)], [toSend, cb]];
   if (wait) {
     toWrite.splice(1, 0, [QUEUE_STOPPER]);

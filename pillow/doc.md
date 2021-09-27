@@ -192,5 +192,12 @@ Overall, the statuses with codes above 199 represent that some error occurred
             <td>Object</td>
             <td>Each key is the name of the field that's invalid, each value is an array of errors</td>
         </tr>
+        <tr>
+            <td>chunks</td>
+            <td>action == 'chunks'</td>
+            <td>Number</td>
+            <td></td>
+        </tr>
     </tbody>
 </table>
+Note that if status is 101, there will be no data at all.

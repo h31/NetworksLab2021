@@ -1,12 +1,12 @@
 const net = require('net');
-const { useHandlers, mimeTypeIsSafe, sendChunks, useWriteQueue, wAmount } = require('../util/misc');
-const { SIGNALS, EVENTS, SOCKET_EVENTS, MESSAGES, LOG_TYPES, LOG_NAMES } = require('../util/constants');
+const { useHandlers, mimeTypeIsSafe, sendChunks, useWriteQueue } = require('../util/misc');
+const { SIGNALS, EVENTS, SOCKET_EVENTS, MESSAGES, LOG_TYPES, LOG_STATES } = require('../util/constants');
 const TossMessenger = require('./toss-messenger');
 const Pillow = require('../pillow/index');
 const Slip = require('../slip/index');
 const fs = require('fs');
 const path = require('path');
-const log = require('./client-logger');
+const logger = require('./client-logger');
 
 
 class TossClient extends net.Socket {
@@ -17,7 +17,7 @@ class TossClient extends net.Socket {
   isTyping = false;
   bufferedMessages = [];
 
-  logSuffix = null;
+  logger = () => {};
 
   constructor(
     { handlers = {}, handlersDir } = {},
@@ -26,25 +26,19 @@ class TossClient extends net.Socket {
   ) {
     super(options);
     this.rl = rl;
-    this.logSuffix = (new Date()).getTime();
+    const logSuffix = (new Date()).getTime();
+    this.logger = toLog => logger(toLog, logSuffix);
     useHandlers(this, {
       handlers,
       handlersDir,
       makeExtraArgs: ev => [{ client: this, ev }],
       handledEvents: SOCKET_EVENTS,
       catcherFunc: err => this.closeCompletely(err),
-      log: async (ev, handler) => await log(handler ? 'handled' : 'skipped', ev, LOG_TYPES.Event, this.logSuffix)
+      log: (ev, handler) => this.logger({
+        type: LOG_TYPES.Event, name: ev, state: handler ? LOG_STATES.passedToHandle : LOG_STATES.skipped
+      })
     });
-    useWriteQueue(
-      this,
-      async (state, queueSize, err) => {
-        const waiting = `${queueSize ? wAmount(queueSize, 'item') : 'No items'} waiting to be sent`;
-        const text = state === err
-          ? `Last write resulted in an error: (${err.constructor.name}) ${err.message}`
-          : waiting;
-        await log(text, state, null, this.logSuffix);
-      }
-    );
+    useWriteQueue(this);
 
     process.on(SIGNALS.SIGINT, () => this.closeCompletely());
     rl.on(EVENTS.close, () => this.closeCompletely());
@@ -57,19 +51,12 @@ class TossClient extends net.Socket {
     process.exit(error ? 1 : 0);
   }
 
-  req(action, data, files) {
+  req(action, data, files, cb) {
     const serializedData = Slip.serialize({ action, data }, { data: files });
     sendChunks(
-      this,
-      serializedData,
+      this, serializedData,
       chunks => Slip.serialize({ action: Pillow.actions.chunks, data: { chunks } }),
-      true,
-      {
-        log: async chunks => await log(
-          `Enqueued ${chunks} bytes of data to be sent`,
-          LOG_TYPES.Chunks, LOG_NAMES.chunksSent, this.logSuffix
-        )
-      }
+      true, { cb }
     );
   }
 

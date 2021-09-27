@@ -10,16 +10,7 @@ const SlipError = require('../../slip/error');
 
 
 function handle(rawData, { client, server, ev }) {
-  const { shouldContinueHandling, dataToHandle } = handleChunks(
-    client, rawData,
-    (receivedChunks, chunksToReceive) => TossLogger.log({
-      status: chunksToReceive ? TossLogger.status.prefix : TossLogger.status.success,
-      state: chunksToReceive ? LOG_STATES.collectingChunks : LOG_STATES.doneChunks,
-      name: LOG_NAMES.chunksReceived,
-      type: LOG_TYPES.Chunks,
-      comment: `Received ${receivedChunks}, ${chunksToReceive ? `${chunksToReceive} chunks to go` : 'no more to receive'}`
-    })
-  );
+  const { shouldContinueHandling, dataToHandle } = handleChunks(client, rawData);
   if (!shouldContinueHandling) {
     return;
   }
@@ -40,10 +31,11 @@ function handle(rawData, { client, server, ev }) {
       status: TossLogger.status.error,
       comment: err.message
     });
-    client.write(Slip.serialize({
+    const toSend = Slip.serialize({
       status: Pillow.responseStatus.ERR_REQ_FORMAT.code,
       data: { errors: { _err: [err.message] } }
-    }));
+    });
+    client.sendChunks(toSend);
     return;
   }
 
