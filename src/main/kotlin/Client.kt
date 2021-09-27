@@ -88,7 +88,7 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
             attname.isNotBlank() and att.isNotBlank() -> {
                 val directory = File(Paths.get("").toAbsolutePath().toString() + "/images")
                 if (!directory.exists()) directory.mkdir()
-                val file = File.createTempFile("media_", File(attname).extension, directory)
+                val file = File.createTempFile("media_", ".${File(attname).extension}", directory)
                 val decodedFile = Base64.getDecoder().decode(att)
                 file.writeBytes(decodedFile)
 
@@ -128,6 +128,12 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
                     att = Base64.getEncoder().encodeToString(byteArrayFile)
                     attname = file.name
                 }
+                else {
+                    println("WARNING: only images or video allowed as attachments.")
+                }
+            }
+            else {
+                println("WARNING: could not find file using given path.")
             }
         }
         return msg.plus("\nattname: $attname\natt: $att")
