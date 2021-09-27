@@ -42,7 +42,7 @@ class Server constructor(port: Int) {
                         writeAndFlush(writer, customMessage.toString())
                         closeAll(reader, writer, customSocket.socket)
                     }
-                    nickname.lowercase(Locale.getDefault()) == "server" -> {
+                    nickname.toLowerCase(Locale.getDefault()) == "server" -> {
                         customMessage.msg = "Sorry, any 'Server' nickname can not be taken. Choose another one."
                         writeAndFlush(writer, customMessage.toString())
                         closeAll(reader, writer, customSocket.socket)
@@ -98,7 +98,7 @@ class Server constructor(port: Int) {
             customMsg.name = nickname
 
             //quit case - break out of loop, then close the stuff...
-            if (customMsg.msg.lowercase(Locale.getDefault()) == "quit") { break }
+            if (customMsg.msg.toLowerCase(Locale.getDefault()) == "quit") { break }
 
             //else - send this message to all active clients
             clientSockets.forEach { writeAndFlush(it.value.writer, customMsg.toString()) }

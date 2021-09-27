@@ -67,7 +67,7 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
             if (text.isBlank()) continue //no blank lines in msg!
             var msg = "msg: $text"
             //quit scenario with "quit command"
-            if (text.lowercase(Locale.getDefault()) == "quit") {
+            if (text.toLowerCase(Locale.getDefault()) == "quit") {
                 println("See you later. Bye!")
                 exitProcess(0)
             }
