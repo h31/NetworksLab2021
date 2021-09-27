@@ -11,7 +11,7 @@ def encode_message(message_type, sender, text, fp=None):
         message['filename'] = file
         message['attachment'] = data.encode('base64')
         file.close()
-    return pickle.dumps(message)
+    return text.encode('utf-8')
 
 
 def decode_message(message):

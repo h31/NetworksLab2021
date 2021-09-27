@@ -8,6 +8,7 @@ def start_client(ci):
     receive_thread.start()
 
     write_thread = threading.Thread(target=ci.write)
+    write_thread.daemon = True
     write_thread.start()
 
 
