@@ -42,12 +42,26 @@ const ERRORS = {
 const LOG_STATES = {
   skipped: 'Skipped',
   passedToHandle: 'Passed to handle',
-  error: 'Error'
+  error: 'Error',
+
+  collectingChunks: 'Collecting',
+  doneChunks: 'Done',
+
+  enqueued: 'Data Enqueued',
+  stopped: 'Queue Stopped',
+  proceeded: 'Queue Proceeded',
+  written: 'Queue entry fully written',
 };
+
+const LOG_NAMES = {
+  chunksSent: 'Sent',
+  chunksReceived: 'Received',
+}
 
 const LOG_TYPES = {
   Action: 'Action',
   Event: 'Event',
+  Chunks: 'Chunks',
 };
 
 const MESSAGES = {
@@ -83,5 +97,6 @@ module.exports = {
   SOCKET_EVENTS,
   MESSAGES,
   SAFE_MIME_TYPES,
-  QUEUE_STOPPER
+  QUEUE_STOPPER,
+  LOG_NAMES
 };

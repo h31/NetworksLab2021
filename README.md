@@ -55,20 +55,20 @@ just brief overview of how the communication process.
 }
 
 ### Chunks
-Chunks are needed to send large amounts of data, especially files. Sockets can't transfer more than
-2^16 bytes of data at a time. Thus, whenever a server is up to send some data to the client, it
-prepends it with a message of shape
+Chunks are needed to send large amounts of data, especially files. Sockets often can't transfer 
+these at one go. Thus, whenever a server is up to send some data to the client, it prepends it 
+with a message of shape
 
-{ action: 'chunks', data: { chunks: 5 }, status: 100 }
+{ action: 'chunks', data: { chunks: 54631 }, status: 100 }
 
-This means that the next five messages the server sends are parts of a single response that it 
-could not handle in one gulp.
+This means that a message of 54631 bytes is incoming, and the client should not parse it until
+all of these are collected.
 
 The same thing should be done client-side: before sending data for any other action, acknowledge
-the server of the amount of chunks to expect.
+the server of the amount of bytes to expect.
 
-→ { action: 'chunks', data: { chunks: 5 } }
+→ { action: 'chunks', data: { chunks: 89076 } }
 
 ← { action: 'chunks', status: 101 }
 
-Now the server is ready to accept 5 chunks of data.
+Now the server is ready to accept 89076 bytes of data.

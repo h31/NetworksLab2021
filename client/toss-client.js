@@ -1,6 +1,6 @@
 const net = require('net');
-const { useHandlers, mimeTypeIsSafe, sendChunks, useWriteQueue } = require('../util/misc');
-const { SIGNALS, EVENTS, SOCKET_EVENTS, MESSAGES, LOG_TYPES } = require('../util/constants');
+const { useHandlers, mimeTypeIsSafe, sendChunks, useWriteQueue, wAmount } = require('../util/misc');
+const { SIGNALS, EVENTS, SOCKET_EVENTS, MESSAGES, LOG_TYPES, LOG_NAMES } = require('../util/constants');
 const TossMessenger = require('./toss-messenger');
 const Pillow = require('../pillow/index');
 const Slip = require('../slip/index');
@@ -35,7 +35,16 @@ class TossClient extends net.Socket {
       catcherFunc: err => this.closeCompletely(err),
       log: async (ev, handler) => await log(handler ? 'handled' : 'skipped', ev, LOG_TYPES.Event, this.logSuffix)
     });
-    useWriteQueue(this);
+    useWriteQueue(
+      this,
+      async (state, queueSize, err) => {
+        const waiting = `${queueSize ? wAmount(queueSize, 'item') : 'No items'} waiting to be sent`;
+        const text = state === err
+          ? `Last write resulted in an error: (${err.constructor.name}) ${err.message}`
+          : waiting;
+        await log(text, state, null, this.logSuffix);
+      }
+    );
 
     process.on(SIGNALS.SIGINT, () => this.closeCompletely());
     rl.on(EVENTS.close, () => this.closeCompletely());
@@ -54,7 +63,13 @@ class TossClient extends net.Socket {
       this,
       serializedData,
       chunks => Slip.serialize({ action: Pillow.actions.chunks, data: { chunks } }),
-      true
+      true,
+      {
+        log: async chunks => await log(
+          `Enqueued ${chunks} bytes of data to be sent`,
+          LOG_TYPES.Chunks, LOG_NAMES.chunksSent, this.logSuffix
+        )
+      }
     );
   }
 

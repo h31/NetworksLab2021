@@ -1,5 +1,5 @@
 const { useHandlers, handleChunks, wAmount } = require('../../util/misc');
-const { LOG_STATES, LOG_TYPES } = require('../../util/constants');
+const { LOG_STATES, LOG_TYPES, LOG_NAMES } = require('../../util/constants');
 const path = require('path');
 const TossLogger = require('../toss-logger');
 const TossError = require('../toss-error');
@@ -10,7 +10,16 @@ const SlipError = require('../../slip/error');
 
 
 function handle(rawData, { client, server, ev }) {
-  const { shouldContinueHandling, dataToHandle } = handleChunks(client, rawData);
+  const { shouldContinueHandling, dataToHandle } = handleChunks(
+    client, rawData,
+    (receivedChunks, chunksToReceive) => TossLogger.log({
+      status: chunksToReceive ? TossLogger.status.prefix : TossLogger.status.success,
+      state: chunksToReceive ? LOG_STATES.collectingChunks : LOG_STATES.doneChunks,
+      name: LOG_NAMES.chunksReceived,
+      type: LOG_TYPES.Chunks,
+      comment: `Received ${receivedChunks}, ${chunksToReceive ? `${chunksToReceive} chunks to go` : 'no more to receive'}`
+    })
+  );
   if (!shouldContinueHandling) {
     return;
   }

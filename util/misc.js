@@ -1,7 +1,7 @@
 const { startCase, padStart } = require('lodash');
 const fs = require('fs');
 const childProcess = require('child_process');
-const { SAFE_MIME_TYPES, EVENTS, QUEUE_STOPPER } = require('./constants');
+const { SAFE_MIME_TYPES, EVENTS, QUEUE_STOPPER, LOG_STATES } = require('./constants');
 
 function capitalCamelCase(str) {
   return startCase(str).replace(/ /g, '');
@@ -97,33 +97,37 @@ async function mimeTypeIsSafe(path) {
   return !!mimeType && !!SAFE_MIME_TYPES.find(prefix => mimeType.startsWith(prefix));
 }
 
-function handleChunks(receiver, receivedChunk) {
+function handleChunks(receiver, receivedChunk, log = () => {}) {
   let shouldContinueHandling = true;
   let dataToHandle = receivedChunk;
   if (receiver.chunksToReceive) {
     receiver.completeData = Buffer.concat([receiver.completeData || Buffer.alloc(0), receivedChunk]);
-    shouldContinueHandling = !(--receiver.chunksToReceive);
+    receiver.chunksToReceive -= receivedChunk.byteLength;
+    shouldContinueHandling = !receiver.chunksToReceive;
   }
 
   if (receiver.completeData && shouldContinueHandling) {
     dataToHandle = receiver.completeData;
     receiver.completeData = null;
   }
+  log(receivedChunk.byteLength, receiver.chunksToReceive);
 
   return { shouldContinueHandling, dataToHandle };
 }
 
-function useWriteQueue(sock) {
+function useWriteQueue(sock, log = () => {}) {
   sock.writeQueue = [];
   sock.isWriting = false;
   sock.canProceed = true;
 
   sock.writeSafe = (...toWrite) => {
     sock.writeQueue.push(...toWrite);
+    log(LOG_STATES.enqueued, sock.writeQueue.length);
     sock.emit(EVENTS.queue);
   }
 
   const afterWrite = err => {
+    log(LOG_STATES.written, sock.writeQueue.length, err);
     if (err) {
       sock.emit(EVENTS.error, err);
     } else {
@@ -136,6 +140,7 @@ function useWriteQueue(sock) {
     if (sock.writeQueue.length && !sock.isWriting && sock.canProceed) {
       const writeArgs = sock.writeQueue.splice(0, 1)[0];
       if (writeArgs[0] === QUEUE_STOPPER) {
+        log(LOG_STATES.stopped, sock.writeQueue.length);
         sock.canProceed = false;
         return;
       }
@@ -156,13 +161,18 @@ function useWriteQueue(sock) {
   });
 
   sock.on(EVENTS.proceedQueue, () => {
+    log(LOG_STATES.proceeded, sock.writeQueue.length);
     sock.canProceed = true;
     sock.emit(EVENTS.queue);
   });
 }
 
-function sendChunks(sock, toSend, wrap, wait = false, { writeFunc = 'writeSafe', cb = () => {} } = {}) {
-  const chunks = Math.ceil(toSend.byteLength / 65536);
+function sendChunks(
+  sock, toSend, wrap, wait = false,
+  { writeFunc = 'writeSafe', cb = () => {}, log = () => {} } = {}
+) {
+  const chunks = toSend.byteLength;
+  log(chunks);
   const toWrite = [[wrap(chunks)], [toSend, cb]];
   if (wait) {
     toWrite.splice(1, 0, [QUEUE_STOPPER]);

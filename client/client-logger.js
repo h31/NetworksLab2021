@@ -6,7 +6,7 @@ async function log(text, occasion, logType, uniqueFileSuffix) {
   } catch {}
   await fs.promises.appendFile(
     `client-logs/log_${uniqueFileSuffix}.txt`,
-    `${logType}: ${occasion} --> ${text}\n`
+    `${logType ? `${logType}: ` : ''}${occasion} --> ${text}\n`
   );
 }
 
