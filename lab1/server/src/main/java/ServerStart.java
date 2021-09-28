@@ -2,10 +2,8 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ServerStart {
 
@@ -38,56 +36,25 @@ public class ServerStart {
         }
 
         private void greetingNewUser() throws IOException, ClassNotFoundException {
-            ServerRequest response = new ServerRequest("greeting",
-                    "Добро пожаловать в чат! Введите пожалуйста свой никнейм: ",
-                    new Date().toString());
-            out.println(response);
-            //System.out.println("Greeting object passed " + response);
+            ExchangeFormat responseAboutNewUser = new ExchangeFormat();
+            ExchangeFormat clientRequest = Util.parseRequest(in.readLine());
 
-            ServerRequest responseAboutNewUser = new ServerRequest();
+            nicknameOfClient = clientRequest.getMessage();
 
-            ServerRequest clientRequest;
-            while (true) {
-                clientRequest = parseRequest(in.readLine());
-                nicknameOfClient = clientRequest.getMessage();
-                responseAboutNewUser.setRequestType("message");
-                responseAboutNewUser.setMessage(nicknameOfClient + " <---- вот этот чувак залогинился в чат");
-                for (ClientHandler activeUser : userList) {
-                    activeUser.out.println(responseAboutNewUser);
-                }
-            }
+            //validate new user nickname
+            //todo
 
 
-            /*while (true) {
-                System.out.println("получили: " + in.readLine());
-            }*/
-
-        }
-
-        public ServerRequest parseRequest(String format) {
-            System.out.println(format);
-            String[] array = Arrays.asList(format.split("[({')|(':')|(', ')|('})]"))
-                    .stream().filter(str -> !str.isEmpty()).collect(Collectors.toList()).toArray(new String[0]);
-
-            ServerRequest serverRequest = new ServerRequest();
-            serverRequest.setTime(new Date().toString());
-            serverRequest.setMessage(array[3]);
-            serverRequest.setRequestType(array[1]);
-
-            return serverRequest;
-        }
-
-        private void greetingUser() throws IOException {
-
-            nicknameOfClient = in.readLine();
-            /*JSONObject jsonObject = new JSONObjeыct();
-            jsonObject.put("msg", nicknameOfClient);
-            out.println(jsonObject.toString());*/
+            //broadcast about new user
+            responseAboutNewUser.setParcelType(Util.Request.INFO.getStringValue());
+            responseAboutNewUser.setUsername(nicknameOfClient);
+            responseAboutNewUser.setTime(new Date().toString());
             for (ClientHandler activeUser : userList) {
-                activeUser.out.println("Залогигнился в чат: " + nicknameOfClient);
-            }
+                activeUser.out.println(responseAboutNewUser);
 
+            }
         }
+
 
         @Override
         public void run() {
@@ -102,23 +69,40 @@ public class ServerStart {
             try {
                 greetingNewUser();
 
-                /*out = new PrintWriter(clientSocket.getOutputStream(), true);
-                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                //greetingUser();
-                while(true) {
-                    String message = in.readLine();
-                    System.out.println("Current thread: " + Thread.currentThread().getName() +
-                            " Current client nickname: " + message);
-                    *//*JSONObject jsonObject = new JSONObject();
-                    jsonObject.put("msg", message);
-                    out.println(jsonObject.toString());*//*
-                    for (ClientHandler activeUser : userList) {
-                        activeUser.out.println(nicknameOfClient + " сказал вот это: " + message);
+                ExchangeFormat clientRequest;
+                ExchangeFormat messageBroadcastResponse = new ExchangeFormat();
+                while (true) {
+                    clientRequest = Util.parseRequest(in.readLine());
+                    if(clientRequest.getParcelType().equals(Util.Request.EXIT.toString())) {
+                        clientSocket.close();
+                        notifyAboutUserExit(nicknameOfClient);
+                        break;
                     }
-                }*/
+
+                    messageBroadcastResponse.setParcelType(Util.Request.MESSAGE.toString());
+                    messageBroadcastResponse.setTime(new Date().toString());
+                    messageBroadcastResponse.setUsername(nicknameOfClient);
+                    messageBroadcastResponse.setMessage(clientRequest.getMessage());
+
+                    for (ClientHandler activeUser : userList) {
+                        activeUser.out.println(messageBroadcastResponse);
+                    }
+                }
 
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
+            }
+        }
+
+        private void notifyAboutUserExit(String nicknameOfClient) {
+            ExchangeFormat notifyParcel = new ExchangeFormat();
+            notifyParcel.setParcelType(Util.Request.EXIT.toString());
+            notifyParcel.setUsername(nicknameOfClient);
+            notifyParcel.setTime(new Date().toString());
+
+            for (ClientHandler activeUser : userList) {
+                activeUser.out.println(notifyParcel);
+
             }
         }
 
