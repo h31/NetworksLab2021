@@ -16,8 +16,8 @@ class Client:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client_socket.connect(('localhost', 6666))
             self.username = ""
-            self.set_username()
-            self.client_socket.send(f"{{'requestType':'greeting', 'message':'{self.username}'}}\r\n".encode('utf-8'))
+            self.set_username("Username:")
+            self.client_socket.send(f"{{'parcelType':'greeting', 'message':'{self.username}'}}\r\n".encode('utf-8'))
 
         except TimeoutError:
             print("Сервер не отвечал некоторое время")
@@ -33,20 +33,20 @@ class Client:
                 # if message['parcelType'] == 'greetingError':
                 #     self.set_nickname()
                 #     self.client_socket.send(
-                #         f"{{'requestType':'greeting', 'message':'{self.nickname}'}}\r\n".encode('utf-8'))
+                #         f"{{'parcelType':'greeting', 'message':'{self.nickname}'}}\r\n".encode('utf-8'))
                 if message['parcelType'] in ['info', 'message']:
                     print(f"\n[{message['time']}] {message['username']} {message['message']}")
                     if 'file' in message.keys():
                         filename = message_data.save_file(message['username'], message['file'],
                                                           message['file_extension'])
                         print(f"Received {filename} from {message['username']}")
-                elif message['responseType'] == 'exception':
+                elif message['parcelType'] == 'exception':
                     if message['message'] == '0':  # TODO
                         pass
-                elif message['responseType'] == 'exit':
+                elif message['parcelType'] == 'exit':
                     raise ServerClosed
 
-                # {'requestType':'greeting', 'message':'Добро пожаловать в чат! Введите пожалуйста свой никнейм: ', 'time':'Mon Sep 27 20:26:04 MSK 2021'}
+                # {'parcelType':'greeting', 'message':'Добро пожаловать в чат! Введите пожалуйста свой никнейм: ', 'time':'Mon Sep 27 20:26:04 MSK 2021'}
 
 
             # if message["type"] == 'nickname request':
@@ -84,16 +84,16 @@ class Client:
                     while not attached:
                         fp = input("Relative filepath:")
                         if fp == '':
-                            self.client_socket.send(f"{{'requestType':'message', 'message':'{message}', "
-                                                    f"'file_extension':'', 'file':''}}".encode('utf-8'))
+                            self.client_socket.send(f"{{'parcelType':'message', 'message':'{message}', "
+                                                    f"'file_extension':'', 'file':''}}\r\n".encode('utf-8'))
 
                             # encoded_message = message_data.encode_message("client message without file", self.nickname,
                             #                                               message)
                             break
                         try:
                             ext, file = message_data.load_file(fp)
-                            self.client_socket.send(f"{{'requestType': 'message', 'message': '{message}', "
-                                                    f"'file_extension':'{ext}', 'file':'{file}'}}".encode('utf-8'))
+                            self.client_socket.send(f"{{'parcelType': 'message', 'message': '{message}', "
+                                                    f"'file_extension':'{ext}', 'file':'{file}'}}\r\n".encode('utf-8'))
                             # encoded_message = message_data.encode_message("client message with file", self.nickname,
                             #                                               message, fp)
                             attached = True
