@@ -17,6 +17,7 @@ class Pillow {
     logOut: 'log-out',
     sendMessage: 'send-message',
     chunks: 'chunks',
+    closeServer: 'close-server'
   };
 
   static requestShape = {
@@ -29,7 +30,7 @@ class Pillow {
         name: 'action',
         type: String,
         required: true,
-        choices: [this.actions.logIn, this.actions.sendMessage, this.actions.chunks] // logOut can only be sent by the server
+        choices: [this.actions.logIn, this.actions.sendMessage, this.actions.chunks] // logOut and closeServer can only be sent by the server
       },
       {
         name: 'data',

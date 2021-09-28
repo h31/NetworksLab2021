@@ -72,3 +72,10 @@ the server of the amount of bytes to expect.
 ← { action: 'chunks', status: 101 }
 
 Now the server is ready to accept 89076 bytes of data.
+
+### Close Server
+When the server is closed, it acknowledges the connected clients of it by sending
+
+← { action: 'close-server', status: 101 }
+
+... and force-closes all the connections after that.

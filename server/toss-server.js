@@ -130,7 +130,8 @@ class TossServer extends net.Server {
       filterClients = list => list,
       getData = () => null,
       files = {},
-      getStatus = () => Pillow.responseStatus.OK.code
+      getStatus = () => Pillow.responseStatus.OK.code,
+      cb = null
     } = {}
   ) {
     const writeableClients = this.clients.filter(c =>
@@ -161,6 +162,9 @@ class TossServer extends net.Server {
           comment: `Finished broadcasting with ${wAmount(errorCount, 'error')}`,
           status: errorCount ? TossLogger.status.warn : TossLogger.status.success
         });
+        if (cb) {
+          cb();
+        }
       }
     }
 
@@ -186,15 +190,35 @@ class TossServer extends net.Server {
     });
   }
 
-  close(callback) {
-    const waitingFor = this.clients.length;
+  async close(callback) {
+    let waitingFor = this.clients.length;
     const { address, port } = this.address();
+
     if (waitingFor) {
       TossLogger.log({
         comment: `Closing the server, waiting for ${wAmount(waitingFor, 'client')} to disconnect...`,
         status: TossLogger.status.prefix
       });
+
+      await new Promise(resolve => {
+        // Not sending via the 'data' arg for .end() to not break the writeQueue and the chunks flow
+        this.broadcast(Pillow.actions.closeServer, {
+          getStatus: () => Pillow.responseStatus.OK_EMPTY.code,
+          cb: () => resolve()
+        });
+      });
+
+      // In case someone's left while the broadcast's been happening
+      waitingFor = this.clients.length;
+      await new Promise(resolve => {
+        this.clients.forEach(sock => sock.end(() => {
+          if (--waitingFor === 0) {
+            resolve();
+          }
+        }));
+      });
     }
+
     return super.close(() => {
       TossLogger.log({
         comment: `Closed the server on ${address}:${port}`,

@@ -16,6 +16,7 @@ class TossClient extends net.Socket {
   rlLoopStarted = false;
   isTyping = false;
   bufferedMessages = [];
+  isServerActive = true;
 
   logger = () => {};
 
@@ -133,7 +134,11 @@ class TossClient extends net.Socket {
   _destroy(error, cb) {
     return super._destroy(error, (_error) => {
       if (!_error) {
-        TossMessenger.alertChatBot(`Goodbye${this.username ? `, ${this.username}` : ''}!`);
+        if (this.isServerActive) {
+          TossMessenger.alertChatBot(`Goodbye${this.username ? `, ${this.username}` : ''}!`);
+        } else {
+          TossMessenger.alertError('The server has been closed');
+        }
       } else {
         this.emit(EVENTS.error, _error);
       }

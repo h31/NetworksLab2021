@@ -91,7 +91,7 @@ When sending a message, at least one of 'message' and 'attachment' must be provi
                 )
             </td>
             <td>String</td>
-            <td>One of ['send-message', 'log-in', 'log-out']</td>
+            <td>One of ['send-message', 'log-in', 'log-out', 'close-server']</td>
         </tr>
         <tr>
             <td>status</td>
