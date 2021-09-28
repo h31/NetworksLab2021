@@ -1,11 +1,9 @@
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.io.*
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
+import java.nio.file.Paths
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -62,6 +60,7 @@ class Server constructor(port: Int) {
     }
 
     private fun clientSocketListener(nickname: String, socket: CustomSocket) {
+        val inStream = BufferedInputStream(socket.socket.getInputStream())
         while (socket.socket.isConnected) {
             //reading incoming message
             //can not use the same code from client because message format is different: here are 3 attrs, there are 5
@@ -79,7 +78,6 @@ class Server constructor(port: Int) {
                         else -> throw ex
                     }
                 }
-
                 //parse the message!
                 val split = msg.split(colonAndSpaceRegex, 2)
                 val type = split.first().toString()
@@ -89,19 +87,44 @@ class Server constructor(port: Int) {
                     "attname" -> customMsg.attname = value
                     "att" -> customMsg.att = value
                 }
-
             }
-            //add the time to customMsg
-            val date = Date()
-            val timeStr = sdf1.format(date)
-            customMsg.time = timeStr
-            customMsg.name = nickname
 
             //quit case - break out of loop, then close the stuff...
             if (customMsg.msg.toLowerCase(Locale.getDefault()) == "quit") { break }
 
-            //else - send this message to all active clients
-            clientSockets.forEach { writeAndFlush(it.value.writer, customMsg.toString()) }
+            //dealing with attachment if any exists
+            val len = if (customMsg.att.isBlank()) 0 else customMsg.att.toInt()
+            var f = ByteArray(len)
+            if (len > 0) { f = inStream.readNBytes(len) }
+
+            //add the time and other attrs to customMsg
+            val date = Date()
+            val timeStr = sdf1.format(date)
+            customMsg.time = timeStr
+            customMsg.name = nickname
+            customMsg.att = customMsg.att + "\n"
+
+            //two writing scenarios...
+            //if there is no attachment...
+            if (f.isEmpty()) {
+                clientSockets.forEach {
+                    val outStream = BufferedOutputStream(it.value.socket.getOutputStream())
+                    outStream.write(customMsg.toString().toByteArray())
+                    outStream.flush()
+                }
+            }
+            //and if some exists
+            else {
+                clientSockets.forEach {
+                    clientScope.launch (Dispatchers.IO) {
+                        val outStream = BufferedOutputStream(it.value.socket.getOutputStream())
+                        outStream.write(customMsg.toString().toByteArray())
+                        outStream.flush()
+                        outStream.write(f)
+                        outStream.flush()
+                    }
+                }
+            }
         }
         //out of loop - close all...
         val customSocket = clientSockets[nickname]!!
@@ -110,8 +133,8 @@ class Server constructor(port: Int) {
         println("User $nickname disconnected; ${clientSockets.keys.size} remains connected.")
     }
 
-    data class CustomSocket constructor (val socket: Socket) {
-        val reader = BufferedReader(InputStreamReader(socket.getInputStream()))
-        val writer = BufferedWriter(OutputStreamWriter(socket.getOutputStream()))
+    data class CustomSocket constructor (var socket: Socket) {
+        var reader = BufferedReader(InputStreamReader(socket.getInputStream()))
+        var writer = BufferedWriter(OutputStreamWriter(socket.getOutputStream()))
     }
 }

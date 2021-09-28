@@ -12,8 +12,11 @@ import kotlin.system.exitProcess
 
 class Client constructor(hostAddress: String, hostPort: Int, private var nickname: String) {
     private var socket = Socket(hostAddress, hostPort)
-    private var reader = BufferedReader(InputStreamReader(socket.getInputStream()))
-    private var writer = BufferedWriter(OutputStreamWriter(socket.getOutputStream()))
+    private var inStream = BufferedInputStream(socket.getInputStream())
+    private var outStream = BufferedOutputStream(socket.getOutputStream())
+    private var reader = BufferedReader(InputStreamReader(inStream))
+    private var writer = BufferedWriter(OutputStreamWriter(outStream))
+
     private val scanner = Scanner(System.`in`)
 
     suspend fun run() = coroutineScope {
@@ -42,6 +45,7 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
                         else -> throw ex
                     }
                 }
+
                 //parse the message!
                 val split = msg.split(colonAndSpaceRegex, 2)
                 val type = split.first().toString()
@@ -65,16 +69,16 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
             //reading user input
             val text = scanner.nextLine()
             if (text.isBlank()) continue //no blank lines in msg!
-            var msg = "msg: $text"
-            //quit scenario with "quit command"
+            val msg = "msg: $text"
+
+            //quit scenario with "quit" command
             if (text.toLowerCase(Locale.getDefault()) == "quit") {
                 println("See you later. Bye!")
                 exitProcess(0)
             }
-            //check if message has any attachments - try to attach them if they exist
-            msg = handleSentAtt(msg)
-            //write the resulted message with parsed attachments
-            writeAndFlush(writer, msg)
+
+            //check if message has any attachments - try to attach them if they exist, if not - send the msg itself
+            handleSentAtt(msg)
         }
         //socket is closed - close everything that depends on it from client side
         closeAll(reader, writer, socket)
@@ -89,11 +93,12 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
                 val directory = File(Paths.get("").toAbsolutePath().toString() + "/images")
                 if (!directory.exists()) directory.mkdir()
                 val file = File.createTempFile("media_", ".${File(attname).extension}", directory)
-                val decodedFile = Base64.getDecoder().decode(att)
-                file.writeBytes(decodedFile)
-
-                //also can be done while sending msg, but here we can generate tmp name for attachment and show it to user
                 customMsg.msg = customMsg.msg.replaceFirst(ATTACHMENT_STRING.toRegex(), "(file ${file.name} attached)")
+
+                val len = att.toInt()
+                val f = ByteArray(len)
+                inStream.readNBytes(f, 0, len)
+                file.writeBytes(f)
             }
             else -> {
                 println("Incorrect message attachments - attachment can not be displayed.")
@@ -106,10 +111,12 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
         println("<${customMsg.time}> [${customMsg.name}]: ${customMsg.msg}")
     }
 
-    private fun handleSentAtt(msg: String): String {
+    private fun handleSentAtt(msg: String) {
         //check if there are any attachments (in "att|path/to/file.xxx|" format)
         var attname = ""
         var att = ""
+        var f = byteArrayOf()
+
         val p = Pattern.compile(ATTACHMENT_STRING)
         val matcher = p.matcher(msg)
         if (matcher.find()) { //if we found "att|...|" ...
@@ -118,14 +125,13 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
             val file = File(pathStr) //and check if it is a correct path to file
             //if path is correct...
             if (file.isFile) {
+                //check its mimeType to be image or video. Everything else is non-positive!
                 val inputStream = BufferedInputStream(FileInputStream(file))
                 val mimeType = URLConnection.guessContentTypeFromStream(inputStream)
                 inputStream.close()
-                //check its mimeType to be image or video. Everything else is non-positive!
-                if (mimeType != null && (mimeType.startsWith("image") || mimeType.startsWith("video"))) {
-                    //encode the file to base64 string
-                    val byteArrayFile = file.readBytes()
-                    att = Base64.getEncoder().encodeToString(byteArrayFile)
+                if ((mimeType != null) && (mimeType.startsWith("image") || mimeType.startsWith("video"))) {
+                    f = file.readBytes()
+                    att = f.size.toString()
                     attname = file.name
                 }
                 else {
@@ -136,6 +142,11 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
                 println("WARNING: could not find file using given path.")
             }
         }
-        return msg.plus("\nattname: $attname\natt: $att")
+
+        outStream.write(msg.plus("\nattname: $attname\natt: $att\n").toByteArray())
+        outStream.flush()
+        if (f.isNotEmpty()) { outStream.write(f) }
+        outStream.flush()
+
     }
 }

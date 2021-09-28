@@ -1,11 +1,6 @@
 import java.io.BufferedReader
 import java.io.BufferedWriter
-import java.io.File
 import java.net.Socket
-import java.nio.file.Paths
-import java.util.*
-import java.util.regex.Matcher
-import java.util.regex.Pattern
 import kotlin.system.exitProcess
 
 const val ATTACHMENT_STRING = """att\|[^|]*\|"""
