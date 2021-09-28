@@ -15,30 +15,31 @@ class Client:
         try:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client_socket.connect(('localhost', 6666))
-            self.nickname = ""
-            self.set_nickname()
-            self.client_socket.send(f"{{'requestType':'greeting', 'message':'{self.nickname}'}}\r\n".encode('utf-8'))
+            self.username = ""
+            self.set_username()
+            self.client_socket.send(f"{{'requestType':'greeting', 'message':'{self.username}'}}\r\n".encode('utf-8'))
 
         except TimeoutError:
             print("Сервер не отвечал некоторое время")
             self.client_socket.close()
 
-    def set_nickname(self, reason=''):
-        self.nickname = input(reason)
+    def set_username(self, reason=''):
+        self.username = input(reason)
 
     def receive(self):
         while True:
             try:
                 message = ast.literal_eval(self.client_socket.recv(1024).decode('utf-8'))
-                # if message['responseType'] == 'greetingError':
+                # if message['parcelType'] == 'greetingError':
                 #     self.set_nickname()
                 #     self.client_socket.send(
                 #         f"{{'requestType':'greeting', 'message':'{self.nickname}'}}\r\n".encode('utf-8'))
-                if message['requestType'] in ['info', 'message']:
-                    print(f"\n[{message['time']}] {message['nickname']} {message['message']}")
+                if message['parcelType'] in ['info', 'message']:
+                    print(f"\n[{message['time']}] {message['username']} {message['message']}")
                     if 'file' in message.keys():
-                        filename = message_data.save_file(message['file'], message['file_extension'])
-                        print(f"Received {filename} from {message['nickname']}")
+                        filename = message_data.save_file(message['username'], message['file'],
+                                                          message['file_extension'])
+                        print(f"Received {filename} from {message['username']}")
                 elif message['responseType'] == 'exception':
                     if message['message'] == '0':  # TODO
                         pass
@@ -74,7 +75,7 @@ class Client:
 
     def write(self):
         while True:
-            if self.nickname != '':
+            if self.username != '':
                 try:
                     message = input()
                     message += "\r\n"

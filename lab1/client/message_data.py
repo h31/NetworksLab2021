@@ -2,11 +2,11 @@ import pickle
 import time
 
 
-def encode_message(message_type, sender, text, fp=None):
-    message = {"type": message_type, "sender": sender, "text": text}
+def encode_message(message_type, username, text, fp=None):
+    message = {"type": message_type, "username": username, "text": text}
     if message_type == "client message with file" and fp is not None:
         file = open(fp, 'rb')
-        message['file_extension'] = '.' + fp.split('.')[-1]
+        message['attachementType'] = '.' + fp.split('.')[-1]
         message['file'] = file
         file.close()
     return message
@@ -23,10 +23,10 @@ def load_file(fp):  # TODO
 
 def decode_message(message):
     message = pickle.loads(message)
-    if message['type'] == "client message with file":
+    if message['parcelType'] == "client message with file":
         data = message['attachment'].decode('base64')
         file = open(
-            f"./Downloads/{message['time'].strftime('%d%M%Y%H%m')} {message['filename']} by {message['sender']}.jpg",
+            f"./Downloads/{message['time'].strftime('%d%M%Y%H%m')} {message['filename']} by {message['nickname']}.jpg",
             'w')
         file.write(data)
         file.close()
