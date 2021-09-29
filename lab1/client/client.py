@@ -17,7 +17,9 @@ class Client:
             self.client_socket.connect(('localhost', 6666))
             self.username = ""
             self.set_username("Username:")
-            self.client_socket.send(f"{{'parcelType':'greeting', 'message':'{self.username}'}}\r\n".encode('utf-8'))
+            self.client_socket.send(
+                f"{{'parcelType':'greeting', 'message':'', 'username':'{self.username}', 'attachment':''}}\r\n".encode(
+                    'utf-8'))
 
         except TimeoutError:
             print("Сервер не отвечал некоторое время")
@@ -85,7 +87,8 @@ class Client:
                         fp = input("Relative filepath:")
                         if fp == '':
                             self.client_socket.send(f"{{'parcelType':'message', 'message':'{message}', "
-                                                    f"'file_extension':'', 'file':''}}\r\n".encode('utf-8'))
+                                                    f"'username':'{self.username}', 'attachment':''}}\r\n".encode(
+                                'utf-8'))
 
                             # encoded_message = message_data.encode_message("client message without file", self.nickname,
                             #                                               message)
@@ -93,7 +96,8 @@ class Client:
                         try:
                             ext, file = message_data.load_file(fp)
                             self.client_socket.send(f"{{'parcelType': 'message', 'message': '{message}', "
-                                                    f"'file_extension':'{ext}', 'file':'{file}'}}\r\n".encode('utf-8'))
+                                                    f"'username':'{self.username}', 'attachment':'{file}'}}\r\n".encode(
+                                'utf-8'))
                             # encoded_message = message_data.encode_message("client message with file", self.nickname,
                             #                                               message, fp)
                             attached = True
