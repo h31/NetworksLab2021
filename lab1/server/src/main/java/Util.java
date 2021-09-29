@@ -22,16 +22,32 @@ public class Util {
         }
     }
 
+    // Имя файлов в винде не должно содержать: \ / : * ? " < > |
     public static ExchangeFormat parseRequest(String format) {
-        System.out.println("че пришло: " + format);
-        String[] array = Arrays.asList(format.split("[({')|(':')|(', ')|('})]"))
-                .stream().filter(str -> !str.isEmpty()).collect(Collectors.toList()).toArray(new String[0]);
+        System.out.println(format);
+        String[] array = format.split("(?<!\\\\)'");
 
-        ExchangeFormat serverRequest = new ExchangeFormat();
-        serverRequest.setTime(new Date().toString());
-        serverRequest.setMessage(array[3]);
-        serverRequest.setParcelType(array[1]);
+        System.out.println(Arrays.toString(array));
 
-        return serverRequest;
+        String[] removedUnnecessary = Arrays.stream(array)
+                .filter(value ->
+                        !value.equals(", ") && !value.equals(":")
+                )
+                .toArray(String[]::new);
+
+
+        // поменять парсер, потому что regex не понимает 'username':'//'
+        // он думает, что эскейпится последняя ковычка, хотя по факту эскейп символ / был уже эскейпнут до этого
+
+
+        ExchangeFormat exchangeFormat = new ExchangeFormat();
+        exchangeFormat.setParcelType(removedUnnecessary[2]);
+        exchangeFormat.setMessage(removedUnnecessary[4]);
+        exchangeFormat.setUsername(removedUnnecessary[6]);
+        exchangeFormat.setAttachmentType(removedUnnecessary[8]);
+
+
+        return exchangeFormat;
     }
+
 }

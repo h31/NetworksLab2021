@@ -12,6 +12,8 @@ public class ExchangeFormat implements Serializable {
 
     private String attachmentType;
 
+    private String attachmentName;
+
     public String getMessage() {
         return message;
     }
