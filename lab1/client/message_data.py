@@ -7,7 +7,7 @@ def encode_message(message_type, username, text, fp=None):
     message = {"type": message_type, "username": username, "text": text}
     if message_type == "client message with file" and fp is not None:
         file = open(fp, 'rb')
-        message['attachementType'] = '.' + fp.split('.')[-1]
+        message['attachmentType'] = '.' + fp.split('.')[-1]
         message['file'] = file
         file.close()
     return message
@@ -34,12 +34,13 @@ def decode_message(message):
         return message['type']
 
 
-def save_file(nickname, file, extension):  # TODO
+def save_file(nickname, data, extension):
+    filename = ''
     try:
         filename = open(
-            f"./Downloads/{time.strftime('%d%M%Y%H%m', time.localtime())} attachment by {nickname}{extension}", 'wb+')
-        filename.write(file)
+            f"./Downloads/{time.strftime('%d%M%Y%H%m%s', time.localtime())} attachment by {nickname}{extension}", 'wb+')
+        filename.write(data)
         filename.close()
-    except Exception:
-        print("Wrong file saving")
+    except OSError:
+        print("An error occurred while saving the file")
     return filename

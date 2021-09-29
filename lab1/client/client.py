@@ -1,6 +1,8 @@
 import ast
 import socket
-import traceback
+
+import colorama
+from colorama import Fore, Back
 
 import message_data
 
@@ -13,70 +15,53 @@ class Client:
 
     def __init__(self):
         try:
+            colorama.init()
+            self.writing = False
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client_socket.connect(('localhost', 6666))
             self.username = ""
-            self.set_username("Username:")
+            self.set_username(Fore.GREEN + "Username:")
             self.client_socket.send(
-                f"{{'parcelType':'greeting', 'message':'', 'username':'{self.username}', 'attachmentType':''}}\r\n".encode(
-                    'utf-8'))
+                f"{{'parcelType':'greeting', 'message':'', 'username':'{self.username}', 'attachmentType':''}}\r\n"
+                    .encode('utf-8'))
 
         except TimeoutError:
-            print("Сервер не отвечал некоторое время")
+            print(Back.RED + "Сервер не отвечает")
             self.client_socket.close()
 
     def set_username(self, reason=''):
         self.username = input(reason).replace("\\", "\\\\").replace("'", "\\'")
-        return self.username
 
     def receive(self):
         while True:
+            # if not self.writing:
             try:
                 message = self.client_socket.recv(1024).decode('utf-8')
-                print(message)
                 try:
                     message = ast.literal_eval(message)
-                except Exception:
-                    message_data.save_file('server', message, '.jpg')
-                # if message['parcelType'] == 'greetingError':
-                #     self.set_nickname()
-                #     self.client_socket.send(
-                #         f"{{'parcelType':'greeting', 'message':'{self.nickname}'}}\r\n".encode('utf-8'))
-                if message['parcelType'] == 'greeting':
-                    print(f"\n[{message['time']}] {message['username']} вошел в чат")
-                if message['parcelType'] == 'message':
-                    print(f"\n[{message['time']}] {message['username']} сказал: {message['message']}")
-                    if 'file' in message.keys():
-                        filename = message_data.save_file(message['username'], message['file'],
-                                                          message['file_extension'])
-                        print(f"Received {filename} from {message['username']}")
-                elif message['parcelType'] == 'exception':
-                    if message['message'] == '0':  # TODO
-                        pass
-                elif message['parcelType'] == 'exit':
-                    raise ServerClosed
-
-                # if message["type"] == 'nickname request':
-                #     encode_message
-                #     self.client_socket.send(self.nickname.encode('ascii'))
-                #     self.client_socket.send(encode_message('nickname response', self.nickname, self.nickname.encode('utf-8'), '')
-                # if message['type'] == 'nickname taken':
-                #     self.set_nickname("Данное имя пользователя уже используется. Введите другое имя пользователя:")
-                #     self.client_socket.send(encode_message('nickname response', self.nickname, self.nickname.encode('utf-8'), '')
-                # if message['type'] == 'invalid nickname':
-                #     self.set_nickname("Тут так не принято. Введите другое имя пользователя:")
-                #     self.client_socket.send(encode_message('nickname response', self.nickname, self.nickname.encode('utf-8'), '')
-                # elif message['type'] == 'server closed':
-                #     raise ServerClosed
-                # else:
-                #     print(f"{message[1]} <{message[2]}>: {message[3]} (file {message[4]} attached)")
+                    if message['parcelType'] == 'exit':
+                        raise ServerClosed
+                    elif message['parcelType'] == 'greeting':
+                        print(f"\n[{message['time']}] {message['username']} вошел в чат")
+                    elif message['parcelType'] == 'message':
+                        print(f"\n[{message['time']}] {message['username']} сказал: {message['message']}")
+                        if 'file' in message.keys():
+                            filename = message_data.save_file(message['username'], message['file'],
+                                                              message['file_extension'])
+                            print(f"Received {filename} from {message['username']}")
+                    elif message['parcelType'] == 'exception':
+                        if message['message'] == '0':  # TODO
+                            pass
+                except SyntaxError:
+                    fp = message_data.save_file('server', message, '.jpg')
+                    print(Fore.YELLOW + f"Медиафайл сохранен в {fp}")
             except ServerClosed:
-                print("Server closed")
+                print(Back.GREEN + "Всем пока!")
                 self.client_socket.close()
                 break
             except Exception:
                 print()
-                print("Сервер невнятно выразился")
+                print(Back.RED + "Сервер покинул чат")
                 self.client_socket.close()
                 break
 
@@ -84,39 +69,29 @@ class Client:
         while True:
             if self.username != '':
                 try:
+                    self.writing = True
                     message = input()
-                    encoded_message = {}
                     attached = False
                     while not attached:
                         fp = input("Relative filepath:")
                         if fp == '':
-                            print(
-                                f"{{'parcelType':'message', 'message':'{message}', 'username':'{self.username}', 'attachmentType':''}}\r\n")
                             self.client_socket.send(
-                                f"{{'parcelType':'message', 'message':'{message}', 'username':'{self.username}', 'attachmentType':''}}\r\n".encode(
+                                f"{{'parcelType':'message', 'message':'{message}', 'username':'{self.username}', "
+                                f"'attachmentType':''}}\r\n".encode(
                                     'utf-8'))
-
-                            # encoded_message = message_data.encode_message("client message without file", self.nickname,
-                            #                                               message)
+                            self.writing = False
                             break
                         try:
                             size, file = message_data.load_file(fp)
                             self.client_socket.send(
-                                f"{{'parcelType':'message', 'message':'{message}', 'username':'{self.username}', 'attachmentType':'{size}'}}\r\n".encode(
+                                f"{{'parcelType':'message', 'message':'{message}', 'username':'{self.username}', "
+                                f"'attachmentType':'{size}'}}\r\n".encode(
                                     'utf-8'))
                             self.client_socket.send(bytes(file))
-                            # encoded_message = message_data.encode_message("client message with file", self.nickname,
-                            #                                               message, fp)
+                            self.writing = False
                             attached = True
                         except FileNotFoundError:
-                            print(f"File {fp} not found")
-                            pass
-                        except:
-                            print()
-                            print(traceback.format_exc())
-
-                    # self.client_socket.send(encoded_message)
+                            print(Fore.RED + f"File {fp} not found")
                 except Exception:
-                    print("Сервер недоступен")
-                    print(traceback.format_exc())
+                    print(Back.RED + "Сервер недоступен")
                     break
