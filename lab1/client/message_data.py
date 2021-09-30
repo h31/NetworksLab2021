@@ -1,6 +1,5 @@
 import os
 import pickle
-import time
 
 
 def encode_message(message_type, username, text, fp=None):
@@ -13,11 +12,12 @@ def encode_message(message_type, username, text, fp=None):
     return message
 
 
-def load_file(fp):  # TODO
+def load_file(fp):
     file = open(fp, 'rb')
+    file_attributes = os.path.basename(fp).split('.')
     data = file.read()
     file.close()
-    return os.path.getsize(fp), data
+    return file_attributes[0], file_attributes[-1], os.path.getsize(fp), data
 
 
 def decode_message(message):
@@ -34,11 +34,11 @@ def decode_message(message):
         return message['type']
 
 
-def save_file(nickname, data, extension):
+def save_file(nickname, extension, name, data):
     filename = ''
     try:
         filename = open(
-            f"./Downloads/{time.strftime('%d%M%Y%H%m%s', time.localtime())} attachment by {nickname}{extension}", 'wb+')
+            f"./Downloads/{name} (by {nickname}).{extension}", 'wb+')
         filename.write(data)
         filename.close()
     except OSError:
