@@ -1,8 +1,12 @@
+package model;
+
+import util.Tool;
+
 import java.io.Serializable;
 
 public class ExchangeFormat implements Serializable {
 
-    private String parcelType; // заменить на enum или что-то более осмысленное, {greeting, exception, exit, msg}
+    private Tool.RequestType parcelType;
 
     private String message;
 
@@ -13,6 +17,10 @@ public class ExchangeFormat implements Serializable {
     private String attachmentType;
 
     private String attachmentName;
+
+    private int attachmentSize;
+
+    private byte[] attachmentByteArray;
 
     public String getMessage() {
         return message;
@@ -30,11 +38,11 @@ public class ExchangeFormat implements Serializable {
         this.time = time;
     }
 
-    public String getParcelType() {
+    public Tool.RequestType getParcelType() {
         return parcelType;
     }
 
-    public void setParcelType(String parcelType) {
+    public void setParcelType(Tool.RequestType parcelType) {
         this.parcelType = parcelType;
     }
 
@@ -54,31 +62,42 @@ public class ExchangeFormat implements Serializable {
         this.attachmentType = attachmentType;
     }
 
-    public ExchangeFormat(String parcelType, String message, String username, String time, String attachmentType) {
-        this.parcelType = parcelType;
-        this.message = message;
-        this.username = username;
-        this.time = time;
-        this.attachmentType = attachmentType;
+    public int getAttachmentSize() {
+        return attachmentSize;
     }
 
-    public ExchangeFormat(String requestType, String message, String time) {
-        this.parcelType = requestType;
-        this.message = message;
-        this.time = time;
+    public void setAttachmentSize(int attachmentSize) {
+        this.attachmentSize = attachmentSize;
+    }
+
+    public String getAttachmentName() {
+        return attachmentName;
+    }
+
+    public void setAttachmentName(String attachmentName) {
+        this.attachmentName = attachmentName;
+    }
+
+    public byte[] getAttachmentByteArray() {
+        return attachmentByteArray;
+    }
+
+    public void setAttachmentByteArray(byte[] attachmentByteArray) {
+        this.attachmentByteArray = attachmentByteArray;
     }
 
     public ExchangeFormat() {
     }
 
-    @Override
-    public String toString() {
+    public String toParcel() {
         return "{" +
-                "'parcelType':'" + parcelType + '\'' +
+                "'parcelType':'" + parcelType.getStringValue() + '\'' +
                 ", 'message':'" + message + '\'' +
                 ", 'username':'" + username + '\'' +
                 ", 'time':'" + time + '\'' +
                 ", 'attachmentType':'" + attachmentType + '\'' +
+                ", 'attachmentName':'" + attachmentName + '\'' +
+                ", 'attachmentSize':'" + attachmentSize + '\'' +
                 '}';
     }
 }

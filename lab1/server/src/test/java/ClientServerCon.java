@@ -1,9 +1,7 @@
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,12 +30,9 @@ public class ClientServerCon {
     @Test
     public void newParser() {
         String format = "{parcelType:greeting, message:eto : : :message: username;, , ,  ,soobsheniye, username:, attach:jaskfj}";
-        String format1 = "{'parcelType':'greeting', 'message':'sak\\'fhas\\'jklas', 'username':'\', 'attachment':'.jpg', 'file':''}";
+        String format1 = "{'parcelType':'greeting', 'message':'sak\\'fhas\\'jklas', 'username':'\\', 'attachment':'.jpg', 'file':''}";
         String formatWithoutBraces = format.substring(1, format.length() - 1);
         //System.out.println(formatWithoutBraces);
-
-
-
 
 
         String[] array = format1.split("(?<!\\\\)'");
@@ -50,13 +45,57 @@ public class ClientServerCon {
                         !value.equals(", ") && !value.equals(":")
                 )
                 .toArray(String[]::new);
-
-
-
         System.out.println(Arrays.toString(removedUnnecessary));
-
-
     }
 
+
+    List<String> resultArray = new ArrayList<>();
+    StringBuilder stringBuilder = new StringBuilder();
+
+
+    @Test
+    public void manualParse() {
+        String format = "{'parcelType':'greeting', 'message':'sak\\\\'fhas\\'jklas', 'username':'\\'э', 'attachment':'.jpg', 'file':''}";
+        format = "{'username':'\\\\''}";
+        format = "{'username':'\\'', 'attachmentType':''}\n";
+
+
+        for (int i = 0; i < format.length(); i++) {
+            if (format.charAt(i) == '\'') {
+                for (int j = i + 1; j < format.length(); j++) {
+                    if (format.charAt(j) == '\\' && format.charAt(j + 1) == '\'') {
+                        if (format.charAt(j + 2) == '\'') {
+                            stringBuilder.append(format.charAt(j)).append(format.charAt(j + 1));
+                            resultArray.add(stringBuilder.toString());
+                            stringBuilder.setLength(0);
+                            i = j + 2;
+                            break;
+                        }
+                        stringBuilder.append(format.charAt(j));
+                        continue;
+                    }
+                    if (format.charAt(j) == '\'') {
+                        if (format.charAt(j + 1) == '\\') {
+                            stringBuilder.append(format.charAt(j));
+                        } else {
+                            resultArray.add(stringBuilder.toString());
+                            stringBuilder.setLength(0);
+                            i = j + 1;
+                            break;
+                        }
+                    } else {
+                        stringBuilder.append(format.charAt(j));
+                    }
+                }
+            }
+        }
+
+        System.out.println(resultArray);
+    }
+
+
+    // {'\\'} <> \
+    // {'\\''} <> \'
+    // {'\\\\''} <> \\'
 
 }
