@@ -11,17 +11,28 @@ class SocketConnection:
 		length = struct.pack(">I", len(data)) # > = big endian, I = 4 bytes
 		try:
 			self.sock.sendall(length)
-			self.sock.send(data)
+			self.sock.sendall(data)
 		except socket.error:
 			return False # error
 		return True # success
 		
 	def recv(self):
 		try:
-			(length, ) = struct.unpack(">I", self.sock.recv(4))
-			data = b''
-			while len(data) < length:
-				data += self.sock.recv(2048)
+			data = self.sock.recv(4)
+			if len(data) != 4: return b''
+			(length, ) = struct.unpack(">I", data) # > = big endian, I = 4 bytes
+			result = b''
+			while True:
+				delta = length - len(result)
+				if delta >= 4096:
+					data = self.sock.recv(4096)
+					if len(data) != 4096: return b''
+					result += data
+				else:
+					data = self.sock.recv(delta)
+					if len(data) != delta: return b''
+					result += data
+					break
 		except socket.error:
-			data = b''
-		return data
+			result = b''
+		return result

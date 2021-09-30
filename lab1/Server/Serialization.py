@@ -69,20 +69,22 @@ def convertToDictionary(lastCharacterIndex):
 	global data, index
 	result = {}
 	while True:
-		key = bytesToStr(getValue())
-		while not chr(data[index]) in ("{", "[", "\""):
+		while chr(data[index]) != "\"":
+			if index == lastCharacterIndex: return result
 			index += 1
+		
+		key = bytesToStr(getValue())
+		
+		while chr(data[index]) not in ("\"", "{", "["):
+			index += 1
+		
 		if chr(data[index]) == "{":
 			value = convertToDictionary(findLastCharacterIndex())
-			index += 1
 		if chr(data[index]) == "[":
 			value = convertToList(findLastCharacterIndex())
-			index += 1
 		if chr(data[index]) == "\"":
 			value = getValue()
 		result[key] = value
-		if index >= lastCharacterIndex: break
-	return result
 
 def findLastCharacterIndex():
 	global data, index
@@ -93,36 +95,35 @@ def findLastCharacterIndex():
 	
 	result = index
 	cnt = 1
+	inside_the_string = False
 	while cnt != 0:
 		result += 1
-		if data[result] == data[index]: cnt += 1
-		if chr(data[result]) == closingSign: cnt -= 1
-	return result - 1
+		if chr(data[result - 1]) != "\\" and chr(data[result]) == "\"":
+			inside_the_string = not inside_the_string
+		if not inside_the_string:
+			if data[result] == data[index]: cnt += 1
+			if chr(data[result]) == closingSign: cnt -= 1
+	return result
 
 def convertToList(lastCharacterIndex):
 	global data, index
 	result = []
 	index += 1
 	while True:
-		while not chr(data[index]) in ("{", "[", "\""):
+		while chr(data[index]) not in ("{", "[", "\""):
+			if index == lastCharacterIndex: return result
 			index += 1
+		
 		if chr(data[index]) == "{":
 			value = convertToDictionary(findLastCharacterIndex())
-			index += 1
 		if chr(data[index]) == "[":
 			value = convertToList(findLastCharacterIndex())
-			index += 1
 		if chr(data[index]) == "\"":
 			value = getValue()
 		result.append(value)
-		if index >= lastCharacterIndex: break
-	return result
 	
 def getValue():
 	global data, index
-	while chr(data[index]) != "\"":
-		index += 1
-	
 	start = index + 1
 	while True:
 		index += 1
@@ -133,9 +134,11 @@ def getValue():
 	return data[start:index - 1]
 
 # usage sample
-#dictionary = {"mes\"sage1" : {"time": "1", "author" : ["John", "Bob"], "text" : "Hello \"World\"", "attachment" : "no"},
-#			"message2" : {"time": {"1" : "2"}, "author" : "John", "text" : "Hi", "attachment" : "no",
-#			"message3" : [[b'test\\"data', {"55" : ["", [b'test\\"data', "8"]]}]]}}
+# {"text1":"text2", "text3":[{"text4":["text5"]}, "text6", ["text7"]]} ->
+# -> b'{"text1":"text2","text3":[{"text4":["text5"]},"text6",["text7"]]}' ->
+# {"text1":"text2", "text3":[{"text4":["text5"]}, "text6", ["text7"]]}
+
+#dictionary = {"message\"":"text2", "text3":[{"{text4}":["[text5]"]}, "text6", ["text7", [""], {}]]}
 #data = dump(dictionary)
 #print(data)
 #result = load(data)

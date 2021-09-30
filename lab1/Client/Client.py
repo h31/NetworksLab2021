@@ -1,4 +1,4 @@
-import socket, sys, threading, Serialization, base64
+import socket, sys, threading, Serialization
 from pathlib import Path
 from datetime import datetime
 from SocketConnection import SocketConnection
@@ -6,14 +6,18 @@ from SocketConnection import SocketConnection
 # launch example: python Client.py Ivan_Ivanov
 if len(sys.argv) != 2:
 	print("Missed nickname")
-	exit(1)
+	exit()
+else:
+	if "\\" in sys.argv[1]:
+		print("Invalid character: \\")
+		exit()
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
-	client_socket.connect(("127.0.0.1", 12345))
+	client_socket.connect(("networkslab-ivt.ftp.sh", 23480)) #127.0.0.1
 except socket.error:
 	print("Server is unavailable")
-	exit(2)
+	exit()
 sock = SocketConnection(client_socket)
 
 # registration on the server
@@ -21,13 +25,11 @@ message = {"nickname":sys.argv[1]}
 sock.send(Serialization.dump(message))
 dictionary = Serialization.load(sock.recv())
 if "status" in dictionary:
-	if Serialization.bytesToStr(dictionary["status"]) == "success":
-		print("Connected")
-	else:
+	if Serialization.bytesToStr(dictionary["status"]) != "success":
 		print("Connection failed: choose a different nickname")
-		exit(3)
+		exit()
 else:
-	exit(3)
+	exit()
 
 def getNonExistentName(file_name):
 	parts = file_name.split(".")
@@ -61,10 +63,11 @@ def getMessage(disconnect_event):
 				+ Serialization.bytesToStr(dictionary["nickname"]) + "] " 
 				+ Serialization.bytesToStr(dictionary["text"]), end = "")
 		
-		if "attachment" in dictionary and "data" in dictionary:
+		if "attachment" in dictionary:
+			file_data = sock.recv()
 			file_name = getNonExistentName(Serialization.bytesToStr(dictionary["attachment"]))
 			with open(file_name, "wb") as f:
-				f.write(base64.b64decode(dictionary["data"]))
+				f.write(file_data)
 			print(" (" + file_name + " attached)", end = "")
 		print()
 
@@ -78,21 +81,33 @@ while True:
 	if disconnect_event.is_set(): break
 	if text == "\q": break
 	
+	message = {}
 	message["text"] = text
 	
 	file_name = input("ATTACHMENT (FILE NAME OR NOTHING):\n")
 	if disconnect_event.is_set(): break
+	if file_name == "\q": break
+	
+	file_data = None
 	if len(file_name) != 0:
 		if (Path.cwd() / file_name).exists():
-			message["attachment"] = file_name
-			with open(message["attachment"], "rb") as f:
-				message["data"] = base64.b64encode(f.read())
+			with open(file_name, "rb") as f:
+				file_data = f.read()
+			if len(file_data) != 0:
+				message["attachment"] = file_name
+			else:
+				print("Empty file")
 		else:
 			print("File not found")
 	
 	if not sock.send(Serialization.dump(message)): # sending failed
 		print("\nDisconnected")
 		break
+	
+	if "attachment" in message:
+		if not sock.send(file_data): # sending failed
+			print("\nDisconnected")
+			break
 
 sock.close()
 listenThread.join()

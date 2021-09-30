@@ -2,8 +2,8 @@ import socket
 from NewClientThread import NewClientThread
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind(("", 12345))
-server_socket.listen(5)
+server_socket.bind(("", 23480))
+server_socket.listen(4)
 
 threads = []
 while True:

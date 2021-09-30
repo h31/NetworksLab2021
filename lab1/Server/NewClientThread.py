@@ -57,26 +57,33 @@ class NewClientThread(threading.Thread):
 				self.nickname = None
 				self.sock.close()
 				break
-				
-			if not ("text" in dictionary): #error
-				continue
-			else: # sending a message to all interlocutors
-				message = {"time":self.getCurrentTimeInUTC(), 
-						"nickname":self.nickname, "text":dictionary["text"]}
-				
-				if "attachment" in dictionary and "data" in dictionary:
-					message["attachment"] = dictionary["attachment"]
-					message["data"] = dictionary["data"]
-				
-				self.sendToEveryone(message)
+			
+			# error	
+			if not ("text" in dictionary): continue
+			
+			# sending a message to all interlocutors
+			message = {"time":self.getCurrentTimeInUTC(), 
+					"nickname":self.nickname, "text":dictionary["text"]}
+			
+			file_data = None
+			if "attachment" in dictionary:
+				message["attachment"] = dictionary["attachment"]
+				file_data = self.sock.recv()
+			
+			self.sendToEveryone(message)
+			if file_data != None:
+				self.sendToEveryone(file_data, serialize = False)
 	
 	def getCurrentTimeInUTC(self):
 		return str(datetime.now(tz = timezone.utc))
 	
-	def sendToEveryone(self, message):
+	def sendToEveryone(self, msg, serialize = True):
 		for thread in self.threads:
 			if thread.ip_address != self.ip_address:
-				thread.send(Serialization.dump(message))
+				if serialize:
+					thread.send(Serialization.dump(msg))
+				else:
+					thread.send(msg)
 	
 	def send(self, data):
 		self.sock.send(data)
