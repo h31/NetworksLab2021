@@ -30,7 +30,7 @@ class Client:
             self.client_socket.close()
 
     def set_username(self, reason=''):
-        self.username = input(reason).replace("\\", "\\\\").replace("'", "\\\\'")
+        self.username = input(reason).replace("\\", "\\\\").replace("'", "\\'")
 
     def receive(self):
         while True:
@@ -72,7 +72,7 @@ class Client:
             if self.username != '':
                 try:
                     self.writing = True
-                    message = input().replace("\\", "\\\\").replace("'", "\\\\'")
+                    message = input().replace("\\", "\\\\").replace("'", "\\'")
                     attached = False
                     while not attached:
                         fp = input("Relative filepath:")
