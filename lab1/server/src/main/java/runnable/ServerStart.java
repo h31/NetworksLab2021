@@ -8,6 +8,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -61,6 +62,7 @@ public class ServerStart {
 
             try {
                 System.out.println(Thread.currentThread().getName());
+                System.out.println(clientList);
                 greetingNewUser();
 
                 ExchangeFormat clientRequest;
@@ -81,6 +83,8 @@ public class ServerStart {
 
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
+                clientList.remove(this);
+                Thread.currentThread().interrupt();
             }
         }
 
@@ -126,12 +130,31 @@ public class ServerStart {
             serverResponse.setUsername(nicknameOfClient);
             serverResponse.setMessage(clientRequest.getMessage());
 
-            if(clientRequest.getAttachmentSize() != 0) {
-                //System.out.println(bytes.length);
+            //dIn = new DataInputStream(clientSocket.getInputStream());
+            /*System.out.println("вот тут насрали");
+            dIn.read(serverResponse.getAttachmentByteArray(), 0, clientRequest.getAttachmentSize()); //
+            System.out.println("МЫ ЭТО ПРОЧЛИ УДАЧНО!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" + serverResponse.getAttachmentByteArray());
+            dOut = new DataOutputStream(clientSocket.getOutputStream());*/
 
-                dIn = new DataInputStream(clientSocket.getInputStream());
-                dIn.readFully(serverResponse.getAttachmentByteArray(), 0, clientRequest.getAttachmentSize());
+
+            if(clientRequest.getAttachmentSize() != 0) {
                 dOut = new DataOutputStream(clientSocket.getOutputStream());
+                dIn = new DataInputStream(clientSocket.getInputStream());
+                System.out.println("ОКАЗЫВАЕТСЯ КЛИЕНТ ВЛОЖИЛ ФАЙЛ");
+                serverResponse.initializeAttachmentByteArray(clientRequest.getAttachmentSize());
+                serverResponse.setAttachmentName(clientRequest.getAttachmentName());
+                serverResponse.setAttachmentType(clientRequest.getAttachmentType());
+                serverResponse.setAttachmentSize(clientRequest.getAttachmentSize());
+
+                byte[] bytes = new byte[clientRequest.getAttachmentSize()];
+                //System.out.println(bytes.length + " размер массива байтов");
+
+                for(int i=0;i<bytes.length;i++){
+                    bytes[i]= dIn.readByte();
+                }
+                //System.out.println(Arrays.toString(bytes));
+                serverResponse.setAttachmentByteArray(bytes);
+                //System.out.println(serverResponse.getAttachmentByteArray().toString());
             }
 
             try {
@@ -140,7 +163,7 @@ public class ServerStart {
                 e.printStackTrace();
             }
 
-            /// почитать про close стрим, и перебивают ли друг друга два открытых стрима
+            ///close стрим, два открытых стрима
                 /*dIn.close();
                 dOut.flush();
                 dOut.close();*/

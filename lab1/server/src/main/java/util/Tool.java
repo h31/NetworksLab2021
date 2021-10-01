@@ -34,7 +34,7 @@ public class Tool {
 
     // Имя файлов в винде не должно содержать: \ / : * ? " < > |
     public static ExchangeFormat parseRequest(String format) {
-        System.out.println(format);
+        System.out.println("пришедший формат: " + format);
         List<String> resultArray = new ArrayList<>();
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < format.length(); i++) {
@@ -67,9 +67,8 @@ public class Tool {
         exchangeFormat.setMessage(resultArray.get(3));
         exchangeFormat.setUsername(resultArray.get(5));
         exchangeFormat.setAttachmentType(resultArray.get(7));
-        // тимофей добавит
-        //exchangeFormat.setAttachmentName(resultArray.get(9));
-        //exchangeFormat.setAttachmentSize(resultArray.get(11));
+        exchangeFormat.setAttachmentName(resultArray.get(9));
+        exchangeFormat.setAttachmentSize(Integer.parseInt(resultArray.get(11)));
 
 
         return exchangeFormat;

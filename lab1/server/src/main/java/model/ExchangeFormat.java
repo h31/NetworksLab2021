@@ -86,6 +86,10 @@ public class ExchangeFormat implements Serializable {
         this.attachmentByteArray = attachmentByteArray;
     }
 
+    public void initializeAttachmentByteArray(int size) {
+        this.attachmentByteArray = new byte[size];
+    }
+
     public ExchangeFormat() {
     }
 

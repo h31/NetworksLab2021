@@ -2,7 +2,9 @@ package runnable;
 
 import model.ExchangeFormat;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 
 public class QueueHandler implements Runnable{
@@ -13,7 +15,6 @@ public class QueueHandler implements Runnable{
     public QueueHandler(BlockingQueue<ExchangeFormat> serverResponseQueue) {
         this.serverResponseQueue = serverResponseQueue;
     }
-
 
     @Override
     public void run() {
@@ -26,7 +27,13 @@ public class QueueHandler implements Runnable{
                 for (ServerStart.ClientHandler activeUser : ServerStart.clientList) {
                     activeUser.out.println(headOfQueue.toParcel());
                     if(headOfQueue.getAttachmentSize() != 0) {
-                        activeUser.dOut.write(headOfQueue.getAttachmentByteArray());
+                        byte[] bytes = headOfQueue.getAttachmentByteArray();
+                        for(int i=0;i<headOfQueue.getAttachmentSize();i++){
+                            activeUser.dOut.writeByte(bytes[i]);
+                        }
+                        System.out.println("сервер отправил все клиентам");
+                        /*activeUser.dOut.write(headOfQueue.getAttachmentByteArray());
+                        activeUser.dOut.flush();*/
                     }
                 }
             } catch (InterruptedException | IOException e) {
