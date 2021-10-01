@@ -15,9 +15,12 @@ def encode_message(message_type, username, text, fp=None):
 def load_file(fp):
     file = open(fp, 'rb')
     file_attributes = os.path.basename(fp).split('.')
-    data = file.read()
+    data = []
+    size = os.path.getsize(fp)
+    for _ in range(size):
+        data.append(file.read(1))
     file.close()
-    return file_attributes[0], file_attributes[-1], os.path.getsize(fp), data
+    return file_attributes[0], file_attributes[-1], size, data
 
 
 def decode_message(message):
@@ -35,7 +38,6 @@ def decode_message(message):
 
 
 def save_file(nickname, extension, name, data):
-    filename = ''
     try:
         filename = open(
             f"./Downloads/{name} (by {nickname}).{extension}", 'wb+')
@@ -43,4 +45,3 @@ def save_file(nickname, extension, name, data):
         filename.close()
     except OSError:
         print("An error occurred while saving the file")
-    return filename
