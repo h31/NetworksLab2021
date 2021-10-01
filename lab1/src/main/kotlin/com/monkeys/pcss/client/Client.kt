@@ -1,76 +1,186 @@
 package com.monkeys.pcss.client
 
 import com.monkeys.pcss.models.message.*
+import com.monkeys.pcss.readMessageFromInputStream
+import com.monkeys.pcss.send
 import com.monkeys.pcss.shapingFileName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import java.io.*
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.io.File
+import java.net.FileNameMap
 import java.net.Socket
 import java.net.SocketException
+import java.net.URLConnection
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.*
 
 class Client(host: String, port: Int) {
 
-    private var socket = Socket(host, port)
-    private var receiver = BufferedReader(InputStreamReader(socket.getInputStream()))
-    private var sender = BufferedWriter(OutputStreamWriter(socket.getOutputStream()))
+    private var socket: Socket = Socket(host, port)
+    private val receiver = BufferedInputStream(socket.getInputStream())
+    private val sender = BufferedOutputStream(socket.getOutputStream())
     private lateinit var name: String
     private var stillWorking = true
 
     suspend fun start() = coroutineScope {
-        try {
-            var nameExist = true
-            println("Enter your nickname or \'q\' to exit.")
-            when (val userInput = readLine()) {
-                null -> {
-                    stillWorking = false
-                }
-                "q" -> {
-                    sender.write("EXIT")
-                    sender.flush()
-                    stillWorking = false
-                }
-                else -> {
-                    val decodedUserInput = String(userInput.toByteArray(Charsets.UTF_8), Charsets.UTF_8)
-                    val data = Data(null, decodedUserInput, "", TimeZone.getDefault().id, null)
-                    val header = Header(MessageType.LOGIN, false, data.getServerMessage().length)
-                    val message = Message(header, data, ByteArray(0))
 
-                    sender.write(message.getMessage())
-                    sender.flush()
-                    var messageInfo = ""
-                    while (nameExist) {
-                        val serverMessage = receiver.readLine()
-                        val parseServerMessage = parseMessage(serverMessage)
-                        messageInfo = parseServerMessage.data.messageText
-                        val type = parseServerMessage.header.type
-                        val senderName = parseServerMessage.data.senderName
+        var nameExist = false
+        var isSingingInNow = true
+        println("Enter your nickname or \'q\' to exit.")
+
+        when (val userInput = readLine()) {
+            null -> {
+                stillWorking = false
+            }
+            "q" -> {
+                send(sender, "EXIT".toByteArray())
+                stillWorking = false
+            }
+            else -> {
+
+                val data = Data(null, userInput, "", "", null)
+                val header = Header(MessageType.LOGIN, false, 0)
+                val message = Message(header, data)
+
+                send(sender, message.getMessage())
+
+                var messageInfo = ""
+
+                while (isSingingInNow) {
+                    if (receiver.available() > 0) {
+
+                        val serverMessage = readMessageFromInputStream(receiver)
+                        val parsedServerMessage = parseMessage(serverMessage)
+                        messageInfo = parsedServerMessage!!.data.messageText
+                        val type = parsedServerMessage.header.type
+                        val senderName = parsedServerMessage.data.senderName
                         if (messageInfo == "Name is taken, please try to connect again"
                             && type == MessageType.LOGIN && senderName == "server"
                         ) {
                             stillWorking = false
-                            nameExist = false
+                            nameExist = true
                         } else {
-                            name = decodedUserInput
+                            name = userInput
                             nameExist = false
                         }
+                        isSingingInNow = false
                     }
-                    println(messageInfo)
-                    println("You can attach a picture by writing such a construction at the end of the message [[filepath]]")
+                }
+                println(messageInfo)
+
+            }
+        }
+        if (nameExist) {
+            stopConnection()
+        } else {
+            launch(Dispatchers.IO) { sendingMessages() }
+            launch(Dispatchers.IO) { receivingMessages() }
+        }
+    }
+
+    private fun sendingMessages() {
+        println("You can attach a picture by writing such a construction at the end of the message [[filepath]]")
+        try {
+            while (stillWorking) {
+                print("m: ")
+                when (val userMessage = readLine()) {
+                    "" -> continue
+                    "q" -> {
+                        send(sender, "EXIT".toByteArray())
+                        stillWorking = false
+                    }
+                    else -> {
+                        val parsedMessage = parseUserMessage(userMessage.toString())
+                        val msg = parsedMessage.first
+                        var file = parsedMessage.second
+                        var fileName = file?.name
+                        var fileByteArray = ByteArray(0)
+
+                        if (file != null) {
+                            val fileNameMap: FileNameMap = URLConnection.getFileNameMap()
+                            val fileType = fileNameMap.getContentTypeFor(fileName).split("/")[0]
+
+                            if (!setOf("image", "video", "audio").contains(fileType)) {
+                                fileName = ""
+                                file = null
+                                println("You can only attach media files, any others may be unsafe. Your file was not attached")
+                            } else {
+                                fileByteArray = file.readBytes()
+                            }
+                        }
+
+                        val data = Data(null, name, "", msg, fileName)
+                        val header = Header(
+                            MessageType.MESSAGE, file != null,
+                            fileByteArray.size
+                        )
+                        val message = Message(header, data)
+
+                        send(sender, message.getMessage())
+
+                        if (header.isFileAttached) {
+                            send(sender, fileByteArray)
+                        }
+                    }
                 }
             }
-            if (nameExist) {
-                stopConnection()
-            }
-
-            launch(Dispatchers.Default) { sendingMessages() }
-            launch(Dispatchers.Default) { receivingMessages() }
         } catch (e: Exception) {
-            println("Troubles while connecting to server! Closing connection. Try to reconnect")
+            println("!E: There is an ERROR while sending ur message. Probably the server was destroyed by evil goblins.")
+            e.printStackTrace()
             stopConnection()
         }
     }
+
+    private fun receivingMessages() {
+        try {
+            while (stillWorking) {
+                if (receiver.available() > 0) {
+                    val serverMessage = readMessageFromInputStream(receiver)
+                    val parsedServerMessage = parseMessage(serverMessage)
+                    if (parsedServerMessage != null) {
+                        val serverData = parsedServerMessage.data
+
+                        val serverZoneDateTime = serverData.time.replace("{", "[").replace("}", "]")
+                        val id = TimeZone.getDefault().id
+                        val parsedSZDT = ZonedDateTime.parse(serverZoneDateTime)
+                        val clientSZDT = parsedSZDT.withZoneSameInstant(ZoneId.of(id))
+                            .format(DateTimeFormatter.ofLocalizedTime(FormatStyle.MEDIUM))
+
+                        val finalData = Data(
+                            serverData.messageId, serverData.senderName,
+                            clientSZDT, serverData.messageText, serverData.fileName
+                        )
+
+                        println(finalData.getClientMessage())
+                        print("m: ")
+
+                        val size = parsedServerMessage.header.fileSize
+                        val byteArray = ByteArray(size)
+                        if (parsedServerMessage.header.isFileAttached) {
+                            receiver.read(byteArray)
+                            val fileName = finalData.fileName
+                            val senderName = finalData.senderName
+                            val time = finalData.time
+                            val file1 = File(shapingFileName(fileName!!, senderName, time))
+                            file1.createNewFile()
+                            file1.writeBytes(byteArray)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("!E: There is an ERROR while receiving new messages. Probably the server was destroyed by evil goblins.")
+            e.printStackTrace()
+            stopConnection()
+        }
+    }
+
 
     private fun stopConnection() {
         try {
@@ -79,70 +189,7 @@ class Client(host: String, port: Int) {
             socket.close()
             println("Bye!")
         } catch (e: SocketException) {
-            println("ERROR! Socket wasn't closed!")
-            e.printStackTrace()
-        }
-    }
-
-    private fun sendingMessages() {
-        while (stillWorking) {
-            try {
-                print("Message: ")
-                when (val userInput = readLine()) {
-                    "", null -> continue
-                    "q" -> {
-                        sender.write("EXIT")
-                        stillWorking = false
-                    }
-                    else -> {
-                        val userMessage = String(userInput.toByteArray(Charsets.UTF_8), Charsets.UTF_8)
-                        val parsedMsg = parseUserMessage(userMessage)
-                        val msg = parsedMsg.first
-                        val file = parsedMsg.second
-                        val fileName = file?.name
-                        val fileByteArray = file?.readBytes()
-
-                        val data = Data(null, name, "", msg, fileName)
-                        val header = Header(
-                            MessageType.MESSAGE, file != null,
-                            data.getServerMessage().toByteArray(Charsets.UTF_8).size
-                        )
-                        val message = Message(header, data, fileByteArray ?: ByteArray(0))
-                        val messageRes = message.getMessage()
-                        sender.write(messageRes)
-                        sender.flush()
-                    }
-                }
-            } catch (e: Exception) {
-                println("Troubles while messaging. Server is down! Try to reconnect")
-                stopConnection()
-                break
-            }
-        }
-    }
-
-    private fun receivingMessages() {
-        while (stillWorking) {
-            try {
-                val serverMessage = receiver.readLine()
-                val message = parseMessage(serverMessage)
-                val fileName = message.data.fileName
-                val time = message.data.time
-                val senderName = message.data.senderName
-                val fileByteArray = message.file
-
-                if (!fileName.isNullOrEmpty() && fileByteArray.isNotEmpty()) {
-                    val file1 = File(shapingFileName(fileName, senderName, time))
-                    file1.createNewFile()
-                    file1.writeBytes(fileByteArray)
-                }
-
-                println(message.data.getClientMessage())
-            } catch (e: Exception) {
-                println("Troubles while messaging. Server is down! Try to reconnect")
-                stopConnection()
-                break
-            }
+            println("ERROR! Socket wasn't closed by client(probably it was closed by server)!")
         }
     }
 }

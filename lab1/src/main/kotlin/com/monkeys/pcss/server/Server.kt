@@ -1,6 +1,8 @@
 package com.monkeys.pcss.server
 
+import com.monkeys.pcss.STANDARD_PORT
 import com.monkeys.pcss.models.ClientList
+import com.monkeys.pcss.models.message.Data
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -8,11 +10,12 @@ import java.net.ServerSocket
 import java.net.SocketException
 
 class Server {
+
     private val clientList = ClientList()
 
     fun start() = runBlocking {
         try {
-            ServerSocket(8081).use { server ->
+            ServerSocket(STANDARD_PORT).use { server ->
                 println("Server is running")
                 while (true) {
                     val client = server.accept()

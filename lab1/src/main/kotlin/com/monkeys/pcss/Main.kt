@@ -21,13 +21,16 @@ fun main(args: Array<String>) {
         CLIENT_WITH_ARGUMENTS -> {
             val clientArgumentIndex = args.indexOf("-c") + 1
             val arg = parseHostAndPort(args[clientArgumentIndex])
-            val client = Client(arg.first, arg.second)
-            runBlocking { client.start() }
+            if (arg.first != "Error") {
+                val client = Client(arg.first, arg.second)
+                runBlocking { client.start() }
+            } else {
+                println("Wrong arguments. Connection not establishment")
+            }
         }
 
         HELP -> {
             printHelp()
         }
-
     }
 }

@@ -1,18 +1,19 @@
 package com.monkeys.pcss.models.message
 
 import java.io.File
-import java.util.*
 
 fun parseData(dataMessage: String): Data {
+    val timeRegex =
+        """[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]+((\+[0-9]{2}:[0-9]{2})|Z)\{[A-Za-z/]+\}"""
     val regex =
-        """\[([A-Za-z0-9]+)?\],\[([A-Za-z0-9А-Яа-я]+)\],\[((([0,1][0-9])|(2[0-3])):[0-5][0-9])?\],\[([^\[\]]*)\],\[(([^(\[\])]+)\.([a-z0-9A-Z]+))?\]""".toRegex()
+        """\[([A-Za-z0-9]+)?\],\[([A-Za-z0-9А-Яа-я]+)\],\[($timeRegex)?\],\[([^\[\]]*)\],\[(([^(\[\])]+)\.([a-z0-9A-Z]+))?\]""".toRegex()
     val matchResult = regex.matchEntire(dataMessage)
     return if (matchResult != null) {
         val messageId = matchResult.groupValues[1]
         val senderName = matchResult.groupValues[2]
         val time = matchResult.groupValues[3]
-        val messageText = matchResult.groupValues[7]
-        val fileName = matchResult.groupValues[8]
+        val messageText = matchResult.groupValues[6]
+        val fileName = matchResult.groupValues[7]
         Data(messageId, senderName, time, messageText, fileName)
     } else {
         Data()
@@ -34,30 +35,37 @@ fun parseHeader(headerMessage: String): Header {
     }
 }
 
-fun parseMessage(message: String) : Message {
-    val splitMessage = message.split("_;_")
-    val header = parseHeader(splitMessage[0])
-    val data = parseData(splitMessage[1])
-    val file = if (splitMessage.size > 2) Base64.getDecoder().decode(splitMessage[2]) else ByteArray(0)
-    return Message(header, data, file)
+fun parseMessage(message: String): Message? {
+    return if (!message.isNullOrEmpty()) {
+        val splitMessage = message.split("_;_")
+        val header = parseHeader(splitMessage[0])
+        val data = parseData(splitMessage[1])
+        Message(header, data)
+    } else null
 }
 
-fun parseHostAndPort(arg: String) : Pair<String, Int> =
-    Pair(arg.split(":")[0], arg.split(":")[1].toInt())
+fun parseHostAndPort(arg: String): Pair<String, Int> {
+    val regex =
+        """([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5]):((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4}))""".toRegex()
+    val matchResult = regex.matchEntire(arg)
+    if (matchResult != null)
+        return Pair(arg.split(":")[0], arg.split(":")[1].toInt())
+    return Pair("Error", 0)
+}
 
 fun parseUserMessage(msg: String) : Pair<String,File?> {
     val splitMsg = msg.split("[[")
     var filePath = splitMsg[splitMsg.size - 1]
     filePath = filePath.filterNot { str -> "]]".contains(str) }
     val file = File(filePath)
-    return if (file.isFile) {
-        when (splitMsg.size) {
+    if (file.isFile) {
+        return when (splitMsg.size) {
             1 -> Pair(msg, null)
             2 -> Pair(splitMsg[0], file)
             else -> Pair(collectMessage(splitMsg), file)
         }
     } else {
-        Pair(msg, null)
+        return Pair(msg, null)
     }
 
 }

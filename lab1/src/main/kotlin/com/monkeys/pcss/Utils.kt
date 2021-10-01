@@ -2,9 +2,13 @@ package com.monkeys.pcss
 
 import com.monkeys.pcss.models.WorkType
 import com.monkeys.pcss.models.WorkType.*
+import java.io.BufferedOutputStream
+import java.io.InputStream
 
+const val STANDARD_PORT = 8081
 
 fun restoreArguments(args: List<String>): WorkType = when {
+    //TODO(обработать флаги для передачи порта с ip")
     args.isEmpty() -> {
         SERVER
     }
@@ -40,8 +44,19 @@ fun kit(): String =
             "\n"
 
 fun generateMessageId(): String {
- //TODO()
+    //TODO()
     return "testNew"
+}
+
+fun readMessageFromInputStream(inputStream: InputStream): String {
+    val byteArray = ByteArray(inputStream.available())
+    inputStream.read(byteArray)
+    return String(byteArray).replace("\u0000", "")
+}
+
+fun send(outputStream: BufferedOutputStream, byteArray: ByteArray) {
+    outputStream.write(byteArray)
+    outputStream.flush()
 }
 
 fun shapingFileName(fileName: String, senderName: String, time: String): String {
@@ -56,3 +71,6 @@ fun shapingFileName(fileName: String, senderName: String, time: String): String 
     builder.append(split[1])
     return builder.toString()
 }
+
+
+
