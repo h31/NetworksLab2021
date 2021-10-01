@@ -7,14 +7,10 @@ from SocketConnection import SocketConnection
 if len(sys.argv) != 2:
 	print("Missed nickname")
 	exit()
-else:
-	if "\\" in sys.argv[1]:
-		print("Invalid character: \\")
-		exit()
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
-	client_socket.connect(("networkslab-ivt.ftp.sh", 23480)) #127.0.0.1
+	client_socket.connect(("127.0.0.1", 23480)) # networkslab-ivt.ftp.sh
 except socket.error:
 	print("Server is unavailable")
 	exit()

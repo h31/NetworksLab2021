@@ -1,19 +1,19 @@
-def strToBytes(string): # convert " to \"
+def strToBytes(string): # convert ", \ to \", \\
 	result = b""
 	for i in range(len(string)):
-		if string[i] == "\"":
+		if string[i] in ("\"", "\\"):
 			result += b'\\'
 		result += string[i].encode("utf-8")
 	return result
 
-def bytesToStr(input_bytes): # convert \" to "
+def bytesToStr(input_bytes): # convert \", \\to ", \
 	string = input_bytes.decode("utf-8")
 	result = ""
 	i = 0
 	while i < len(string):
 		if string[i] == "\\":
 			if i != len(string) - 1:
-				if string[i + 1] == "\"":
+				if string[i + 1] in ("\"", "\\"):
 					i += 1
 		result += string[i]
 		i += 1
@@ -128,8 +128,8 @@ def getValue():
 	while True:
 		index += 1
 		if chr(data[index]) == "\"": break
-		if chr(data[index]) == "\\" and chr(data[index + 1]) == "\"": index += 1
-		
+		if chr(data[index]) == "\\" and chr(data[index + 1]) in ("\\", "\""): index += 1
+	
 	index += 1
 	return data[start:index - 1]
 
@@ -138,8 +138,8 @@ def getValue():
 # -> b'{"text1":"text2","text3":[{"text4":["text5"]},"text6",["text7"]]}' ->
 # {"text1":"text2", "text3":[{"text4":["text5"]}, "text6", ["text7"]]}
 
-#dictionary = {"message\"":"text2", "text3":[{"{text4}":["[text5]"]}, "text6", ["text7", [""], {}]]}
-#data = dump(dictionary)
-#print(data)
-#result = load(data)
-#print(result)
+# dictionary = {"message":"text2", "text3":[{"{text4}":["[text5]"]}, "text6", ["text7", [""], {}]]}
+# data = dump(dictionary)
+# print(data)
+# result = load(data)
+# print(result)
