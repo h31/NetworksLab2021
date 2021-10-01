@@ -1,7 +1,7 @@
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import java.io.*
-import java.lang.Exception
-import java.lang.NullPointerException
 import java.net.Socket
 import java.net.SocketException
 import java.net.URLConnection
@@ -9,6 +9,7 @@ import java.nio.file.Paths
 import java.util.*
 import java.util.regex.Pattern
 import kotlin.system.exitProcess
+
 
 class Client constructor(hostAddress: String, hostPort: Int, private var nickname: String) {
     private var socket = Socket(hostAddress, hostPort)
@@ -45,13 +46,12 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
                         else -> throw ex
                     }
                 }
-
                 //parse the message!
                 val split = msg.split(colonAndSpaceRegex, 2)
                 val type = split.first().toString()
                 val value = split.last().toString()
                 when (type) {
-                    "time" -> customMsg.time = value
+                    "time" -> customMsg.time = getLocalTime(value)
                     "name" -> customMsg.name = value
                     "msg" -> customMsg.msg = value
                     "attname" -> customMsg.attname = value
@@ -72,7 +72,7 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
             val msg = "msg: $text"
 
             //quit scenario with "quit" command
-            if (text.toLowerCase(Locale.getDefault()) == "quit") {
+            if (text.lowercase(Locale.getDefault()) == "quit") {
                 println("See you later. Bye!")
                 exitProcess(0)
             }
