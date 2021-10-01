@@ -147,6 +147,5 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
         outStream.flush()
         if (f.isNotEmpty()) { outStream.write(f) }
         outStream.flush()
-
     }
 }
