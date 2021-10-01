@@ -58,35 +58,35 @@ public class ClientServerCon {
         String format = "{'parcelType':'greeting', 'message':'sak\\\\'fhas\\'jklas', 'username':'\\'э', 'attachment':'.jpg', 'file':''}";
         format = "{'username':'\\\\''}";
         format = "{'username':'\\'', 'attachmentType':''}\n";
+        format = "{'parcelType':'greeting', 'message':'', 'username':'rock\\'n\\'roll', 'attachmentType':''}";
+        format = "{'rock\\'n\\'roll'}";
+        format = "{'\\\\\\'\\\\'\\\\\\'\\\\\\'\\\\\\'\\\\\\'\\\\\\'\\\\\\'\\\\\\'}";
+        format = "{'\\\\\\''}";
+
+
+
 
 
         for (int i = 0; i < format.length(); i++) {
             if (format.charAt(i) == '\'') {
                 for (int j = i + 1; j < format.length(); j++) {
-                    if (format.charAt(j) == '\\' && format.charAt(j + 1) == '\'') {
-                        if (format.charAt(j + 2) == '\'') {
-                            stringBuilder.append(format.charAt(j)).append(format.charAt(j + 1));
-                            resultArray.add(stringBuilder.toString());
-                            stringBuilder.setLength(0);
-                            i = j + 2;
-                            break;
+                    if (format.charAt(j) == '\\' && format.charAt(j+1) == '\\') {
+                            stringBuilder.append(format.charAt(j)).append(format.charAt(j+1));
+                            j=j+1;
+                            continue;
                         }
-                        stringBuilder.append(format.charAt(j));
+                    if (format.charAt(j) == '\\' && format.charAt(j+1) == '\'') {
+                        stringBuilder.append(format.charAt(j)).append(format.charAt(j+1));
+                        j = j+1;
                         continue;
                     }
-                    if (format.charAt(j) == '\'') {
-                        if (format.charAt(j + 1) == '\\') {
-                            stringBuilder.append(format.charAt(j));
-                        } else {
-                            resultArray.add(stringBuilder.toString());
-                            stringBuilder.setLength(0);
-                            i = j + 1;
-                            break;
-                        }
-                    } else {
-                        stringBuilder.append(format.charAt(j));
+                    if(format.charAt(j) == '\'') {
+                        resultArray.add(stringBuilder.toString());
+                        i = j+1;
+                        break;
                     }
-                }
+                    stringBuilder.append(format.charAt(j));
+                    }
             }
         }
 

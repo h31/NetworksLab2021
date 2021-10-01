@@ -20,7 +20,7 @@ public class ExchangeFormat implements Serializable {
 
     private int attachmentSize;
 
-    private byte[] attachmentByteArray;
+    private byte[] attachmentByteArray; // inner field
 
     public String getMessage() {
         return message;

@@ -64,13 +64,13 @@ public class ServerStart {
                 greetingNewUser();
 
                 ExchangeFormat clientRequest;
-                ExchangeFormat messageBroadcastResponse = new ExchangeFormat();
                 while (true) {
                     String message = in.readLine();
 
+                    System.out.println(message);
                     clientRequest = Tool.parseRequest(message);
 
-                    if (clientRequest.getParcelType().equals(Tool.RequestType.EXIT.toString())) {
+                    if (clientRequest.getParcelType().getStringValue().equals(Tool.RequestType.EXIT.getStringValue())) {
                         notifyAboutUserExit(nicknameOfClient);
                         closeConnections(); // подумать над очередностью, надо ли присылать клиенту нотифай об его уходе?
                         break;
@@ -141,9 +141,9 @@ public class ServerStart {
             }
 
             /// почитать про close стрим, и перебивают ли друг друга два открытых стрима
-                dIn.close();
+                /*dIn.close();
                 dOut.flush();
-                dOut.close();
+                dOut.close();*/
         }
 
 
