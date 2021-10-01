@@ -15,10 +15,10 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
     private var socket = Socket(hostAddress, hostPort)
     private var inStream = BufferedInputStream(socket.getInputStream())
     private var outStream = BufferedOutputStream(socket.getOutputStream())
-    private var reader = BufferedReader(InputStreamReader(inStream))
-    private var writer = BufferedWriter(OutputStreamWriter(outStream))
+    private var reader = BufferedReader(InputStreamReader(inStream, Charsets.UTF_8))
+    private var writer = BufferedWriter(OutputStreamWriter(outStream, Charsets.UTF_8))
 
-    private val scanner = Scanner(System.`in`)
+    private val scanner = Scanner(System.`in`, Charsets.UTF_8)
 
     suspend fun run() = coroutineScope {
         launch(Dispatchers.IO) { joinChat() }
@@ -70,7 +70,6 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
             val text = scanner.nextLine()
             if (text.isBlank()) continue //no blank lines in msg!
             val msg = "msg: $text"
-
             //quit scenario with "quit" command
             if (text.toLowerCase(Locale.getDefault()) == "quit") {
                 println("See you later. Bye!")
@@ -142,8 +141,7 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
                 println("WARNING: could not find file using given path.")
             }
         }
-
-        outStream.write(msg.plus("\nattname: $attname\natt: $att\n").toByteArray())
+        outStream.write(msg.plus("\nattname: $attname\natt: $att\n").toByteArray(Charsets.UTF_8))
         outStream.flush()
         if (f.isNotEmpty()) { outStream.write(f) }
         outStream.flush()

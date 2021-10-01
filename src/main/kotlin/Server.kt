@@ -118,7 +118,7 @@ class Server constructor(port: Int) {
                 clientSockets.forEach {
                     clientScope.launch (Dispatchers.IO) {
                         val outStream = BufferedOutputStream(it.value.socket.getOutputStream())
-                        outStream.write(customMsg.toString().toByteArray())
+                        outStream.write(customMsg.toString().toByteArray(Charsets.UTF_8))
                         outStream.flush()
                         outStream.write(f)
                         outStream.flush()
@@ -134,7 +134,7 @@ class Server constructor(port: Int) {
     }
 
     data class CustomSocket constructor (var socket: Socket) {
-        var reader = BufferedReader(InputStreamReader(socket.getInputStream()))
-        var writer = BufferedWriter(OutputStreamWriter(socket.getOutputStream()))
+        var reader = BufferedReader(InputStreamReader(socket.getInputStream(), Charsets.UTF_8))
+        var writer = BufferedWriter(OutputStreamWriter(socket.getOutputStream(), Charsets.UTF_8))
     }
 }
