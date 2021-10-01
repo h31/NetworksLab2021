@@ -22,8 +22,8 @@ class Client:
             self.username = ""
             self.set_username(Fore.GREEN + "Username:")
             self.client_socket.send(
-                f"{{'parcelType':'greeting', 'message':'', 'username':'{self.username}', 'attachmentType':''}}\r\n"
-                    .encode('utf-8'))
+                f"{{'parcelType':'greeting', 'message':'', 'username':'{self.username}', 'attachmentType':'', "
+                f"'attachmentName':'', 'attachmentSize':''}}\r\n".encode('utf-8'))
 
         except TimeoutError:
             print(Back.RED + "Сервер не отвечает")
@@ -34,9 +34,10 @@ class Client:
 
     def receive(self):
         while True:
-            # if not self.writing:
             try:
                 message = self.client_socket.recv(1024).decode('utf-8')
+                # while self.writing:
+                #     pass
                 try:
                     message = ast.literal_eval(message)
                     if message['parcelType'] == 'exit':
@@ -46,8 +47,9 @@ class Client:
                     elif message['parcelType'] == 'message':
                         print(f"\n[{message['time']}] {message['username']} сказал: {message['message']}")
                         if 'file' in message.keys():
-                            filename = message_data.save_file(message['username'], message['file'],
-                                                              message['file_extension'])
+                            filename = message_data.save_file(message['username'],
+                                                              message['attachmentType'], message['attachmentName'],
+                                                              message['file'])
                             print(f"Received {filename} from {message['username']}")
                     elif message['parcelType'] == 'exception':
                         if message['message'] == '0':  # TODO
@@ -77,16 +79,16 @@ class Client:
                         if fp == '':
                             self.client_socket.send(
                                 f"{{'parcelType':'message', 'message':'{message}', 'username':'{self.username}', "
-                                f"'attachmentType':''}}\r\n".encode(
-                                    'utf-8'))
+                                f"'attachmentType':'', "
+                                f"'attachmentName':'', 'attachmentSize':'0'}}\r\n".encode('utf-8'))
                             self.writing = False
                             break
                         try:
-                            size, file = message_data.load_file(fp)
+                            ext, name, size, file = message_data.load_file(fp)
                             self.client_socket.send(
                                 f"{{'parcelType':'message', 'message':'{message}', 'username':'{self.username}', "
-                                f"'attachmentType':'{size}'}}\r\n".encode(
-                                    'utf-8'))
+                                f"'attachmentType':'{ext}', "
+                                f"'attachmentName':'{name}', 'attachmentSize':'{size}'}}\r\n".encode('utf-8'))
                             self.client_socket.send(bytes(file))
                             self.writing = False
                             attached = True
