@@ -38,8 +38,7 @@ fun closeAll(reader: BufferedReader, writer: BufferedWriter, socket: Socket) {
 fun getLocalTime(timeUtc: String): String {
     val instant = Instant.parse(timeUtc)
     val z = ZoneId.systemDefault()
-    val lt = LocalTime.ofInstant(instant, z)
-    return lt.toString().split(".")[0]
+    return LocalTime.ofInstant(instant, z).toString()
 }
 
 

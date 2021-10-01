@@ -7,6 +7,7 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.*
 
 class Server constructor(port: Int) {
@@ -26,7 +27,7 @@ class Server constructor(port: Int) {
                 val reader = customSocket.reader
                 val writer = customSocket.writer
                 val nickname = reader.readLine()
-                val timeStr = Instant.now().toString()
+                val timeStr = Instant.now().truncatedTo(ChronoUnit.SECONDS).toString()
                 val customMessage = CustomMessage(timeStr, "Server")
                 when {
                     !nickname.matches(nicknameRegex) -> {
@@ -98,7 +99,7 @@ class Server constructor(port: Int) {
             if (len > 0) { f = inStream.readNBytes(len) }
 
             //add the time and other attrs to customMsg
-            val timeStr = Instant.now().toString()
+            val timeStr = Instant.now().truncatedTo(ChronoUnit.SECONDS).toString()
             customMsg.time = timeStr
             customMsg.name = nickname
             customMsg.att = customMsg.att + "\n"
