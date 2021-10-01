@@ -1,6 +1,9 @@
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.net.Socket
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
 import kotlin.system.exitProcess
 
 const val ATTACHMENT_STRING = """att\|[^|]*\|"""
@@ -30,6 +33,13 @@ fun closeAll(reader: BufferedReader, writer: BufferedWriter, socket: Socket) {
     reader.close()
     writer.close()
     socket.close()
+}
+
+fun getLocalTime(timeUtc: String): String {
+    val instant = Instant.parse(timeUtc)
+    val z = ZoneId.systemDefault()
+    val lt = LocalTime.ofInstant(instant, z)
+    return lt.toString().split(".")[0]
 }
 
 

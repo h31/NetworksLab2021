@@ -1,17 +1,18 @@
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import java.io.*
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
-import java.nio.file.Paths
-import java.text.SimpleDateFormat
+import java.time.Instant
 import java.util.*
 
 class Server constructor(port: Int) {
     private val  publicSocket: ServerSocket = ServerSocket(port)
     private val clientSockets = mutableMapOf<String, CustomSocket>()
     private val clientScope = CoroutineScope(Dispatchers.IO)
-    private val sdf1 = SimpleDateFormat("HH:mm:ss")
 
     suspend fun run() = coroutineScope {
         println("This is your port, let the clients connect to it: ${publicSocket.localPort}")
@@ -25,8 +26,7 @@ class Server constructor(port: Int) {
                 val reader = customSocket.reader
                 val writer = customSocket.writer
                 val nickname = reader.readLine()
-                val date = Date()
-                val timeStr = sdf1.format(date)
+                val timeStr = Instant.now().toString()
                 val customMessage = CustomMessage(timeStr, "Server")
                 when {
                     !nickname.matches(nicknameRegex) -> {
@@ -40,7 +40,7 @@ class Server constructor(port: Int) {
                         writeAndFlush(writer, customMessage.toString())
                         closeAll(reader, writer, customSocket.socket)
                     }
-                    nickname.toLowerCase(Locale.getDefault()) == "server" -> {
+                    nickname.lowercase(Locale.getDefault()) == "server" -> {
                         customMessage.msg = "Sorry, any 'Server' nickname can not be taken. Choose another one."
                         writeAndFlush(writer, customMessage.toString())
                         closeAll(reader, writer, customSocket.socket)
@@ -90,7 +90,7 @@ class Server constructor(port: Int) {
             }
 
             //quit case - break out of loop, then close the stuff...
-            if (customMsg.msg.toLowerCase(Locale.getDefault()) == "quit") { break }
+            if (customMsg.msg.lowercase(Locale.getDefault()) == "quit") { break }
 
             //dealing with attachment if any exists
             val len = if (customMsg.att.isBlank()) 0 else customMsg.att.toInt()
@@ -98,8 +98,7 @@ class Server constructor(port: Int) {
             if (len > 0) { f = inStream.readNBytes(len) }
 
             //add the time and other attrs to customMsg
-            val date = Date()
-            val timeStr = sdf1.format(date)
+            val timeStr = Instant.now().toString()
             customMsg.time = timeStr
             customMsg.name = nickname
             customMsg.att = customMsg.att + "\n"
