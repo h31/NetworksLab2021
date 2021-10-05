@@ -7,20 +7,15 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class ServerStart {
 
     private ServerSocket serverSocket;
 
-    public static List<ClientHandler> clientList = new ArrayList<>();
+    public static ConcurrentHashMap<String, ClientHandler> clientMap = new ConcurrentHashMap<>();
+
 
     public BlockingQueue<ExchangeFormat> serverResponseQueue
             = new ArrayBlockingQueue<>(1000);
@@ -33,7 +28,7 @@ public class ServerStart {
         new Thread(new QueueHandler(serverResponseQueue)).start();
         while (true) {
             ClientHandler clientHandler = new ClientHandler(serverSocket.accept());
-            clientList.add(clientHandler);
+            clientMap.put("", clientHandler);
             connectionThreadPool.execute(clientHandler);
         }
     }
@@ -61,8 +56,6 @@ public class ServerStart {
             System.out.println("Soedineniye ustanovleno");
 
             try {
-                System.out.println(Thread.currentThread().getName());
-                System.out.println(clientList);
                 greetingNewUser();
 
                 ExchangeFormat clientRequest;
@@ -73,8 +66,9 @@ public class ServerStart {
                     clientRequest = Tool.parseRequest(message);
 
                     if (clientRequest.getParcelType().getStringValue().equals(Tool.RequestType.EXIT.getStringValue())) {
+                        closeConnections();
+                        clientMap.remove(nicknameOfClient);
                         notifyAboutUserExit(nicknameOfClient);
-                        closeConnections(); // подумать над очередностью, надо ли присылать клиенту нотифай об его уходе?
                         break;
                     }
 
@@ -83,37 +77,65 @@ public class ServerStart {
 
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
-                clientList.remove(this);
+                clientMap.remove(nicknameOfClient);
                 Thread.currentThread().interrupt();
             }
         }
 
         private void greetingNewUser() throws IOException, ClassNotFoundException {
-            ExchangeFormat responseAboutNewUser = new ExchangeFormat();
+            ExchangeFormat response = new ExchangeFormat();
+            ExchangeFormat responseException = new ExchangeFormat();
             ExchangeFormat clientRequest = Tool.parseRequest(in.readLine());
 
-            nicknameOfClient = clientRequest.getUsername();
+            String usernameDemo = clientRequest.getUsername();
 
             //validate new user nickname
-            //todo
+            while(!validateUsername(usernameDemo)) {
+                responseException.setParcelType(Tool.RequestType.EXCEPTION);
+                responseException.setMessage("1");
+                responseException.setTime(Tool.getCurrentTime());
+                out.println(responseException.toParcel());
+                clientRequest = Tool.parseRequest(in.readLine());
+                usernameDemo = clientRequest.getUsername();
+            }
 
+            setVerifiedUsername(usernameDemo);
 
             //broadcast about new user
-            responseAboutNewUser.setParcelType(Tool.RequestType.GREETING);
-            responseAboutNewUser.setUsername(nicknameOfClient);
-            responseAboutNewUser.setTime(new Date().toString());
+            response.setParcelType(Tool.RequestType.GREETING);
+            response.setUsername(nicknameOfClient);
+            response.setTime(Tool.getCurrentTime());
             try {
-                serverResponseQueue.put(responseAboutNewUser);
+                serverResponseQueue.put(response);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+        }
+
+        private boolean validateUsername(String username) {
+            for (Map.Entry<String, ClientHandler> activeUser : ServerStart.clientMap.entrySet()) {
+                if(activeUser.getKey().equals(username)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private void setVerifiedUsername(String username) {
+            for (Map.Entry<String, ClientHandler> entry : clientMap.entrySet()) {
+                if (entry.getValue().equals(this)) {
+                    ClientHandler handlerVar = clientMap.remove(entry.getKey());
+                    clientMap.put(username, handlerVar);
+                }
+            }
+            nicknameOfClient = username;
         }
 
         private void notifyAboutUserExit(String nicknameOfClient) {
             ExchangeFormat notifyParcel = new ExchangeFormat();
             notifyParcel.setParcelType(Tool.RequestType.EXIT);
             notifyParcel.setUsername(nicknameOfClient);
-            notifyParcel.setTime(new Date().toString());
+            notifyParcel.setTime(Tool.getCurrentTime());
 
             try {
                 serverResponseQueue.put(notifyParcel);
@@ -126,47 +148,36 @@ public class ServerStart {
             ExchangeFormat serverResponse = new ExchangeFormat();
 
             serverResponse.setParcelType(Tool.RequestType.MESSAGE);
-            serverResponse.setTime(new Date().toString());
+            serverResponse.setTime(Tool.getCurrentTime());
             serverResponse.setUsername(nicknameOfClient);
             serverResponse.setMessage(clientRequest.getMessage());
-
-            //dIn = new DataInputStream(clientSocket.getInputStream());
-            /*System.out.println("вот тут насрали");
-            dIn.read(serverResponse.getAttachmentByteArray(), 0, clientRequest.getAttachmentSize()); //
-            System.out.println("МЫ ЭТО ПРОЧЛИ УДАЧНО!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" + serverResponse.getAttachmentByteArray());
-            dOut = new DataOutputStream(clientSocket.getOutputStream());*/
-
 
             if(clientRequest.getAttachmentSize() != 0) {
                 dOut = new DataOutputStream(clientSocket.getOutputStream());
                 dIn = new DataInputStream(clientSocket.getInputStream());
-                System.out.println("ОКАЗЫВАЕТСЯ КЛИЕНТ ВЛОЖИЛ ФАЙЛ");
+                System.out.println("Клиент вложил файл");
                 serverResponse.initializeAttachmentByteArray(clientRequest.getAttachmentSize());
                 serverResponse.setAttachmentName(clientRequest.getAttachmentName());
                 serverResponse.setAttachmentType(clientRequest.getAttachmentType());
                 serverResponse.setAttachmentSize(clientRequest.getAttachmentSize());
 
                 byte[] bytes = new byte[clientRequest.getAttachmentSize()];
-                //System.out.println(bytes.length + " размер массива байтов");
 
                 for(int i=0;i<bytes.length;i++){
                     bytes[i]= dIn.readByte();
                 }
-                //System.out.println(Arrays.toString(bytes));
                 serverResponse.setAttachmentByteArray(bytes);
-                //System.out.println(serverResponse.getAttachmentByteArray().toString());
+                dIn.close();
+                dOut.close();
+
             }
+
 
             try {
                 serverResponseQueue.put(serverResponse);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
-            ///close стрим, два открытых стрима
-                /*dIn.close();
-                dOut.flush();
-                dOut.close();*/
         }
 
 
@@ -175,8 +186,6 @@ public class ServerStart {
                 clientSocket.close();
                 in.close();
                 out.close();
-                dIn.close();
-                dOut.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }

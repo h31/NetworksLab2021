@@ -2,7 +2,9 @@ package util;
 
 import model.ExchangeFormat;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class Tool {
@@ -30,6 +32,12 @@ public class Tool {
             }
             return null;
         }
+    }
+
+
+    public static String getCurrentTime() {
+        SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
+        return df.format(new Date());
     }
 
     // Имя файлов в винде не должно содержать: \ / : * ? " < > |
