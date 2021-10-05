@@ -1,6 +1,5 @@
 import ast
 import socket
-import time
 import traceback
 
 import colorama
@@ -9,18 +8,16 @@ from colorama import Fore, Back
 import message_data
 
 
-class ServerClosed(Exception):
-    pass
-
-
 class Client:
+
     def __init__(self):
         try:
             colorama.init()
+            self.logged = False
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client_socket.connect(('192.168.152.249', 6666))
+            self.client_socket.connect(('10.147.234.167', 6666))
             self.username = ""
-            self.set_username(Back.WHITE + Fore.GREEN + "Username:")
+            self.set_username(Back.BLACK + Fore.GREEN + "Username:")
             self.client_socket.send(
                 f"{{'parcelType':'greeting', 'message':'', 'username':'{self.username}', 'attachmentType':'', "
                 f"'attachmentName':'', 'attachmentSize':'0'}}\r\n".encode('utf-8'))
@@ -34,24 +31,27 @@ class Client:
 
     def receive(self):
         while True:
-            # if not self.writing:
             try:
                 message = bytes()
                 letter = self.client_socket.recv(1)
                 while letter != b'\n':
                     message += letter
                     letter = self.client_socket.recv(1)
-                message = message.decode('latin-1')
+                message = message.decode('utf-8')
                 message = ast.literal_eval(message)
                 if message['parcelType'] == 'exit':
-                    raise ServerClosed
+                    print(
+                        Fore.YELLOW + Back.BLACK + f"\n[{message_data.time_format(message['time'])}] {message['username']} покинул чат")
                 elif message['parcelType'] == 'greeting':
-                    print(Fore.GREEN + Back.BLACK + f"\n[{message['time']}] {message['username']} вошел в чат")
+                    print(
+                        Fore.GREEN + Back.BLACK + f"\n[{message_data.time_format(message['time'])}] {message['username']} вошел в чат")
+                    if message['username'] == self.username:
+                        self.logged = True
+                        print(Back.BLACK + Fore.GREEN + "Если тебе надоест общение, напиши !exit\n")
                 elif message['parcelType'] == 'message':
                     print(
-                        Fore.GREEN + Back.BLACK + f"\n[{message['time']}] {message['username']} сказал: {message['message']}")
+                        Fore.GREEN + Back.BLACK + f"\n[{message_data.time_format(message['time'])}] {message['username']} сказал: {message['message']}")
                     if message['attachmentSize'] != '0':
-                        time.sleep(1)
                         attachment = b''
                         for _ in range(int(message['attachmentSize'])):
                             attachment += self.client_socket.recv(1)
@@ -60,11 +60,15 @@ class Client:
                         print(
                             Fore.BLUE + Back.YELLOW + f"Received {message['attachmentName']} from {message['username']}")
                 elif message['parcelType'] == 'exception':
-                    if message['message'] == '0':  # TODO
-                        pass
-            except ServerClosed:
-                print(Fore.WHITE + Back.GREEN + "Всем пока!")
-                self.client_socket.close()
+                    if message['message'] == '1':  # TODO
+                        print(Fore.RED + Back.BLACK + 'Имя пользователя уже занято!\n')
+                        self.set_username(Back.BLACK + Fore.GREEN + "Username:")
+                        self.client_socket.send(
+                            f"{{'parcelType':'greeting', 'message':'', 'username':'{self.username}', 'attachmentType':'', "
+                            f"'attachmentName':'', 'attachmentSize':'0'}}\r\n".encode('utf-8'))
+                    else:
+                        print(Fore.RED + Back.BLACK + 'Неизвестная ошибка сервера')
+            except ConnectionAbortedError:
                 break
             except Exception:
                 print(Fore.RED + Back.BLACK + '\n' + traceback.format_exc())
@@ -73,12 +77,26 @@ class Client:
 
     def write(self):
         while True:
-            if self.username != '':
+            if self.username != '' and self.logged:
                 try:
-                    message = input(Fore.GREEN + Back.BLACK + "Message:").replace("\\", "\\\\").replace("'", "\\'")
+                    message = input(Fore.GREEN + Back.BLACK + "Message\n").replace("\\", "\\\\").replace("'", "\\'")
+                    if message == "!exit":
+                        self.client_socket.send(
+                            f"{{'parcelType':'exit', 'message':'', 'username':'{self.username}', 'attachmentType':'', "
+                            f"'attachmentName':'', 'attachmentSize':'0'}}\r\n".encode('utf-8'))
+                        self.client_socket.close()
+                        self.logged = False
+                        break
                     attached = False
                     while not attached:
-                        fp = input(Fore.GREEN + Back.BLACK + "Relative filepath:")
+                        fp = input(Fore.GREEN + Back.BLACK + "Relative filepath\n")
+                        if message == "!exit":
+                            self.client_socket.send(
+                                f"{{'parcelType':'exit', 'message':'', 'username':'{self.username}', 'attachmentType':'', "
+                                f"'attachmentName':'', 'attachmentSize':'0'}}\r\n".encode('utf-8'))
+                            self.client_socket.close()
+                            self.logged = False
+                            break
                         if fp == '':
                             self.client_socket.send(
                                 f"{{'parcelType':'message', 'message':'{message}', 'username':'{self.username}', "
