@@ -111,24 +111,12 @@ class Server constructor(port: Int) {
             customMsg.name = nickname
             customMsg.att = customMsg.att + "\n"
 
-            //two writing scenarios...
-            //if there is no attachment...
             clientSockets.forEach {
-                clientScope.launch(Dispatchers.IO) {
+                clientScope.launch (Dispatchers.IO) {
                     val outStream = BufferedOutputStream(it.value.socket.getOutputStream())
                     outStream.write(customMsg.toString().toByteArray(Charsets.UTF_8))
                     outStream.flush()
-
-                }
-            }
-            //and if some exists
-            else {
-                clientSockets.forEach {
-                    clientScope.launch (Dispatchers.IO) {
-                        val outStream = BufferedOutputStream(it.value.socket.getOutputStream())
-                        outStream.write(customMsg.toString().toByteArray(Charsets.UTF_8))
-                        outStream.flush()
-
+                    if (f.isEmpty()) {
                         outStream.write(f)
                         outStream.flush()
                     }
