@@ -53,7 +53,7 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
                 when (type) {
                     "time" -> customMsg.time = getLocalTime(value)
                     "name" -> customMsg.name = value
-                    "msg" -> customMsg.msg = value
+                    "msg" -> customMsg.msg = value.replace("\\n","\n").replace("\\t","\t")
                     "attname" -> customMsg.attname = value
                     "att" -> customMsg.att = value
                 }
@@ -69,7 +69,9 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
             //reading user input
             val text = scanner.nextLine()
             if (text.isBlank()) continue //no blank lines in msg!
-            val msg = "msg: $text"
+            var msg = "msg: $text"
+            msg = msg.replace("\n","\\n").replace("\t","\\t")
+
             //quit scenario with "quit" command
             if (text.toLowerCase(Locale.getDefault()) == "quit") {
                 println("See you later. Bye!")
