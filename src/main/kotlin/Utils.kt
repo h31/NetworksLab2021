@@ -22,8 +22,8 @@ fun checkPort(portIn: String): Int {
         println("incorrect port format. Port should be an integer.")
         exitProcess(0)
     }
-    else if (!((port > 1024) and (port < 65535))) {
-        println("Incorrect port format. Port should be in [1025, 65534] range.")
+    else if (!((port >= 0) and (port < 65535))) {
+        println("Incorrect port format. Port should be in [0, 65534] range.")
         exitProcess(0)
     }
     return port
