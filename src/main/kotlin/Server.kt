@@ -96,9 +96,7 @@ class Server constructor(port: Int) {
             }
 
             //quit case - break out of loop, then close the stuff...
-            if (customMsg.msg.toLowerCase(Locale.getDefault()) == "quit") {
-                break
-            }
+            if (customMsg.msg.toLowerCase(Locale.getDefault()) == "quit") { break }
 
             //dealing with attachment if any exists
             val len = if (customMsg.att.isBlank()) 0 else customMsg.att.toInt()
@@ -120,7 +118,17 @@ class Server constructor(port: Int) {
                     val outStream = BufferedOutputStream(it.value.socket.getOutputStream())
                     outStream.write(customMsg.toString().toByteArray(Charsets.UTF_8))
                     outStream.flush()
-                    if (f.isEmpty()) {
+
+                }
+            }
+            //and if some exists
+            else {
+                clientSockets.forEach {
+                    clientScope.launch (Dispatchers.IO) {
+                        val outStream = BufferedOutputStream(it.value.socket.getOutputStream())
+                        outStream.write(customMsg.toString().toByteArray(Charsets.UTF_8))
+                        outStream.flush()
+
                         outStream.write(f)
                         outStream.flush()
                     }
@@ -135,7 +143,8 @@ class Server constructor(port: Int) {
         println("User $nickname disconnected; ${clientSockets.keys.size} remains connected.")
     }
 
-    data class CustomSocket constructor(var socket: Socket) {
+
+    data class CustomSocket constructor (var socket: Socket) {
         var reader = BufferedReader(InputStreamReader(socket.getInputStream(), Charsets.UTF_8))
         var writer = BufferedWriter(OutputStreamWriter(socket.getOutputStream(), Charsets.UTF_8))
     }

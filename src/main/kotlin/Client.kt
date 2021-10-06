@@ -71,6 +71,7 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
             if (text.isBlank()) continue //no blank lines in msg!
             var msg = "msg: $text"
             msg = msg.replace("\n","\\n").replace("\t","\\t")
+
             //quit scenario with "quit" command
             if (text.toLowerCase(Locale.getDefault()) == "quit") {
                 println("See you later. Bye!")
