@@ -21,18 +21,26 @@ public class QueueHandler implements Runnable {
         while (true) {
             try {
                 headOfQueue = serverResponseQueue.take();
+                String messageAuthor = headOfQueue.getUsername();
+                if (headOfQueue.getAttachmentSize() != 0) {
+                    for (Map.Entry<String, ClientHandler> activeUser : ServerStart.clientMap.entrySet()) {
+                        ClientHandler value = activeUser.getValue();
+                        value.out.println(headOfQueue.toParcel());
 
-
-                for (Map.Entry<String, ServerStart.ClientHandler> activeUser : ServerStart.clientMap.entrySet()) {
-                    ServerStart.ClientHandler value = activeUser.getValue();
-                    value.out.println(headOfQueue.toParcel());
-                    if (headOfQueue.getAttachmentSize() != 0) {
-                        byte[] bytes = headOfQueue.getAttachmentByteArray();
-                        value.dOut.write(bytes, 0, bytes.length);
-                        System.out.println("сервер отправил клиенту " + headOfQueue.getUsername());
+                        if (!activeUser.getKey().equals(messageAuthor)) {
+                            System.out.println("сообщение будет послано " + activeUser.getKey());
+                            byte[] bytes = headOfQueue.getAttachmentByteArray();
+                            value.dOut.write(bytes, 0, bytes.length);
+                            System.out.println("сервер отправил клиенту " + headOfQueue.getUsername());
+                        }
+                    }
+                    System.out.println("файл отправлен всем клиентам");
+                } else {
+                    for (Map.Entry<String, ClientHandler> activeUser : ServerStart.clientMap.entrySet()) {
+                        ClientHandler value = activeUser.getValue();
+                        value.out.println(headOfQueue.toParcel());
                     }
                 }
-                System.out.println("файл отправлен всем клиентам");
             } catch (InterruptedException | IOException e) {
                 e.printStackTrace();
             }

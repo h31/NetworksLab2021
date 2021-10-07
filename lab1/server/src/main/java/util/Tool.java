@@ -40,9 +40,15 @@ public class Tool {
         return df.format(new Date());
     }
 
-    // Имя файлов в винде не должно содержать: \ / : * ? " < > |
+
     public static ExchangeFormat parseRequest(String format) {
-        System.out.println("пришедший формат: " + format);
+        /*if(format == null) {
+            ExchangeFormat exceptionResponse = new ExchangeFormat();
+            exceptionResponse.setParcelType(RequestType.EXCEPTION);
+            exceptionResponse.setTime(getCurrentTime());
+            exceptionResponse.setMessage("Incorrect parcel format, 2");
+        }*/
+
         List<String> resultArray = new ArrayList<>();
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < format.length(); i++) {
