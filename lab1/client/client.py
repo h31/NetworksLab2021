@@ -34,9 +34,10 @@ class Client:
             try:
                 message = bytes()
                 letter = self.client_socket.recv(1)
-                while letter != b'\n':
+                while letter != b'\r':
                     message += letter
                     letter = self.client_socket.recv(1)
+                self.client_socket.recv(1)
                 message = message.decode('utf-8', 'ignore')
                 message = ast.literal_eval(message)
                 if message['parcelType'] == 'exit':
@@ -54,10 +55,11 @@ class Client:
                     print(
                         Fore.GREEN + Back.BLACK + f"\n[{message_data.time_format(message['time'])}] "
                                                   f"{message['username']} сказал: {message['message']}")
-                    if message['attachmentSize'] != '0':
+                    if message['attachmentSize'] != '0' and message['username'] != self.username:
+                        # attachment = self.client_socket.recv(int(message['attachmentSize']))
                         attachment = b''
-                        self.client_socket.recv(1024)
-                        print("Получил файл от сервера")
+                        for _ in range(int(message['attachmentSize'])):
+                            attachment += self.client_socket.recv(1)
                         message_data.save_file(message['username'], message['attachmentType'],
                                                message['attachmentName'], attachment)
                         print(
@@ -118,7 +120,6 @@ class Client:
                             # for i in file:
                             #     self.client_socket.send(i)
                             self.client_socket.send(bytes(file))
-                            print("done sending")
                             attached = True
                         except FileNotFoundError:
                             print(Fore.BLUE + Fore.RED + f"File {fp} not found")
