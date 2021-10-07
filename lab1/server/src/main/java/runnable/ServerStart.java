@@ -75,7 +75,7 @@ public class ServerStart {
                     processDefaultMessage(clientRequest);
                 }
 
-            } catch (IOException | ClassNotFoundException e) {
+            } catch (IOException | ClassNotFoundException | NullPointerException e) {
                 e.printStackTrace();
                 clientMap.remove(nicknameOfClient);
                 Thread.currentThread().interrupt();
@@ -90,7 +90,7 @@ public class ServerStart {
             String usernameDemo = clientRequest.getUsername();
 
             //validate new user nickname
-            while(!validateUsername(usernameDemo)) {
+            while (!validateUsername(usernameDemo)) {
                 responseException.setParcelType(Tool.RequestType.EXCEPTION);
                 responseException.setMessage("1");
                 responseException.setTime(Tool.getCurrentTime());
@@ -114,7 +114,7 @@ public class ServerStart {
 
         private boolean validateUsername(String username) {
             for (Map.Entry<String, ClientHandler> activeUser : ServerStart.clientMap.entrySet()) {
-                if(activeUser.getKey().equals(username)) {
+                if (activeUser.getKey().equals(username)) {
                     return false;
                 }
             }
@@ -152,7 +152,7 @@ public class ServerStart {
             serverResponse.setUsername(nicknameOfClient);
             serverResponse.setMessage(clientRequest.getMessage());
 
-            if(clientRequest.getAttachmentSize() != 0) {
+            if (clientRequest.getAttachmentSize() != 0) {
                 dOut = new DataOutputStream(clientSocket.getOutputStream());
                 dIn = new DataInputStream(clientSocket.getInputStream());
                 System.out.println("Клиент вложил файл");
@@ -161,15 +161,13 @@ public class ServerStart {
                 serverResponse.setAttachmentType(clientRequest.getAttachmentType());
                 serverResponse.setAttachmentSize(clientRequest.getAttachmentSize());
 
+                int count;
                 byte[] bytes = new byte[clientRequest.getAttachmentSize()];
-
-                for(int i=0;i<bytes.length;i++){
-                    bytes[i]= dIn.readByte();
-                }
+                dIn.readFully(bytes, 0, bytes.length);
+                System.out.println("Получил");
                 serverResponse.setAttachmentByteArray(bytes);
-                dIn.close();
-                dOut.close();
-
+               /* dIn.close();
+                dOut.close();*/
             }
 
 

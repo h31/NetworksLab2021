@@ -5,12 +5,9 @@ import os
 def load_file(fp):
     file = open(fp, 'rb')
     file_attributes = os.path.basename(fp).split('.')
-    data = []
-    size = os.path.getsize(fp)
-    for _ in range(size):
-        data.append(file.read(1))
+    data = file.read()
     file.close()
-    return file_attributes[0], file_attributes[-1], size, data
+    return file_attributes[0], file_attributes[-1], os.path.getsize(fp), data
 
 
 def save_file(nickname, extension, name, data):

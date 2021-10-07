@@ -15,7 +15,7 @@ class Client:
             colorama.init()
             self.logged = False
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client_socket.connect(('10.147.234.167', 6666))
+            self.client_socket.connect(('localhost', 6666))
             self.username = ""
             self.set_username(Back.BLACK + Fore.GREEN + "Username:")
             self.client_socket.send(
@@ -53,8 +53,8 @@ class Client:
                         Fore.GREEN + Back.BLACK + f"\n[{message_data.time_format(message['time'])}] {message['username']} сказал: {message['message']}")
                     if message['attachmentSize'] != '0':
                         attachment = b''
-                        for _ in range(int(message['attachmentSize'])):
-                            attachment += self.client_socket.recv(1)
+                        self.client_socket.recv(1024)
+                        print("Получил файл от сервера")
                         message_data.save_file(message['username'], message['attachmentType'],
                                                message['attachmentName'], attachment)
                         print(
@@ -109,8 +109,10 @@ class Client:
                                 f"{{'parcelType':'message', 'message':'{message}', 'username':'{self.username}', "
                                 f"'attachmentType':'{ext}', "
                                 f"'attachmentName':'{name}', 'attachmentSize':'{size}'}}\r\n".encode('utf-8'))
-                            for i in file:
-                                self.client_socket.send(i)
+                            # for i in file:
+                            #     self.client_socket.send(i)
+                            self.client_socket.send(bytes(file))
+                            print("done sending")
                             attached = True
                         except FileNotFoundError:
                             print(Fore.BLUE + Fore.RED + f"File {fp} not found")
