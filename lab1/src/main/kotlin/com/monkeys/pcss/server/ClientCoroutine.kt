@@ -1,9 +1,10 @@
 package com.monkeys.pcss.server
 
 import com.monkeys.pcss.generateMessageId
+import com.monkeys.pcss.getNewMessage
 import com.monkeys.pcss.models.ClientList
 import com.monkeys.pcss.models.message.*
-import com.monkeys.pcss.readMessageFromInputStream
+import java.io.BufferedInputStream
 import java.net.Socket
 import java.time.ZonedDateTime
 
@@ -19,15 +20,21 @@ suspend fun clientCoroutine(client: Socket, clientList: ClientList) {
 
 fun login(client: Socket, clientList: ClientList): Pair<Boolean, String> {
     try {
-        val receiver = client.getInputStream()
+        val receiver = BufferedInputStream(client.getInputStream())
         var name = ""
         var isSuccessfullyLogin = false
         while (true) {
             if (receiver.available() > 0) {
-                val message = readMessageFromInputStream(receiver)
-                val parsedMessage = parseMessage(message)
-                name = parsedMessage!!.data.senderName
+                val fullMessage = getNewMessage(receiver)
+                val message = fullMessage.first
+                name = message.data.senderName
                 isSuccessfullyLogin = clientList.addNewClient(client, name)
+                if (isSuccessfullyLogin) {
+                    val data = Data(0, name, "", "Client $name connected to chat", null)
+                    val dataSize = data.getServerMessage().length
+                    val header = Header(MessageType.SPECIAL, false, dataSize)
+                    clientList.writeToEveryBody(Message(header, data), ByteArray(0))
+                }
                 break
             }
         }
@@ -46,42 +53,37 @@ fun startCommunication(clientId: String, clientList: ClientList) {
         while (isWorking) {
             if (receiver.available() > 0) {
 
-                val message = readMessageFromInputStream(receiver)
-                val parsedMessage = parseMessage(message)
+                val fullMessage = getNewMessage(receiver)
+                val message = fullMessage.first
+                val fileByteArray = fullMessage.second
 
-                val size = parsedMessage!!.header.fileSize
-                val byteArray = ByteArray(size)
-                if (parsedMessage.header.isFileAttached) {
-                    receiver.read(byteArray)
-                    println(byteArray.size)
-                }
-
-                if (parsedMessage.header.type == MessageType.MESSAGE) {
-                    val messageId = generateMessageId()
+                if (message.header.type == MessageType.MESSAGE) {
+                    val fileSize = message.data.fileSize
                     val time = ZonedDateTime.now().toString().replace("[", "{").replace("]", "}")
                     val data = Data(
-                        messageId,
-                        parsedMessage.data.senderName,
+                        fileSize,
+                        message.data.senderName,
                         time,
-                        parsedMessage.data.messageText,
-                        parsedMessage.data.fileName
+                        message.data.messageText,
+                        message.data.fileName
                     )
+                    val dataSize = data.getServerMessage().length
                     val resMessage = Message(
                         Header(
                             MessageType.MESSAGE,
-                            parsedMessage.header.isFileAttached,
-                            byteArray.size
+                            message.header.isFileAttached,
+                            dataSize
                         ),
                         data
                     )
-                    clientList.writeToEveryBody(resMessage, byteArray)
-                } else if (parsedMessage.data.messageText == "EXIT") {
-                    clientList.finishConnection(parsedMessage.data.senderName)
+                    clientList.writeToEveryBody(resMessage, fileByteArray)
+                } else if (message.data.messageText == "EXIT") {
+                    clientList.finishConnection(message.data.senderName)
                     isWorking = false
                 } else {
                     println(
-                        "Got message with type '${parsedMessage.header.type}' and text " +
-                                "'${parsedMessage.data.messageText}' from '${parsedMessage.data.senderName}'"
+                        "Got message with type '${message.header.type}' and text " +
+                                "'${message.data.messageText}' from '${message.data.senderName}'"
                     )
                 }
             }
@@ -91,4 +93,3 @@ fun startCommunication(clientId: String, clientList: ClientList) {
         clientList.finishConnection(clientId)
     }
 }
-

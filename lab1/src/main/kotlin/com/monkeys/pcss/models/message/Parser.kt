@@ -6,7 +6,7 @@ fun parseData(dataMessage: String): Data {
     val timeRegex =
         """[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]+((\+[0-9]{2}:[0-9]{2})|Z)\{[A-Za-z/]+\}"""
     val regex =
-        """\[([A-Za-z0-9]+)?\],\[([A-Za-z0-9А-Яа-я]+)\],\[($timeRegex)?\],\[([^\[\]]*)\],\[(([^(\[\])]+)\.([a-z0-9A-Z]+))?\]""".toRegex()
+        """_\[([A-Za-z0-9]+)?\],\[([A-Za-z0-9А-Яа-я]+)\],\[($timeRegex)?\],\[([^\[\]]*)\],\[(([^(\[\])]+)\.([a-z0-9A-Z]+))?\]_;_""".toRegex()
     val matchResult = regex.matchEntire(dataMessage)
     return if (matchResult != null) {
         val messageId = matchResult.groupValues[1]
@@ -14,7 +14,7 @@ fun parseData(dataMessage: String): Data {
         val time = matchResult.groupValues[3]
         val messageText = matchResult.groupValues[6]
         val fileName = matchResult.groupValues[7]
-        Data(messageId, senderName, time, messageText, fileName)
+        Data(messageId.toInt(), senderName, time, messageText, fileName)
     } else {
         Data()
     }
@@ -22,7 +22,7 @@ fun parseData(dataMessage: String): Data {
 
 fun parseHeader(headerMessage: String): Header {
     val regex =
-        """\[([0-2])\],\[([01])\],\[([0-9]+)\]""".toRegex()
+        """\[([0-2])\],\[([01])\],\[([0-9]+)\]_;""".toRegex()
 
     val matchResult = regex.matchEntire(headerMessage)
     return if (matchResult != null) {
@@ -36,12 +36,14 @@ fun parseHeader(headerMessage: String): Header {
 }
 
 fun parseMessage(message: String): Message? {
-    return if (!message.isNullOrEmpty()) {
+    return if (message.isNotEmpty() && message.isNotBlank()) {
         val splitMessage = message.split("_;_")
         val header = parseHeader(splitMessage[0])
         val data = parseData(splitMessage[1])
         Message(header, data)
-    } else null
+    } else {
+        null
+    }
 }
 
 fun parseHostAndPort(arg: String): Pair<String, Int> {
@@ -58,14 +60,14 @@ fun parseUserMessage(msg: String) : Pair<String,File?> {
     var filePath = splitMsg[splitMsg.size - 1]
     filePath = filePath.filterNot { str -> "]]".contains(str) }
     val file = File(filePath)
-    if (file.isFile) {
-        return when (splitMsg.size) {
+    return if (file.isFile) {
+        when (splitMsg.size) {
             1 -> Pair(msg, null)
             2 -> Pair(splitMsg[0], file)
             else -> Pair(collectMessage(splitMsg), file)
         }
     } else {
-        return Pair(msg, null)
+        Pair(msg, null)
     }
 
 }
