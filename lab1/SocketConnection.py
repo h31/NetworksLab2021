@@ -22,11 +22,10 @@ class SocketConnection:
 			if len(data) != 4: return b''
 			(length, ) = struct.unpack(">I", data) # > = big endian, I = 4 bytes
 			result = b''
-			while True:
+			while length != 0:
 				data = self.sock.recv(length)
 				result += data
 				length -= len(data)
-				if length == 0: break
 		except socket.error:
 			result = b''
 		return result

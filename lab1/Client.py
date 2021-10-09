@@ -10,7 +10,7 @@ if len(sys.argv) != 2:
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
-	client_socket.connect(("127.0.0.1", 23480)) # networkslab-ivt.ftp.sh / 127.0.0.1
+	client_socket.connect(("networkslab-ivt.ftp.sh", 23480)) # networkslab-ivt.ftp.sh / 127.0.0.1
 except socket.error:
 	print("Server is unavailable")
 	exit()
@@ -61,7 +61,7 @@ def getMessage(disconnect_event):
 				+ Serialization.bytesToStr(dictionary["text"]), end = "")
 		
 		if "attachment" in dictionary:
-			file_data = sock.recv() # receive attachment (file)
+			file_data = sock.recv() # receive file (see the description of the protocol) 
 			file_name = getNonExistentName(Serialization.bytesToStr(dictionary["attachment"]))
 			with open(file_name, "wb") as f:
 				f.write(file_data)
