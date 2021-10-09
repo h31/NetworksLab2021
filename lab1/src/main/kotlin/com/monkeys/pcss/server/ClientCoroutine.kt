@@ -1,6 +1,5 @@
 package com.monkeys.pcss.server
 
-import com.monkeys.pcss.generateMessageId
 import com.monkeys.pcss.getNewMessage
 import com.monkeys.pcss.models.ClientList
 import com.monkeys.pcss.models.message.*

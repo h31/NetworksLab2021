@@ -47,12 +47,11 @@ fun parseMessage(message: String): Message? {
 }
 
 fun parseHostAndPort(arg: String): Pair<String, Int> {
-    val regex =
-        """([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5]):((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4}))""".toRegex()
-    val matchResult = regex.matchEntire(arg)
-    if (matchResult != null)
-        return Pair(arg.split(":")[0], arg.split(":")[1].toInt())
-    return Pair("Error", 0)
+    return try {
+        Pair(arg.split(":")[0], arg.split(":")[1].toInt())
+    } catch (e: Exception) {
+        Pair("127.0.0.1", 8081)
+    }
 }
 
 fun parseUserMessage(msg: String) : Pair<String,File?> {
@@ -67,7 +66,10 @@ fun parseUserMessage(msg: String) : Pair<String,File?> {
             else -> Pair(collectMessage(splitMsg), file)
         }
     } else {
-        Pair(msg, null)
+        Pair(
+            msg.replace("[", "_%+<+$")
+                .replace("]", "_%+>+\$"), null
+        )
     }
 
 }

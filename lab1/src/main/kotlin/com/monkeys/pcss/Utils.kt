@@ -13,7 +13,7 @@ const val STANDARD_PORT = 8081
 const val STANDARD_HEADER_SIZE = 20
 const val DOWNLOADS_DIR = "PCSS downloads/"
 
-fun restoreArguments(args: List<String>): WorkType = when {
+fun parseArguments(args: List<String>): WorkType = when {
     args.isEmpty() -> {
         SERVER
     }
@@ -48,11 +48,6 @@ fun kit(): String =
             "    |U_____U|" +
             "\n"
 
-fun generateMessageId(): String {
-    //TODO()
-    return "testNew"
-}
-
 fun send(outputStream: OutputStream, byteArray: ByteArray) {
     outputStream.write(byteArray)
 }
@@ -68,11 +63,11 @@ fun sendMessage(outputStream: OutputStream, message: ByteArray, file: ByteArray?
 fun getNewMessage(inputStream: BufferedInputStream): Pair<Message, ByteArray> {
     val headerByteArray = ByteArray(STANDARD_HEADER_SIZE)
     inputStream.readNBytes(headerByteArray, 0, STANDARD_HEADER_SIZE)
-    val sHeader = String(headerByteArray).replace("\u0000", "")
+    val sHeader = String(headerByteArray)
     val header = Header(sHeader)
     val dataByteArray = ByteArray(header.dataSize)
     inputStream.readNBytes(dataByteArray, 0, header.dataSize)
-    val sData = String(dataByteArray).replace("\u0000", "")
+    val sData = String(dataByteArray)
     val data = Data(sData)
     val message = Message(header, data)
     if (header.isFileAttached) {
@@ -83,7 +78,7 @@ fun getNewMessage(inputStream: BufferedInputStream): Pair<Message, ByteArray> {
     return Pair(message, ByteArray(0))
 }
 
-fun shapingFileName(fileName: String, senderName: String, time: String): String {
+fun shapeFileName(fileName: String, senderName: String, time: String): String {
     val builder = StringBuilder()
     val split = fileName.split(".")
     builder.append(split[0])
@@ -97,7 +92,7 @@ fun shapingFileName(fileName: String, senderName: String, time: String): String 
 }
 
 fun getFixedLengthString(dataSize: Int): String {
-    return String.format("%1$" + 8 + "s", dataSize).replace(' ', '0')
+    return dataSize.toString().padStart(8, '0')
 }
 
 

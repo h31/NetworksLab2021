@@ -7,10 +7,10 @@ import com.monkeys.pcss.server.Server
 import kotlinx.coroutines.runBlocking
 
 fun main(args: Array<String>) {
-    when(restoreArguments(args.toList())) {
+    when (parseArguments(args.toList())) {
         SERVER -> {
-           val server = Server()
-           server.start()
+            val server = Server()
+            server.start()
         }
 
         CLIENT -> {
@@ -21,11 +21,14 @@ fun main(args: Array<String>) {
         CLIENT_WITH_ARGUMENTS -> {
             val clientArgumentIndex = args.indexOf("-c") + 1
             val arg = parseHostAndPort(args[clientArgumentIndex])
-            if (arg.first != "Error") {
+            try {
                 val client = Client(arg.first, arg.second)
                 runBlocking { client.start() }
-            } else {
-                println("Wrong arguments. Connection not establishment")
+            } catch (e: Exception) {
+                println(
+                    "Incorrect arguments or it is impossible to establish a connection with the specified server.\n" +
+                            "Connection not establishment"
+                )
             }
         }
 

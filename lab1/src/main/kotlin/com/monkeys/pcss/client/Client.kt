@@ -84,12 +84,12 @@ class Client(host: String, port: Int) {
         if (nameExist) {
             stopConnection()
         } else {
-            launch(Dispatchers.IO) { sendingMessages() }
-            launch(Dispatchers.IO) { receivingMessages() }
+            launch(Dispatchers.IO) { sendMessages() }
+            launch(Dispatchers.IO) { receiveMessages() }
         }
     }
 
-    private fun sendingMessages() {
+    private fun sendMessages() {
         try {
             while (stillWorking) {
                 print("m: ")
@@ -144,7 +144,7 @@ class Client(host: String, port: Int) {
         }
     }
 
-    private fun receivingMessages() {
+    private fun receiveMessages() {
         try {
             while (stillWorking) {
                 if (receiver.available() > 0) {
@@ -173,7 +173,7 @@ class Client(host: String, port: Int) {
                             val fileName = finalData.fileName
                             val senderName = finalData.senderName
                             val time = finalData.time
-                            val finalFileName = shapingFileName(fileName!!, senderName, time)
+                            val finalFileName = shapeFileName(fileName!!, senderName, time)
                             val file1 = File(DOWNLOADS_DIR + finalFileName)
                             file1.createNewFile()
                             file1.writeBytes(fileByteArray)
