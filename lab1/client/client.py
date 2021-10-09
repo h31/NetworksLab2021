@@ -11,8 +11,8 @@ import message_data
 class Client:
 
     def __init__(self):
+        colorama.init()
         try:
-            colorama.init()
             self.logged = False
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client_socket.connect(('localhost', 6666))
@@ -39,7 +39,7 @@ class Client:
                     letter = self.client_socket.recv(1)
                 self.client_socket.recv(1)
                 message = message.decode('utf-8', 'ignore')
-                message = ast.literal_eval(message)
+                message = ast.literal_eval(message)  # TODO: replace with parser
                 if message['parcelType'] == 'exit':
                     print(
                         Fore.YELLOW + Back.BLACK + f"\n[{message_data.time_format(message['time'])}] "
@@ -56,10 +56,10 @@ class Client:
                         Fore.GREEN + Back.BLACK + f"\n[{message_data.time_format(message['time'])}] "
                                                   f"{message['username']} сказал: {message['message']}")
                     if message['attachmentSize'] != '0' and message['username'] != self.username:
-                        # attachment = self.client_socket.recv(int(message['attachmentSize']))
-                        attachment = b''
-                        for _ in range(int(message['attachmentSize'])):
-                            attachment += self.client_socket.recv(1)
+                        attachment = bytes(self.client_socket.recv(int(message['attachmentSize'])))
+                        # attachment = b''
+                        # for _ in range(int(message['attachmentSize'])):
+                        #     attachment += self.client_socket.recv(1)
                         message_data.save_file(message['username'], message['attachmentType'],
                                                message['attachmentName'], attachment)
                         print(
