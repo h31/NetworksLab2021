@@ -10,7 +10,7 @@ if len(sys.argv) != 2:
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
-	client_socket.connect(("127.0.0.1", 23480)) # networkslab-ivt.ftp.sh
+	client_socket.connect(("networkslab-ivt.ftp.sh", 23480)) # networkslab-ivt.ftp.sh / 127.0.0.1
 except socket.error:
 	print("Server is unavailable")
 	exit()
@@ -47,12 +47,13 @@ def getLocalTime(utcTime):
 
 def getMessage(disconnect_event):
 	while True:
-		dictionary = Serialization.load(sock.recv())
-		if dictionary == None: # socket is closed
+		data = sock.recv()
+		if len(data) == 0: # socket is closed
 			print("\nDisconnected")
 			disconnect_event.set()
 			break
 		
+		dictionary = Serialization.load(data)
 		if "time" in dictionary and "nickname" in dictionary and "text" in dictionary:
 			time = getLocalTime(Serialization.bytesToStr(dictionary["time"]))
 			print("<" + time + "> [" 
@@ -60,7 +61,7 @@ def getMessage(disconnect_event):
 				+ Serialization.bytesToStr(dictionary["text"]), end = "")
 		
 		if "attachment" in dictionary:
-			file_data = sock.recv()
+			file_data = sock.recv() # receive attachment (file)
 			file_name = getNonExistentName(Serialization.bytesToStr(dictionary["attachment"]))
 			with open(file_name, "wb") as f:
 				f.write(file_data)

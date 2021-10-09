@@ -11,8 +11,9 @@ class NewClientThread(threading.Thread):
 		self.nickname = None
 
 	def registration(self):
-		result = True
 		data = self.sock.recv()
+		if len(data) == 0: return False
+		result = True
 		dictionary = Serialization.load(data)
 		if not "nickname" in dictionary:
 			answer = {"status":"error: nickname is required"}
@@ -43,23 +44,21 @@ class NewClientThread(threading.Thread):
 		
 		# notify everyone about the connection of a new user
 		message = {"time":self.getCurrentTimeInUTC(), "nickname":"SERVER",
-				"text":"User " + self.nickname + " connected"}
+				"text":"User \"" + self.nickname + "\" connected"}
 		self.sendToEveryone(message)
 		
 		while True:
-			data = self.sock.recv() # receiving new message
-			dictionary = Serialization.load(data)
-			if dictionary == None: # socket is closed
+			data = self.sock.recv()
+			if len(data) == 0: # socket is closed
 				message = {"time":self.getCurrentTimeInUTC(), "nickname":"SERVER",
-						"text":"User " + self.nickname + " disconnected"}
+						"text":"User \"" + self.nickname + "\" disconnected"}
 				self.sendToEveryone(message)
 				
 				self.nickname = None
 				self.sock.close()
 				break
-			
-			# error	
-			if not ("text" in dictionary): continue
+			dictionary = Serialization.load(data)
+			if not ("text" in dictionary): continue # error	
 			
 			# sending a message to all interlocutors
 			message = {"time":self.getCurrentTimeInUTC(), 

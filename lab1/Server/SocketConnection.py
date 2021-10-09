@@ -23,16 +23,10 @@ class SocketConnection:
 			(length, ) = struct.unpack(">I", data) # > = big endian, I = 4 bytes
 			result = b''
 			while True:
-				delta = length - len(result)
-				if delta >= 4096:
-					data = self.sock.recv(4096)
-					if len(data) != 4096: return b''
-					result += data
-				else:
-					data = self.sock.recv(delta)
-					if len(data) != delta: return b''
-					result += data
-					break
+				data = self.sock.recv(length)
+				result += data
+				length -= len(data)
+				if length == 0: break
 		except socket.error:
 			result = b''
 		return result
