@@ -24,17 +24,20 @@ public class QueueHandler implements Runnable {
                 String messageAuthor = headOfQueue.getUsername();
                 if (headOfQueue.getAttachmentSize() != 0) {
                     for (Map.Entry<String, ClientHandler> activeUser : ServerStart.clientMap.entrySet()) {
+                        if (activeUser.getKey().equals(messageAuthor)) {
+
+                        }
                         ClientHandler value = activeUser.getValue();
                         value.out.println(headOfQueue.toParcel());
 
                         if (!activeUser.getKey().equals(messageAuthor)) {
-                            System.out.println("сообщение будет послано " + activeUser.getKey());
+                            System.out.println("File will be sent to the " + activeUser.getKey());
                             byte[] bytes = headOfQueue.getAttachmentByteArray();
                             value.dOut.write(bytes, 0, bytes.length);
-                            System.out.println("сервер отправил клиенту " + headOfQueue.getUsername());
+                            System.out.println("File was sent to the  " + activeUser.getKey());
                         }
                     }
-                    System.out.println("файл отправлен всем клиентам");
+                    System.out.println("File sent to all clients");
                 } else {
                     for (Map.Entry<String, ClientHandler> activeUser : ServerStart.clientMap.entrySet()) {
                         ClientHandler value = activeUser.getValue();

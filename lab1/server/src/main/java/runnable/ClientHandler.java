@@ -36,7 +36,7 @@ public class ClientHandler implements Runnable {
             greetingNewUser();
             ExchangeFormat clientRequest;
             while (true) {
-                System.out.println(ServerStart.clientMap.entrySet() + " <---- текущие активные клиенты");
+                System.out.println(ServerStart.clientMap.entrySet() + " <---- current active client list");
                 String message = in.readLine();
 
                 System.out.println(message);
@@ -138,7 +138,7 @@ public class ClientHandler implements Runnable {
 
             byte[] bytes = new byte[clientRequest.getAttachmentSize()];
             dIn.readFully(bytes);
-            System.out.println("Получил");
+            System.out.println("File received from client ");
             serverResponse.setAttachmentByteArray(bytes);
                /* dIn.close();
                 dOut.close();*/
