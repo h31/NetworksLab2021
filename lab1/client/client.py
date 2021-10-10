@@ -1,4 +1,3 @@
-import ast
 import socket
 import traceback
 
@@ -19,7 +18,7 @@ class Client:
             self.username = ""
             self.set_username(Back.BLACK + Fore.GREEN + "Username:")
             self.client_socket.send(
-                f"{{'parcelType':'greeting', 'message':'', 'username':'{self.username}', 'attachmentType':'', "
+                f"{{'parcelType':'greeting', 'message':'', 'username':'{self.username}', "
                 f"'attachmentName':'', 'attachmentSize':'0'}}\r\n".encode('utf-8'))
 
         except TimeoutError:
@@ -38,8 +37,7 @@ class Client:
                     message += letter
                     letter = self.client_socket.recv(1)
                 self.client_socket.recv(1)
-                message = message.decode('utf-8', 'ignore')
-                message = ast.literal_eval(message)  # TODO: replace with parser
+                message = message_data.parse_message(message.decode('utf-8', 'ignore'))
                 if message['parcelType'] == 'exit':
                     print(
                         Fore.YELLOW + Back.BLACK + f"\n[{message_data.time_format(message['time'])}] "
@@ -60,18 +58,16 @@ class Client:
                         # attachment = b''
                         # for _ in range(int(message['attachmentSize'])):
                         #     attachment += self.client_socket.recv(1)
-                        message_data.save_file(message['username'], message['attachmentType'],
-                                               message['attachmentName'], attachment)
+                        message_data.save_file(message['username'], message['attachmentName'], attachment)
                         print(
                             Fore.BLUE + Back.YELLOW + f"Received {message['attachmentName']} "
                                                       f"from {message['username']}")
                 elif message['parcelType'] == 'exception':
-                    if message['message'] == '1':  # TODO
+                    if message['message'] == '1':
                         print(Fore.RED + Back.BLACK + 'Имя пользователя уже занято!\n')
                         self.set_username(Back.BLACK + Fore.GREEN + "Username:")
                         self.client_socket.send(
                             f"{{'parcelType':'greeting', 'message':'', 'username':'{self.username}', "
-                            f"'attachmentType':'', "
                             f"'attachmentName':'', 'attachmentSize':'0'}}\r\n".encode('utf-8'))
                     else:
                         print(Fore.RED + Back.BLACK + 'Неизвестная ошибка сервера')
@@ -89,8 +85,8 @@ class Client:
                     message = input(Fore.GREEN + Back.BLACK + "Message\n").replace("\\", "\\\\").replace("'", "\\'")
                     if message == "!exit":
                         self.client_socket.send(
-                            f"{{'parcelType':'exit', 'message':'', 'username':'{self.username}', 'attachmentType':'', "
-                            f"'attachmentName':'', 'attachmentSize':'0'}}\r\n".encode('utf-8'))
+                            f"{{'parcelType':'exit', 'message':'', 'username':'{self.username}', 'attachmentName':'', "
+                            f"'attachmentSize':'0'}}\r\n".encode('utf-8'))
                         self.client_socket.close()
                         self.logged = False
                         break
@@ -100,7 +96,6 @@ class Client:
                         if message == "!exit":
                             self.client_socket.send(
                                 f"{{'parcelType':'exit', 'message':'', 'username':'{self.username}', "
-                                f"'attachmentType':'', "
                                 f"'attachmentName':'', 'attachmentSize':'0'}}\r\n".encode('utf-8'))
                             self.client_socket.close()
                             self.logged = False
@@ -108,18 +103,16 @@ class Client:
                         if fp == '':
                             self.client_socket.send(
                                 f"{{'parcelType':'message', 'message':'{message}', 'username':'{self.username}', "
-                                f"'attachmentType':'', "
                                 f"'attachmentName':'', 'attachmentSize':'0'}}\r\n".encode('utf-8'))
                             break
                         try:
-                            name, ext, size, file = message_data.load_file(fp)
+                            name, size, file = message_data.load_file(fp)
                             self.client_socket.send(
                                 f"{{'parcelType':'message', 'message':'{message}', 'username':'{self.username}', "
-                                f"'attachmentType':'{ext}', "
                                 f"'attachmentName':'{name}', 'attachmentSize':'{size}'}}\r\n".encode('utf-8'))
                             # for i in file:
                             #     self.client_socket.send(i)
-                            self.client_socket.send(bytes(file))
+                            self.client_socket.sendall(bytes(file))
                             attached = True
                         except FileNotFoundError:
                             print(Fore.BLUE + Fore.RED + f"File {fp} not found")
