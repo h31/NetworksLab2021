@@ -72,7 +72,6 @@ disconnect_event = threading.Event()
 listenThread = threading.Thread(target = getMessage, args=(disconnect_event,))
 listenThread.start()
 
-print("Enter \q to exit")
 while True:
 	text = input("NEW MESSAGE:\n")
 	if disconnect_event.is_set(): break
