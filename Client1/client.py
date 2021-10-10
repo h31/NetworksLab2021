@@ -42,7 +42,9 @@ def main():  # chức năng chính
                     fileName = files[0].strip() # xóa khoảng trống ở tên của tập tin
                     filesize = os.path.getsize(fileName) # đọc size của tập tin
                     clientsocket.send(f"{SEND_FILE}".encode()) # thông báo cho máy chủ rằng muốn gửi tập tin
-                    clientsocket.send(f"{files[0]}{SEPARATOR}{filesize}".encode()) # gửi header của tập tin
+                    fileHeader = f"{files[0]}{SEPARATOR}{filesize}".encode()  # tạo ra header cho tập tin
+                    clientsocket.send(f"{len(fileHeader):<{HEADER_LENGTH}}".encode('utf-8'))  # gửi header của tập tin
+                    clientsocket.send(fileHeader)  # gửi header của tập tin
                     f = open(fileName, "rb") # mở tập tin để đọc
                     bytes_read = f.read(filesize) # đọc thông tin từ tập tin
                     clientsocket.sendall(bytes_read) # gửi cho máy chủ những gì trong tập tin
