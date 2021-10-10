@@ -9,7 +9,6 @@ IP = "127.0.0.1"  # địa chỉ localhost
 PORT = 10000  # số port để nghe , số port > 1023
 clients = {}  # danh sách những khách hàng
 SEND_FILE = "SEND_FILE"
-BUFFER_SIZE = 4096
 SEPARATOR = "<SEPARATOR>"
 
 CONNECT = "CONNECT"  # tạo ra const đối với sử dụng chúng sau để hiểu loại của hoạt động khách hàng
@@ -82,12 +81,14 @@ def getMessage(clientsocket):  # chức năng đối với chấp nhận các th
         message_header = clientsocket.recv(HEADER_LENGTH)  # đọc header của thông báo
         if not len(message_header):  # nếu không có header thì một lỗi đã xảy ra
             return False
-        if message_header.decode('utf-8') == SEND_FILE: # kiểm tra sẽ nhận file hoặc không
-            file_header = clientsocket.recv(BUFFER_SIZE) # đọc header của file
-            filename, filesize = file_header.decode('utf-8').split(SEPARATOR) # tách header của file để có tên của file và size
-            filename = os.path.basename(filename) # hàm này cắt bớt đường dẫn đến tệp, chỉ để lại tên tệp
-            filesize = int(filesize) # str -> int
-            bytes_read = clientsocket.recv(filesize) # đọc cả file
+        if message_header.decode('utf-8') == SEND_FILE:  # kiểm tra sẽ nhận file hoặc không
+            file_header_len = int(clientsocket.recv(HEADER_LENGTH).decode())
+            file_header = clientsocket.recv(file_header_len)  # đọc header của file
+            filename, filesize = file_header.decode('utf-8').split(
+                SEPARATOR)  # tách header của file để có tên của file và size
+            filename = os.path.basename(filename)  # hàm này cắt bớt đường dẫn đến tệp, chỉ để lại tên tệp
+            filesize = int(filesize)  # str -> int
+            bytes_read = clientsocket.recv(filesize)  # đọc cả file
             return {
                 'sendFile': True,
                 'header': file_header,
@@ -96,7 +97,7 @@ def getMessage(clientsocket):  # chức năng đối với chấp nhận các th
         else:
             messsage_length = int(message_header.decode('utf-8').strip())  # tạo ra chiếu dài
             return {
-                'sendFile':False,
+                'sendFile': False,
                 'header': message_header,
                 'data': clientsocket.recv(messsage_length)}  # đưa header và hạn chế bao nhiều byte cần phải đọc
     except ValueError:  # nếu có vấn đề với loại thông tin, thì một lỗi đâ xảy ra
@@ -110,7 +111,7 @@ def handle_client(clientsocket):
     while True:
         message = getMessage(clientsocket)  # đọc thông báo
         name = clients[clientsocket]['data'].decode('utf-8')  # đọc tên
-        current_time = datetime.now().strftime("%H:%M") # tạo ra thời gian hiện tại
+        current_time = datetime.now().strftime("%H:%M")  # tạo ra thời gian hiện tại
         if message is False:  # nếu vấn đề đã xảy ra ( tại sao vấn đề đã xảy ra -  xem chức năng "client" )
             clientsocket.shutdown(socket.SHUT_WR)  # tắt khách hàng
             clientsocket.close()
@@ -120,16 +121,20 @@ def handle_client(clientsocket):
             # ngắt kết nối
             del clients[clientsocket]  # hủy bỏ khác hàng này từ danh sách những khách hàng
             return None
-        if message['sendFile']: # nếu có loại SEND_FILE
-            sendToAll(f'{SEND_FILE:<{HEADER_LENGTH}}'.encode('utf-8'), clientsocket) # Nói cho tất cả khách hàng rằng sẽ gửi file
-            sendToAll(clients[clientsocket]['header'] + clients[clientsocket]['data'], clientsocket) # gửi tến của khách hàng, ai đã gửi file này
-            sendToAll(f'{len(message["header"]):<{HEADER_LENGTH}}'.encode('utf-8'), clientsocket) # gửi chiếu dài của header
-            sendToAll(message["header"], clientsocket) # gửi header của file ( tên của file và size )
-            sendToAll(message["data"], clientsocket) # gửi file
-            filename = message["header"].decode('utf-8').split(SEPARATOR)[0] # đọc tên của file để tạo ra tin nhắn
+        if message['sendFile']:  # nếu có loại SEND_FILE
+            final_message = f'{SEND_FILE:<{HEADER_LENGTH}}'.encode('utf-8') + clients[clientsocket]['header'] + \
+                            clients[clientsocket]['data'] + f'{len(message["header"]):<{HEADER_LENGTH}}'.encode(
+                'utf-8') + message["header"] + message["data"]
+            sendToAll(final_message,clientsocket)
+            # f'{SEND_FILE:<{HEADER_LENGTH}}'.encode('utf-8') - Nói cho tất cả khách hàng rằng sẽ gửi file
+            # clients[clientsocket]['header'] + clients[clientsocket]['data'] - # gửi tến của khách hàng, ai đã gửi file này
+            # f'{len(message["header"]):<{HEADER_LENGTH}}'.encode('utf-8') - # gửi chiếu dài của header
+            # message["header"] - gửi header của file ( tên của file và size )
+            # message["data"] - # gửi file
+            filename = message["header"].decode('utf-8').split(SEPARATOR)[0]  # đọc tên của file để tạo ra tin nhắn
             print(
                 f"At {current_time} client {name} sended file {filename}")
-                # viết tin nhắn rằng máy chủ đã chấp nhận tập tin
+            # viết tin nhắn rằng máy chủ đã chấp nhận tập tin
         else:
             print(
                 f'At {current_time}  received file from {name}: {message["data"].decode("utf-8")}')
