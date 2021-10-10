@@ -8,7 +8,6 @@ import re
 
 HEADER_LENGTH = 10  # header chiếu dài
 SEPARATOR = "<SEPARATOR>"
-BUFFER_SIZE = 4096  # gửi 4096 byte mỗi bước
 SEND_FILE = "SEND_FILE"
 
 IP = "127.0.0.1"  # địa chỉ localhost
@@ -43,7 +42,9 @@ def main():  # chức năng chính
                     fileName = files[0].strip() # xóa khoảng trống ở tên của tập tin
                     filesize = os.path.getsize(fileName) # đọc size của tập tin
                     clientsocket.send(f"{SEND_FILE}".encode()) # thông báo cho máy chủ rằng muốn gửi tập tin
-                    clientsocket.send(f"{files[0]}{SEPARATOR}{filesize}".encode()) # gửi header của tập tin
+                    fileHeader = f"{files[0]}{SEPARATOR}{filesize}".encode()  # tạo ra header cho tập tin
+                    clientsocket.send(f"{len(fileHeader):<{HEADER_LENGTH}}".encode('utf-8'))  # gửi header của tập tin
+                    clientsocket.send(fileHeader)  # gửi header của tập tin
                     f = open(fileName, "rb") # mở tập tin để đọc
                     bytes_read = f.read(filesize) # đọc thông tin từ tập tin
                     clientsocket.sendall(bytes_read) # gửi cho máy chủ những gì trong tập tin
@@ -67,7 +68,7 @@ def getMessage(clientsocket):
         nickname_header = clientsocket.recv(HEADER_LENGTH)  # tạo  header của tên
         current_time = datetime.now().strftime("%H:%M")
         if len(nickname_header) == 0:
-            print("Closed connect")
+            print("Close connect")
             clientsocket.shutdown(socket.SHUT_WR)
             clientsocket.close()
             os._exit(0)
