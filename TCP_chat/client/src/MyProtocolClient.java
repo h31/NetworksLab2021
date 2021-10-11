@@ -3,41 +3,52 @@ import java.io.IOException;
 import java.util.TimeZone;
 import java.util.Date;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 
 class MyProtocolClient {
   private InputStream is;
+  private int hour;
+  private int min;
+  private String myUsername;
+  private String username = null;
+  private String text = null;
+  private String filename = null;
 
-  public MyProtocolClient (InputStream is) {
+  public MyProtocolClient (InputStream is, String myUsername) {
     this.is = is;
+    this.myUsername = myUsername;
   }
 
-  public String decodeMessage(String username) {
-    String message = new String();
+  public void decodeMessage() {
     try {
-    int type = is.read();
-    this.addTime(message);
-    message += "[" + this.getText() + "] ";
+    int type = is.read(); //type
+    this.addTime(); //time
+    this.username = this.getText(); //username
     switch (type) {
       case 0:
-	message += this.getText();
-	this.receiveFile(username);
+	this.text = this.getText(); //text
+	this.receiveFile(); //file
+	System.out.println(String.format("<%d:%d> [%s] %s (%s attached)", 
+	  this.hour, this.min, this.username, this.text, this.filename));
         break;
       case 1:
-	message += this.getText();
+	this.text = this.getText(); //text
+	System.out.println(String.format("<%d:%d> [%s] %s",
+	  this.hour, this.min, this.username, this.text));
 	break;
       case 2:
-	this.receiveFile(username);
+	this.receiveFile(); //file
+        System.out.println(String.format("<%d:%d> [%s] (%s attached)",
+	  this.hour, this.min, this.username, this.filename));
 	break;
       default:
-	return null;
+	return;
     }
     }
     catch (IOException e) {e.printStackTrace();}
-    return message;
   }
 
-  private void addTime(String message) {
+  private void addTime() {
     long x = 0;
     long ms = 0;
     try {
@@ -52,51 +63,50 @@ class MyProtocolClient {
     TimeZone tz = TimeZone.getDefault();
     ms += tz.getDSTSavings();
     Date d = new Date(ms);
-    int h = d.getHours();
-    int m = d.getMinutes();
-    message += "<" + Integer.toString(h) + ":" + Integer.toString(m) + ">";
+    this.hour = d.getHours();
+    this.min = d.getMinutes();
     return;
   }
 
   private String getText() {
     int len = this.getInt();
-    byte[] text = new byte[len];
+    byte[] bytes = new byte[len];
     int rec = 0;
     try {
       while (rec != len) {
-        rec += this.is.read(text, rec, len - rec);
+        bytes[rec]= (byte)this.is.read();
+	rec++;
       }
     } catch (IOException e) {e.printStackTrace();}
-    String textString = new String(text);
+    String textString = new String(bytes);
     return textString;
   }
 
-  private void receiveFile(String username) {
-    String dirName = username + "_Data";
+  private void receiveFile() {
+    String dirName = this.myUsername + "_Data";
     File directory = new File(dirName);
     if (!directory.exists()) {
         directory.mkdir();
     }
-    String filename = this.getText();
+    this.filename = this.getText();
     File file = new File(dirName + "/" + filename);
+    boolean exists = file.exists();
+    if (exists)
+      System.out.println(String.format("File %s is already exist", this.filename));
     try {
-      FileWriter fw = new FileWriter(file.getAbsoluteFile());
-      int rec = 0; //bytes received
-      byte[] buf = new byte[1024]; //buffer
-      int len = getInt();
-      int cur = 0;
-      while (cur != len) {
-        rec = this.is.read(buf, 0, 1024);
-	cur += rec;
-	String str = new String(buf);
-	char[] ch = str.toCharArray();
-	fw.write(ch, 0, rec);
-      }
-
-      System.out.println("File " + filename + " received, len = " 
-        + Integer.toString(len));
-      fw.close(); 
-    } catch (IOException e) {
+      FileOutputStream os = new FileOutputStream(file);
+      int len = this.getInt();
+      System.out.println ("LEN = " + len);
+      int rec = 0;
+      byte b;
+      while (rec != len) {
+        b = (byte)this.is.read();
+        if (!exists)
+	  os.write(b);
+	rec++;
+      } 
+    }
+    catch (IOException e) {
       e.printStackTrace();
       System.exit(-1);
     }

@@ -36,6 +36,7 @@ class MyByteArray {
   }
 
   public int receiveFile(int fileLen, InputStream is) {
+    addInt(fileLen);
     int rec = 0; //bytes received
     byte b;
     try {

@@ -98,6 +98,7 @@ public class Client {
   private static void sendFile(OutputStream os, File f) {
     try {
       byte[] fileBytes = Files.readAllBytes(f.toPath());
+      System.out.println("BYTES: " + fileBytes.length);
       writeInt(os, fileBytes.length);
       os.write(fileBytes);
     }

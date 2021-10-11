@@ -34,11 +34,13 @@ class User extends Thread {
       byte[] toSend;
       while(true) {
         String msg = this.br.readLine();
-        if (msg == null)
+        if (msg == null) 
           this.removeUser();
         System.out.println("new mssadge from user " + this.username);
 	System.out.println("msg = " + msg);
 	toSend = coder.codeMessage(msg, this.username);
+	if (toSend == null) 
+	  this.removeUser();
         sendAll(toSend);
       }
     } catch (IOException e) {

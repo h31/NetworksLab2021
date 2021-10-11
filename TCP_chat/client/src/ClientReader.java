@@ -3,20 +3,19 @@ import java.io.InputStream;
 
 class ClientReader extends Thread {
   private InputStream is;
-  private String username;
+  private String myUsername;
 
-  public ClientReader (InputStream is, String username) {
+  public ClientReader (InputStream is, String myUsername) {
     this.is = is;
-    this.username = username;
+    this.myUsername = myUsername;
   }
 
   @Override
   public void run() {
     String msg = new String();
-    MyProtocolClient decoder = new MyProtocolClient(this.is);
+    MyProtocolClient decoder = new MyProtocolClient(this.is, myUsername);
     while (true) {
-      msg = decoder.decodeMessage(username);
-      System.out.println(msg);
+      decoder.decodeMessage();
     } 
   }
 }
