@@ -38,12 +38,14 @@ class MyByteArray {
   public int receiveFile(int fileLen, InputStream is) {
     addInt(fileLen);
     int rec = 0; //bytes received
-    byte b;
+    int b;
     try {
       while (rec != fileLen) {
-        b = (byte)is.read();
+        b = is.read();
+	if (b == -1)
+	  return -1;
 	rec++;
-        this.add(b);
+        this.add((byte)b);
       }
     System.out.println("RECEIVED = " + rec); 
     } catch (IOException e) {return -1;}

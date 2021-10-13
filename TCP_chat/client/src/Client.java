@@ -95,7 +95,7 @@ public class Client {
         case 2:
 	  f = new File(filename);
           if (!f.exists()) {
-            System.out.println("File " + filename + "do not exist");
+            System.out.println("File " + filename + " do not exist");
             return;
           }
 	  msg = "/" + filename + "\n";

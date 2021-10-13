@@ -33,25 +33,29 @@ class User extends Thread {
       byte[] toSend;
       while(true) {
 	MyByteArray arr = new MyByteArray(100);
-	byte b;
+	int b;
 	while (true) {
-          b = (byte)is.read();
+          b = is.read();
 	  if (b == -1)
             this.removeUser();
-	  if (b == 10) // new line
+	  if ((byte)b == 10) // new line
 	    break;
-	  arr.add(b);
+	  arr.add((byte)b);
 	}
-	String msg = new String(arr.getArray());
+	String msg = new String(arr.getArray(), "UTF-8");
         System.out.println("new mssadge from user " + this.username);
 	System.out.println("msg = " + msg);
 	toSend = coder.codeMessage(msg, this.username);
-	if (toSend == null) 
+	if (toSend == null) {
+	  System.out.println("Protocol violation by " + this.username);
 	  this.removeUser();
+	}
         sendAll(toSend);
       }
     } catch (IOException e) {
       //connection lost, need to remove user from list and stop thread
+      System.out.println("IOException for user " + this.username);
+      System.out.println(e);
       this.removeUser();
     }
   }

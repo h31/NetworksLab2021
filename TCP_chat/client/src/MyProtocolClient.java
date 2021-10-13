@@ -76,14 +76,16 @@ class MyProtocolClient {
   private String getText() {
     int len = this.getInt();
     byte[] bytes = new byte[len];
+    int b;
     int rec = 0;
     try {
       while (rec != len) {
-        bytes[rec]= (byte)this.is.read();
-	if (bytes[rec] == -1) {
+        b = this.is.read();
+	if (b == -1) {
 	  System.out.println("Server lost");
           System.exit(-1);
 	}
+	bytes[rec] = (byte)b;
 	rec++;
       }
     }
@@ -106,18 +108,15 @@ class MyProtocolClient {
     try {
       FileOutputStream os = new FileOutputStream(file);
       int len = this.getInt();
-      System.out.println("DEBUG_LEN:" + len);
       int rec = 0;
-      byte b;
+      int b;
       while (rec != len) {
-        b = (byte)this.is.read();
+        b = this.is.read();
 	if (b == -1) {
-	  System.out.println("b == -1");
-	  System.out.println("rec=" + rec);
 	  System.out.println("Server lost");
           System.exit(-1);
 	}
-	os.write(b);
+	os.write((byte)b);
 	rec++;
       } 
       os.close();
