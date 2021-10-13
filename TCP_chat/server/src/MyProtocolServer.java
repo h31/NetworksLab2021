@@ -8,10 +8,10 @@ import java.io.IOException;
 //Class is coding message and sending it to other users
 class MyProtocolServer {
   private final static int ARRAY_LEN = 150;
-  private final static int TEXT_SIZE = 512;
-  private final static int USERNAME_SIZE = 64;
-  private final static int FILENAME_SIZE = 64;
-  private final static int FILE_SIZE = 100000;
+  private final static int TEXT_SIZE = 1024;
+  private final static int USERNAME_SIZE = 32;
+  private final static int FILENAME_SIZE = 128;
+  private final static int FILE_SIZE = 500000;
 
   private InputStream is; 
 
@@ -80,8 +80,10 @@ class MyProtocolServer {
     int x;
     int ans = 0;
     try {
-      for (int i = 24; i >= 0; i -= 8) {
+      for (int i = 24; i >= 0; i -= 8) {	
         x = this.is.read();
+	if (x == -1)
+	  return -1;
         ans += (x << i);
       }
     }

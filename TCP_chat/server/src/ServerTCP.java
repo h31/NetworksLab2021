@@ -28,7 +28,7 @@ public class ServerTCP {
 	//reading username
 	String username = br.readLine();
         //creating a new User
-        User newUser = new User(clientSocket, username, br, clientSocket.getOutputStream()); 
+        User newUser = new User(clientSocket, username, clientSocket.getInputStream(), clientSocket.getOutputStream()); 
         //adding to the list
         userList.add(newUser);
         newUser.start(); //creating a new thread

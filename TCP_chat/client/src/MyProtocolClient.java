@@ -54,11 +54,16 @@ class MyProtocolClient {
     try {
       for (int i = 56; i >= 0; i -= 8) {
         x = this.is.read();
+	if (x == -1) {
+	  System.out.println("Server lost");
+	  System.exit(-1);
+	}
         ms += (x << i);
       }
     }
     catch (IOException e) {
-      e.printStackTrace();
+      System.out.println("Server lost");
+      System.exit(-1);
     }
     TimeZone tz = TimeZone.getDefault();
     ms += tz.getDSTSavings();
@@ -75,9 +80,17 @@ class MyProtocolClient {
     try {
       while (rec != len) {
         bytes[rec]= (byte)this.is.read();
+	if (bytes[rec] == -1) {
+	  System.out.println("Server lost");
+          System.exit(-1);
+	}
 	rec++;
       }
-    } catch (IOException e) {e.printStackTrace();}
+    }
+    catch (IOException e) {
+      System.out.println("Server lost");
+      System.exit(-1);
+    }
     String textString = new String(bytes);
     return textString;
   }
@@ -90,21 +103,24 @@ class MyProtocolClient {
     }
     this.filename = this.getText();
     File file = new File(dirName + "/" + filename);
-    boolean exists = file.exists();
-    if (exists)
-      System.out.println(String.format("File %s is already exist", this.filename));
     try {
       FileOutputStream os = new FileOutputStream(file);
       int len = this.getInt();
-      System.out.println ("LEN = " + len);
+      System.out.println("DEBUG_LEN:" + len);
       int rec = 0;
       byte b;
       while (rec != len) {
         b = (byte)this.is.read();
-        if (!exists)
-	  os.write(b);
+	if (b == -1) {
+	  System.out.println("b == -1");
+	  System.out.println("rec=" + rec);
+	  System.out.println("Server lost");
+          System.exit(-1);
+	}
+	os.write(b);
 	rec++;
       } 
+      os.close();
     }
     catch (IOException e) {
       e.printStackTrace();
@@ -119,13 +135,17 @@ class MyProtocolClient {
     try { 
       for (int i = 24; i >= 0; i -= 8) {
         x = this.is.read();
+	if (x == -1) {
+	  System.out.println("Server lost");
+          System.exit(-1);
+	}
         ans += (x << i);
       }
     }
     catch (IOException e) {
-      e.printStackTrace();
+      System.out.println("Server lost");
+      System.exit(-1);
     }
     return ans;
   }
-
 }

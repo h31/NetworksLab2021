@@ -10,11 +10,20 @@ import java.nio.file.Files;
 import java.net.Socket;
 
 public class Client {
+  private final static int TEXT_SIZE = 1024;
+  private final static int USERNAME_SIZE = 32;
+  private final static int FILENAME_SIZE = 128;
+  private final static int FILE_SIZE = 500000;
+
   public static void main(String[] args){
-    try {
+    try { 
       //Enter username
       System.out.println("Enter your username");
       String username = System.console().readLine();
+      if (username.length() > USERNAME_SIZE) {
+	System.out.println("Username size is too big");
+        return;
+      }
       //creating a socket connected to the server
       Socket clientSocket = new Socket ("localhost", 7777);
       //creating buffered reader and buffered writer
@@ -30,16 +39,24 @@ public class Client {
         sendMessages(os, bw);
       }
     }
-    catch (Exception e) {
-      e.printStackTrace();
+    catch (IOException e) {
+      System.out.println("Server lost");
+      System.exit(-1);
     }
   }
 
   private static void sendMessages(OutputStream os, BufferedWriter bw) {
     System.out.println("Enter messsage");
     String msg = System.console().readLine();
+    if (msg.length() > TEXT_SIZE) {
+      System.out.println("Text size is too big");
+      return;
+    }
     System.out.println("Enter filename");
     String filename = System.console().readLine();
+    if (filename.length() > FILENAME_SIZE) {
+      System.out.println("Filename size is too big");
+    }
     byte type;
     if (msg == null || filename == null) {
       System.out.println("Try again");
@@ -68,9 +85,7 @@ public class Client {
 	    return;
 	  }
 	  msg = msg + "/" + filename + "\n";
-	  bw.write(msg);
-	  bw.flush();
-	  sendFile(os, f);	
+	  send(os, f, msg);	
           break;
         case 1:
 	  msg = msg + "\n";
@@ -83,27 +98,33 @@ public class Client {
             System.out.println("File " + filename + "do not exist");
             return;
           }
-	  filename = "/" + filename + "\n";
-	  os.write(filename.getBytes());
-	  sendFile(os, f);
+	  msg = "/" + filename + "\n";
+	  send(os, f, msg);
 	  break;
       }
       return;
     }
     catch (IOException e) {
-      e.printStackTrace();
+      System.out.println("Server lost");
+      System.exit(-1);
     }
   }
 
-  private static void sendFile(OutputStream os, File f) {
+  private static void send(OutputStream os, File f, String msg) {
     try {
       byte[] fileBytes = Files.readAllBytes(f.toPath());
-      System.out.println("BYTES: " + fileBytes.length);
+      if (fileBytes.length > FILE_SIZE) {
+        System.out.println("File size is too big");
+	return;
+      }
+      os.write(msg.getBytes());
       writeInt(os, fileBytes.length);
       os.write(fileBytes);
+      os.flush();
     }
     catch (IOException e) {
-      e.printStackTrace();
+      System.out.println("Server lost");
+      System.exit(-1);
     }
   }
 
@@ -115,7 +136,8 @@ public class Client {
       return;
     }
     catch (IOException e) {
-      e.printStackTrace();
+      System.out.println("Server lost");
+      System.exit(-1);
     }
   }
 }

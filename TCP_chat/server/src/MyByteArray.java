@@ -45,6 +45,7 @@ class MyByteArray {
 	rec++;
         this.add(b);
       }
+    System.out.println("RECEIVED = " + rec); 
     } catch (IOException e) {return -1;}
     return 0;
   }
@@ -70,7 +71,6 @@ class MyByteArray {
       newArray[i] = this.arr[i];
     this.len = newLen;
     this.arr = newArray;
-    System.out.println("new len and pos = " + newLen + ", " + pos);
     return;
   }
 
