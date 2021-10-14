@@ -1,0 +1,21 @@
+@startuml
+participant Client
+participant Server
+Client -> Server : create connection
+...
+=== MessageSending ==
+Client -> Server : send message size (by 4 bytes)
+alt if we want send file
+Client -> Server : send message with fileName and fileSize
+Client -> Server : send file
+else if we don't want send file
+Client -> Server : send message with empty fileName and fileSize
+end
+...
+=== Message reading ==
+Server -> Client : send message size (by 4 bytes)
+Server -> Client : send message
+alt if fileName and fileSize exists
+Client -> Server : send file
+end
+@enduml
