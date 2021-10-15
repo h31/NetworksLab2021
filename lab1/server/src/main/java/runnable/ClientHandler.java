@@ -41,8 +41,6 @@ public class ClientHandler implements Runnable {
                 String message = in.readLine();
                 in.mark(message.length());
 
-                System.out.println("вот что прислал клиент + " + message);
-                System.out.println("вот размер того, что он прислал " + message.length());
                 if(Tool.isClientMessageNull(message)) {
                     killCurrentClient(nicknameOfClient, this);
                     break;
@@ -162,8 +160,6 @@ public class ClientHandler implements Runnable {
             int count = 0;
             in.reset();
             while((count += dIn.read(bytes, 0, bytes.length)) > 0) {
-                System.out.println("уже прочтено: " + count);
-                System.out.println("осталось " + dIn.available());
                 if(count == bytes.length) {
                     break;
                 }

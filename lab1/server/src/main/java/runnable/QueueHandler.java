@@ -3,6 +3,7 @@ package runnable;
 import model.ExchangeFormat;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
@@ -40,7 +41,7 @@ public class QueueHandler implements Runnable {
                             byte[] bytes = headOfQueue.getAttachmentByteArray();
                             headOfQueue.setAttachmentSize(fileSize);
                             addresseeSocket.out.println(headOfQueue.toParcel());
-                            addresseeSocket.dOut.write(bytes, 0, bytes.length);
+                            addresseeSocket.dOut.size()  write(bytes, 0, bytes.length);
                             System.out.println("File was sent to the  " + addresseeUsername);
                         }
                     }
