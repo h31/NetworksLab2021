@@ -66,6 +66,3 @@ def time_format(minsec):
     """
     min, sec = minsec.split(':')[1:]
     return datetime.datetime.today().replace(minute=int(min), second=int(sec)).strftime("%Y-%m-%d %H:%M:%S")
-
-
-save_file('test', 'mabitch.mp4', load_file('../Sbor.mp4')[-1])
