@@ -24,8 +24,6 @@ public class ClientHandler implements Runnable {
         try {
             out = new PrintWriter(clientSocket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            dOut = new DataOutputStream(clientSocket.getOutputStream());
-            dIn = new DataInputStream(clientSocket.getInputStream());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -48,6 +46,7 @@ public class ClientHandler implements Runnable {
                     notifyAboutUserExit(nicknameOfClient);
                     break;
                 }
+
 
                 processDefaultMessage(clientRequest);
             }
@@ -137,7 +136,19 @@ public class ClientHandler implements Runnable {
             serverResponse.setAttachmentSize(clientRequest.getAttachmentSize());
 
             byte[] bytes = new byte[clientRequest.getAttachmentSize()];
-            dIn.readFully(bytes);
+            int count;
+            int leftBytes;
+
+            dOut = new DataOutputStream(clientSocket.getOutputStream());
+            dIn = new DataInputStream(clientSocket.getInputStream());
+            //  dIn.skipBytes(clientRequest.getMessage().length());
+            //while((count = dIn.read(bytes, 0, bytes.length)) > 0) {
+            while((leftBytes = dIn.available()) > 0) {
+                System.out.println("bytes left: " + leftBytes);
+                count = dIn.read(bytes, 0, bytes.length);
+               System.out.println("bytes read: " + count);
+            }
+            // читать столько сколько dIn.available(), но пока хз
             System.out.println("File received from client ");
             serverResponse.setAttachmentByteArray(bytes);
                /* dIn.close();
