@@ -22,8 +22,11 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try {
+            InputStreamReader inputStreamReader = new InputStreamReader(clientSocket.getInputStream());
             out = new PrintWriter(clientSocket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            in = new BufferedReader(inputStreamReader);
+            dOut = new DataOutputStream(clientSocket.getOutputStream());
+            dIn = new DataInputStream(clientSocket.getInputStream());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -36,9 +39,16 @@ public class ClientHandler implements Runnable {
             while (true) {
                 System.out.println(ServerStart.clientMap.entrySet() + " <---- current active client list");
                 String message = in.readLine();
+                in.mark(message.length());
 
-                System.out.println(message);
+                System.out.println("вот что прислал клиент + " + message);
+                System.out.println("вот размер того, что он прислал " + message.length());
+                if(Tool.isClientMessageNull(message)) {
+                    killCurrentClient(nicknameOfClient, this);
+                    break;
+                }
                 clientRequest = Tool.parseRequest(message);
+
 
                 if (clientRequest.getParcelType().getStringValue().equals(Tool.RequestType.EXIT.getStringValue())) {
                     closeConnections();
@@ -51,7 +61,7 @@ public class ClientHandler implements Runnable {
                 processDefaultMessage(clientRequest);
             }
 
-        } catch (IOException | ClassNotFoundException | NullPointerException e) {
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
             ServerStart.clientMap.remove(nicknameOfClient);
             Thread.currentThread().interrupt();
@@ -61,7 +71,14 @@ public class ClientHandler implements Runnable {
     private void greetingNewUser() throws IOException, ClassNotFoundException {
         ExchangeFormat response = new ExchangeFormat();
         ExchangeFormat responseException = new ExchangeFormat();
-        ExchangeFormat clientRequest = Tool.parseRequest(in.readLine());
+        String clientGreetingMessage = in.readLine();
+
+        if(Tool.isClientMessageNull(clientGreetingMessage)) {
+            killCurrentClient("", this);
+            return;
+        }
+
+        ExchangeFormat clientRequest = Tool.parseRequest(clientGreetingMessage);
 
         String usernameDemo = clientRequest.getUsername();
 
@@ -71,7 +88,12 @@ public class ClientHandler implements Runnable {
             responseException.setMessage("1");
             responseException.setTime(Tool.getCurrentTime());
             out.println(responseException.toParcel());
-            clientRequest = Tool.parseRequest(in.readLine());
+            clientGreetingMessage = in.readLine();
+            if(Tool.isClientMessageNull(clientGreetingMessage)) {
+                killCurrentClient(nicknameOfClient, this);
+                return;
+            }
+            clientRequest = Tool.parseRequest(clientGreetingMessage);
             usernameDemo = clientRequest.getUsername();
         }
 
@@ -132,27 +154,22 @@ public class ClientHandler implements Runnable {
             System.out.println("Клиент вложил файл");
             serverResponse.initializeAttachmentByteArray(clientRequest.getAttachmentSize());
             serverResponse.setAttachmentName(clientRequest.getAttachmentName());
-            serverResponse.setAttachmentType(clientRequest.getAttachmentType());
             serverResponse.setAttachmentSize(clientRequest.getAttachmentSize());
 
             byte[] bytes = new byte[clientRequest.getAttachmentSize()];
-            int count;
             int leftBytes;
 
-            dOut = new DataOutputStream(clientSocket.getOutputStream());
-            dIn = new DataInputStream(clientSocket.getInputStream());
-            //  dIn.skipBytes(clientRequest.getMessage().length());
-            //while((count = dIn.read(bytes, 0, bytes.length)) > 0) {
-            while((leftBytes = dIn.available()) > 0) {
-                System.out.println("bytes left: " + leftBytes);
-                count = dIn.read(bytes, 0, bytes.length);
-               System.out.println("bytes read: " + count);
+            int count = 0;
+            in.reset();
+            while((count += dIn.read(bytes, 0, bytes.length)) > 0) {
+                System.out.println("уже прочтено: " + count);
+                System.out.println("осталось " + dIn.available());
+                if(count == bytes.length) {
+                    break;
+                }
             }
-            // читать столько сколько dIn.available(), но пока хз
             System.out.println("File received from client ");
             serverResponse.setAttachmentByteArray(bytes);
-               /* dIn.close();
-                dOut.close();*/
         }
 
 
@@ -161,6 +178,12 @@ public class ClientHandler implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    private void killCurrentClient(String nickname, ClientHandler clientHandler) {
+        ServerStart.clientMap.remove(nickname, clientHandler);
+        closeConnections();
+        Thread.currentThread().interrupt();
     }
 
 

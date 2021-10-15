@@ -4,7 +4,7 @@ import util.Tool;
 
 import java.io.Serializable;
 
-public class ExchangeFormat implements Serializable {
+public class ExchangeFormat {
 
     private Tool.RequestType parcelType;
 
@@ -13,8 +13,6 @@ public class ExchangeFormat implements Serializable {
     private String username;
 
     private String time;
-
-    private String attachmentType;
 
     private String attachmentName;
 
@@ -54,14 +52,6 @@ public class ExchangeFormat implements Serializable {
         this.username = username;
     }
 
-    public String getAttachmentType() {
-        return attachmentType;
-    }
-
-    public void setAttachmentType(String attachmentType) {
-        this.attachmentType = attachmentType;
-    }
-
     public int getAttachmentSize() {
         return attachmentSize;
     }
@@ -99,7 +89,6 @@ public class ExchangeFormat implements Serializable {
                 ", 'message':'" + message + '\'' +
                 ", 'username':'" + username + '\'' +
                 ", 'time':'" + time + '\'' +
-                ", 'attachmentType':'" + attachmentType + '\'' +
                 ", 'attachmentName':'" + attachmentName + '\'' +
                 ", 'attachmentSize':'" + attachmentSize + '\'' +
                 '}';

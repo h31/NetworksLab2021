@@ -1,6 +1,7 @@
 package util;
 
 import model.ExchangeFormat;
+import runnable.ServerStart;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -41,49 +42,57 @@ public class Tool {
     }
 
 
+    public static boolean isClientMessageNull(String message) {
+        if(message == null || message.isEmpty()) {
+            return true;
+        }
+        return false;
+    }
+
+
     public static ExchangeFormat parseRequest(String format) {
-        /*if(format == null) {
-            ExchangeFormat exceptionResponse = new ExchangeFormat();
-            exceptionResponse.setParcelType(RequestType.EXCEPTION);
-            exceptionResponse.setTime(getCurrentTime());
-            exceptionResponse.setMessage("Incorrect parcel format, 2");
-        }*/
+
 
         List<String> resultArray = new ArrayList<>();
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < format.length(); i++) {
             if (format.charAt(i) == '\'') {
                 for (int j = i + 1; j < format.length(); j++) {
-                    if (format.charAt(j) == '\\' && format.charAt(j+1) == '\\') {
-                        stringBuilder.append(format.charAt(j)).append(format.charAt(j+1));
-                        j=j+1;
+                    if (format.charAt(j) == '\\' && format.charAt(j + 1) == '\\') {
+                        stringBuilder.append(format.charAt(j)).append(format.charAt(j + 1));
+                        j = j + 1;
                         continue;
                     }
-                    if (format.charAt(j) == '\\' && format.charAt(j+1) == '\'') {
-                        stringBuilder.append(format.charAt(j)).append(format.charAt(j+1));
-                        j = j+1;
+                    if (format.charAt(j) == '\\' && format.charAt(j + 1) == '\'') {
+                        stringBuilder.append(format.charAt(j)).append(format.charAt(j + 1));
+                        j = j + 1;
                         continue;
                     }
-                    if(format.charAt(j) == '\'') {
+                    if (format.charAt(j) == '\'') {
                         resultArray.add(stringBuilder.toString());
                         stringBuilder.setLength(0);
-                        i = j+1;
+                        i = j + 1;
                         break;
                     }
                     stringBuilder.append(format.charAt(j));
                 }
             }
         }
-
-        System.out.println(resultArray);
         ExchangeFormat exchangeFormat = new ExchangeFormat();
-        exchangeFormat.setParcelType(RequestType.findByValue(resultArray.get(1)));
-        exchangeFormat.setMessage(resultArray.get(3));
-        exchangeFormat.setUsername(resultArray.get(5));
-        exchangeFormat.setAttachmentType(resultArray.get(7));
-        exchangeFormat.setAttachmentName(resultArray.get(9));
-        exchangeFormat.setAttachmentSize(Integer.parseInt(resultArray.get(11)));
-
+        try {
+            System.out.println(resultArray);
+            exchangeFormat.setParcelType(RequestType.findByValue(resultArray.get(1)));
+            exchangeFormat.setMessage(resultArray.get(3));
+            exchangeFormat.setUsername(resultArray.get(5));
+            exchangeFormat.setAttachmentName(resultArray.get(7));
+            exchangeFormat.setAttachmentSize(Integer.parseInt(resultArray.get(9)));
+        } catch (IndexOutOfBoundsException e) {
+            e.printStackTrace();
+            ExchangeFormat exceptionResponse = new ExchangeFormat();
+            exceptionResponse.setParcelType(RequestType.EXCEPTION);
+            exceptionResponse.setMessage("Invalid parcel format");
+            return exceptionResponse;
+        }
 
         return exchangeFormat;
     }

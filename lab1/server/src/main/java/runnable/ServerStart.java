@@ -21,7 +21,6 @@ public class ServerStart {
     public void start(int port) throws IOException {
         serverSocket = new ServerSocket(port);
         System.out.println("Server started");
-       /* new Thread(new QueueHandler(serverResponseQueue)).start();*/
         QueueHandler queueHandler = new QueueHandler(serverResponseQueue);
         connectionThreadPool.execute(queueHandler);
         while (true) {
@@ -29,6 +28,7 @@ public class ServerStart {
             clientMap.put("", clientHandler);
             connectionThreadPool.execute(clientHandler);
         }
+
 
     }
 

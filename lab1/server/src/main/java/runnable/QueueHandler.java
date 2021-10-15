@@ -22,19 +22,26 @@ public class QueueHandler implements Runnable {
             try {
                 headOfQueue = serverResponseQueue.take();
                 String messageAuthor = headOfQueue.getUsername();
-                if (headOfQueue.getAttachmentSize() != 0) {
+                int fileSize = headOfQueue.getAttachmentSize();
+                if (fileSize != 0) {
+                    ClientHandler addresseeSocket;
+                    String addresseeUsername;
                     for (Map.Entry<String, ClientHandler> activeUser : ServerStart.clientMap.entrySet()) {
-                        if (activeUser.getKey().equals(messageAuthor)) {
-
+                        addresseeSocket = activeUser.getValue();
+                        addresseeUsername = activeUser.getKey();
+                        // отослать автору его же сообщение обратно
+                        if (addresseeUsername.equals(messageAuthor)) {
+                            headOfQueue.setAttachmentSize(0);
+                            addresseeSocket.out.println(headOfQueue.toParcel());
                         }
-                        ClientHandler value = activeUser.getValue();
-                        value.out.println(headOfQueue.toParcel());
-
-                        if (!activeUser.getKey().equals(messageAuthor)) {
-                            System.out.println("File will be sent to the " + activeUser.getKey());
+                        // бродкаст сообщение + файл всем кроме автора
+                        if (!addresseeUsername.equals(messageAuthor)) {
+                            System.out.println("File will be sent to the " + addresseeUsername);
                             byte[] bytes = headOfQueue.getAttachmentByteArray();
-                            value.dOut.write(bytes, 0, bytes.length);
-                            System.out.println("File was sent to the  " + activeUser.getKey());
+                            headOfQueue.setAttachmentSize(fileSize);
+                            addresseeSocket.out.println(headOfQueue.toParcel());
+                            addresseeSocket.dOut.write(bytes, 0, bytes.length);
+                            System.out.println("File was sent to the  " + addresseeUsername);
                         }
                     }
                     System.out.println("File sent to all clients");
