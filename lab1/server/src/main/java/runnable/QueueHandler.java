@@ -41,7 +41,7 @@ public class QueueHandler implements Runnable {
                             byte[] bytes = headOfQueue.getAttachmentByteArray();
                             headOfQueue.setAttachmentSize(fileSize);
                             addresseeSocket.out.println(headOfQueue.toParcel());
-                            addresseeSocket.dOut.size()  write(bytes, 0, bytes.length);
+                            addresseeSocket.dOut.write(bytes, 0, bytes.length);
                             System.out.println("File was sent to the  " + addresseeUsername);
                         }
                     }

@@ -5,6 +5,7 @@ import util.Tool;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Map;
 
 public class ClientHandler implements Runnable {
@@ -41,12 +42,13 @@ public class ClientHandler implements Runnable {
                 String message = in.readLine();
                 in.mark(message.length());
 
-                if(Tool.isClientMessageNull(message)) {
+                if (Tool.isClientMessageNull(message)) {
                     killCurrentClient(nicknameOfClient, this);
                     break;
                 }
                 clientRequest = Tool.parseRequest(message);
 
+                System.out.println(message);
 
                 if (clientRequest.getParcelType().getStringValue().equals(Tool.RequestType.EXIT.getStringValue())) {
                     closeConnections();
@@ -71,7 +73,7 @@ public class ClientHandler implements Runnable {
         ExchangeFormat responseException = new ExchangeFormat();
         String clientGreetingMessage = in.readLine();
 
-        if(Tool.isClientMessageNull(clientGreetingMessage)) {
+        if (Tool.isClientMessageNull(clientGreetingMessage)) {
             killCurrentClient("", this);
             return;
         }
@@ -87,7 +89,7 @@ public class ClientHandler implements Runnable {
             responseException.setTime(Tool.getCurrentTime());
             out.println(responseException.toParcel());
             clientGreetingMessage = in.readLine();
-            if(Tool.isClientMessageNull(clientGreetingMessage)) {
+            if (Tool.isClientMessageNull(clientGreetingMessage)) {
                 killCurrentClient(nicknameOfClient, this);
                 return;
             }
@@ -155,15 +157,11 @@ public class ClientHandler implements Runnable {
             serverResponse.setAttachmentSize(clientRequest.getAttachmentSize());
 
             byte[] bytes = new byte[clientRequest.getAttachmentSize()];
-            int leftBytes;
 
             int count = 0;
             in.reset();
-            while((count += dIn.read(bytes, 0, bytes.length)) > 0) {
-                if(count == bytes.length) {
-                    break;
-                }
-            }
+            dIn.readFully(bytes);
+
             System.out.println("File received from client ");
             serverResponse.setAttachmentByteArray(bytes);
         }
