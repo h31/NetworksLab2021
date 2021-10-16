@@ -12,7 +12,8 @@ if len(name) > 16:
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(('127.0.0.1', 55555))
-
+host = 'networkslab-ivt.ftp.sh'
+port = 55555
 
 def receive_message():
     buffer = 0
@@ -52,7 +53,7 @@ def send_message():
             client.send(file_name_size)
             f = open(file_name, "rb")
             file_data_write = f.read(file_size)
-            client.sendall(file_data_write)
+            client.send(file_data_write)
             f.close()
             print(f'File {file_name} is send')
         else:
