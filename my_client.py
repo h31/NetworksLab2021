@@ -23,9 +23,9 @@ def receive_message():
                 buffer = int(message.strip())
             if message.strip() == "file":
                 file_header_len = int(client.recv(length_of_message).decode())
-                file_header = client.recv(file_header_len).decode(code_table) #заголовок это имя файла и размер файла
-                file_name = file_header[:file_header.find("<>")]
-                file_size = file_header[file_header.find("<>")+2:]
+                file_name_size = client.recv(file_header_len).decode(code_table) #заголовок это имя файла и размер файла
+                file_name = file_name_size[:file_name_size.find("<>")]
+                file_size = file_name_size[file_name_size.find("<>")+2:]
                 file_name = os.path.basename(file_name) # если имя файла задано как путь к нему, останется только имя файла
                 file_size = int(file_size)
                 f = open("send"+file_name, "wb")

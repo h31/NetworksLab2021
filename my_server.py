@@ -34,13 +34,13 @@ def handle(client):
                     buffer = int(message.strip())
                 if message == "file":   # если file, то хотят отправить файл
                     file_header_len = int(client.recv(length_of_message).decode())
-                    file_header = client.recv(file_header_len).decode(code_table)# заголовок это имя файла и размер файла
-                    file_size = file_header[file_header.find("<>")+2:]
+                    file_name_size = client.recv(file_header_len).decode(code_table)# заголовок это имя файла и размер файла
+                    file_size = file_name_size[file_name_size.find("<>")+2:]
                     file_size = int(file_size)
                     file_data_read = client.recv(file_size)
                     broadcast(f'{"file":<{length_of_message}}'.encode(code_table) +
-                              f'{len(file_header.encode(code_table)):<{length_of_message}}'.encode(code_table) +
-                              file_header.encode(code_table) + file_data_read)
+                              f'{len(file_name_size.encode(code_table)):<{length_of_message}}'.encode(code_table) +
+                              file_name_size.encode(code_table) + file_data_read)
             else:
                 message = client.recv(buffer).decode(code_table)
                 time_zone = message[message.find('<') + 1: message.find('>')]
