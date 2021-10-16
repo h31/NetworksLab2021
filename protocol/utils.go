@@ -21,12 +21,14 @@ func GetCurTime() ([]byte, error) {
 	return []byte{byte(h), byte(m)}, nil
 }
 
+// 40_000_001 -> [1 90 98 2]
 func IntToByteArr(size int) []byte {
 	res := toBitArray(size)
 	res = toByteArray(res)
 	return res
 }
 
+// [1 90 98 2] -> 40_000_001
 func ByteArrToInt(arr []byte) int {
 	res := 0
 	arrLen := len(arr)

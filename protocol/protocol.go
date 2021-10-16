@@ -1,7 +1,9 @@
 package protocol
 
 import (
+	"bufio"
 	"errors"
+	"os"
 )
 
 const (
@@ -24,12 +26,63 @@ func NewMessage() *message {
 }
 
 func (m *message) SetCommand(cmd byte) error {
-	byteCmd, err := MakeField(cmd)
+	byteCmd, length, err := MakeField(cmd)
 	if err != nil {
 		return err
 	}
 
 	m.command = byteCmd
+	m.lengths = append(m.lengths, length)
+
+	return nil
+}
+
+func (m *message) SetUsername(username string) error {
+	usernameField, length, err := MakeField([]byte(username))
+	if err != nil {
+		return err
+	}
+
+	m.username = usernameField
+	m.lengths = append(m.lengths, length)
+
+	return nil
+}
+
+func (m *message) SetServerTime(serverTime []byte) error {
+	serverTimeField, length, err := MakeField(serverTime)
+	if err != nil {
+		return err
+	}
+
+	m.serverTime = serverTimeField
+	m.lengths = append(m.lengths, length)
+
+	return nil
+}
+
+func (m *message) SetText(text *string) error {
+	textField, length, err := MakeField(text)
+	if err != nil {
+		return err
+	}
+
+	m.text = textField
+	m.lengths = append(m.lengths, length)
+
+	return nil
+}
+
+func (m *message) SetFile(file *os.File) error {
+	fileField, length, err := MakeField(file)
+	if err != nil {
+		return err
+	}
+
+	m.file = fileField
+	m.lengths = append(m.lengths, length)
+
+	return nil
 }
 
 func (m *message) PackMessage() ([]byte, error) {
@@ -37,18 +90,24 @@ func (m *message) PackMessage() ([]byte, error) {
 }
 
 
-func MakeField(i interface{}) ([]byte, error) {
-	data := []byte{}
+func MakeField(i interface{}) ([]byte, byte, error) {
+	var data []byte
 
-	switch i.(type) {
+	switch t := i.(type) {
 	case string:
-		data = []byte(i.(string))
+		data = []byte(t)
 	case int:
-		data = IntToByteArr(i.(int))
+		data = IntToByteArr(t)
 	case byte:
-		data = []byte{i.(byte)}
+		data = []byte{t}
+	case os.File:
+		buffer := bufio.NewReader(&t)
+		_, err := buffer.Read(data)
+		if err != nil {
+			return nil, 0, err
+		}
 	default:
-		return nil, errors.New("Wrong type")
+		return nil, 0, errors.New("wrong type")
 	}
 
 	dataLength := len(data)
@@ -57,5 +116,5 @@ func MakeField(i interface{}) ([]byte, error) {
 	field := make([]byte, 0, dataLength+len(dataByteLength))
 	field = append(append(field, dataByteLength...), data...)
 
-	return field, nil
+	return field, byte(len(dataByteLength)), nil
 }
