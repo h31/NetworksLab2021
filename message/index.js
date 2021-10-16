@@ -89,6 +89,9 @@ class Message {
       const pureUntil = originalLength - pn.pointsTo.offset;
 
       const parts = pn.labels.slice(0, pureUntil).map(lbl => {
+        if (!lbl) {
+          return [];
+        }
         const buf = Buffer.from(lbl);
         const ln = Buffer.from([buf.byteLength]);
         return [ln, buf];
@@ -101,7 +104,7 @@ class Message {
       } else {
         const { labels: poLabels, offsetFromStart: offsetFromMsgStart } = processedNames[pn.pointsTo.idx];
         const labelsMakingOffset = poLabels.slice(0, poLabels.length - pn.pointsTo.offset);
-        const offsetFromNameStart = labelsMakingOffset.reduce((res, lbl) => res + 1 + lbl.length, 0);
+        const offsetFromNameStart = labelsMakingOffset.reduce((res, lbl) => res + 1 + Buffer.from(lbl).byteLength, 0);
         finisher = BitBuffer.concat([
           new BitBuffer([1, 1], { size: 2 }),
           new BitBuffer(offsetFromMsgStart + offsetFromNameStart, { size: 14 })
@@ -180,6 +183,46 @@ class Message {
    * @private
    */
   static _makeRR(data, rrType, rrClass, ttl, inverse) {
+    const common = BitBuffer.concat([
+      new BitBuffer(rrType, { size: 16 }),
+      new BitBuffer(rrClass, { size: 16 }),
+      new BitBuffer(ttl, { size: 32 })
+    ]).toBuffer();
+
+    if (inverse) { // for inverse queries
+      let rDataBlock;
+
+      switch (rrType) {
+        case ResourceRecord.TYPE.ipv4: {
+          const addrParts = data.split('.').map(Number);
+          rDataBlock = Buffer.from([0, 4, ...addrParts]);
+          break;
+        }
+        case ResourceRecord.TYPE.ipv6: {
+          const addrParts = data.split('.').map(v => Number(`0x${v}`));
+          const addrPartsBuf = (new BitBuffer(addrParts, { eachSize: 16 })).toBuffer();
+          rDataBlock = Buffer.concat([
+            Buffer.from([0, 16]),
+            addrPartsBuf
+          ]);
+          break;
+        }
+        case ResourceRecord.TYPE.text: {
+          const txtBuf = Buffer.from(data);
+          const sizeBuf = (new BitBuffer(txtBuf.byteLength, { size: 16 })).toBuffer();
+          rDataBlock = Buffer.concat([txtBuf, sizeBuf]);
+          break;
+        }
+        case ResourceRecord.TYPE.mailExchange:
+          // TODO
+      }
+
+      return {
+        name: '',
+        otherData: Buffer.concat([common, rDataBlock])
+      };
+    }
+
     // TODO
   }
 
@@ -220,7 +263,8 @@ class Message {
     const header = this._makeHeader(
       id, this.QR.query, opCode, 0,
       +trunc, +recDesired, 0, 0,
-      questions.length, 0, 0, 0
+      sections[0].sectionData.length, sections[1].sectionData.length,
+      0, 0
     );
     return Buffer.concat([header, body]);
   }
@@ -383,6 +427,20 @@ class Message {
           .split([16, 16, 16, 16])
           .map(bb => bb.toNumber().toString(16))
           .join('.');
+        break;
+      case ResourceRecord.TYPE.startOfAuthority:
+        const { currOffset: mNameOffset, name: mName } = this._parseName(payload, currOffset + 10);
+        const { currOffset: rNameOffset, name: rName } = this._parseName(payload, mNameOffset);
+        const otherDataBuf = Buffer.alloc(20);
+        payload.copy(otherDataBuf, 0, rNameOffset, rNameOffset + 20);
+        const [serial, refresh, retry, expire, minimum] =
+          (new BitBuffer(otherDataBuf)).split([32, 32, 32, 32, 32]).map(bb => bb.toNumber());
+        rData = {
+          mName, rName,
+          serial, refresh,
+          retry, expire,
+          minimum
+        };
         break;
     }
 

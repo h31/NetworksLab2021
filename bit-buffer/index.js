@@ -51,11 +51,12 @@ class BitBuffer {
    *
    * @param {Buffer|number|string|Array<Buffer|number|string>} rawData
    * @param {number=} size
+   * @param {number=} eachSize
    * @param {string=utf8} encoding
    * @return {Array<number>}
    * @private
    */
-  _makeData(rawData, { size, encoding = 'utf8' } = {}) {
+  _makeData(rawData, { size, eachSize, encoding = 'utf8' } = {}) {
     let errorText = '';
     let bits;
 
@@ -72,7 +73,7 @@ class BitBuffer {
       const isBitsAlready = !rawData.some(item => ![0, 1].includes(item));
       bits = isBitsAlready
         ? rawData
-        : rawData.map(entry => this._makeData(entry, { encoding })).flat();
+        : rawData.map(entry => this._makeData(entry, { encoding, size: eachSize })).flat();
 
       errorText = 'data';
     } else {
@@ -98,8 +99,8 @@ class BitBuffer {
     return other instanceof BitBuffer ? other.data : (new BitBuffer(other)).data;
   }
 
-  constructor(rawData, { size, encoding = 'utf8' } = {}) {
-    this.data = this._makeData(rawData, { size, encoding });
+  constructor(rawData, { size, eachSize, encoding = 'utf8' } = {}) {
+    this.data = this._makeData(rawData, { size, eachSize, encoding });
   }
 
   toNumber() {
