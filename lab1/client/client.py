@@ -29,10 +29,10 @@ class Client:
         self.username = input(reason).replace("\\", "\\\\").replace("'", "\\'")
 
     def receive(self):
-        '''Метод получения данных от сервера('''
+        """Метод получения данных от сервера"""
         while True:
             try:
-                message = bytes()
+                message = bytearray()
                 letter = self.client_socket.recv(1)
                 while letter != b'\r':
                     message += letter
@@ -59,9 +59,9 @@ class Client:
                     if message['attachmentSize'] != '0' and message['username'] != self.username:
                         size = int(message['attachmentSize'])
                         count = size
-                        attachment = b''
+                        attachment = bytearray()
                         while count > 0:
-                            attachment += bytes(self.client_socket.recv(count))
+                            attachment += self.client_socket.recv(count)
                             count = size - len(attachment)
                         # attachment = b''
                         # for _ in range(int(message['attachmentSize'])):
