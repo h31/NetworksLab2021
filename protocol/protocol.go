@@ -1,28 +1,29 @@
 package protocol
 
 import (
-	"bufio"
 	"errors"
-	"os"
 )
 
 const (
-	CMD_NONE byte = iota
+	CMD_QUIT byte = 1 << iota
 	CMD_NAME
+	CMD_ERROR
 )
 
 type message struct {
-	fields     byte
-	lengths    []byte
-	command    []byte
+	fields     byte // length of lengths field
+	lengths    []byte // how many bytes does the length of each field takes
+	command    []byte 
 	username   []byte
 	serverTime []byte
 	text       []byte
 	file       []byte
 }
 
-func NewMessage() *message {
-	return new(message)
+func NewMessage() message {
+	return message{
+		lengths: make([]byte, 0, 5),
+	}
 }
 
 func (m *message) SetCommand(cmd byte) error {
@@ -33,6 +34,7 @@ func (m *message) SetCommand(cmd byte) error {
 
 	m.command = byteCmd
 	m.lengths = append(m.lengths, length)
+	m.fields++
 
 	return nil
 }
@@ -45,6 +47,7 @@ func (m *message) SetUsername(username string) error {
 
 	m.username = usernameField
 	m.lengths = append(m.lengths, length)
+	m.fields++
 
 	return nil
 }
@@ -57,6 +60,7 @@ func (m *message) SetServerTime(serverTime []byte) error {
 
 	m.serverTime = serverTimeField
 	m.lengths = append(m.lengths, length)
+	m.fields++
 
 	return nil
 }
@@ -69,11 +73,12 @@ func (m *message) SetText(text *string) error {
 
 	m.text = textField
 	m.lengths = append(m.lengths, length)
+	m.fields++
 
 	return nil
 }
 
-func (m *message) SetFile(file *os.File) error {
+func (m *message) SetFile(file []byte) error {
 	fileField, length, err := MakeField(file)
 	if err != nil {
 		return err
@@ -81,12 +86,24 @@ func (m *message) SetFile(file *os.File) error {
 
 	m.file = fileField
 	m.lengths = append(m.lengths, length)
+	m.fields++
 
 	return nil
 }
 
 func (m *message) PackMessage() ([]byte, error) {
-	return nil, nil
+	msgLen := len(m.lengths) + len(m.command) + len(m.username) + len(m.serverTime) + len(m.text) + len(m.file) + 1
+	msg := make([]byte, 0, msgLen)
+
+	msg = append(msg, m.fields)
+	msg = append(msg, m.lengths...)
+	msg = append(msg, m.command...)
+	msg = append(msg, m.username...)
+	msg = append(msg, m.serverTime...)
+	msg = append(msg, m.text...)
+	msg = append(msg, m.file...)
+
+	return msg, nil
 }
 
 
@@ -100,12 +117,8 @@ func MakeField(i interface{}) ([]byte, byte, error) {
 		data = IntToByteArr(t)
 	case byte:
 		data = []byte{t}
-	case os.File:
-		buffer := bufio.NewReader(&t)
-		_, err := buffer.Read(data)
-		if err != nil {
-			return nil, 0, err
-		}
+	case []byte:
+		data = t
 	default:
 		return nil, 0, errors.New("wrong type")
 	}

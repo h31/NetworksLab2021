@@ -7,6 +7,8 @@ import (
 	"os"
 )
 
+// os.ReadFile(string)
+
 func main() {
 
 	// Подключаемся к сокету
