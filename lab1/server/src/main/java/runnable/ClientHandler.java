@@ -5,13 +5,14 @@ import util.Tool;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 
 public class ClientHandler implements Runnable {
     private Socket clientSocket;
     public PrintWriter out;
-    public BufferedReader in;
+    public InputStream in;
     private String nicknameOfClient;
     public DataInputStream dIn;
     public DataOutputStream dOut;
@@ -23,11 +24,12 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try {
-            InputStreamReader inputStreamReader = new InputStreamReader(clientSocket.getInputStream());
+
+            in = clientSocket.getInputStream();
             out = new PrintWriter(clientSocket.getOutputStream(), true);
-            in = new BufferedReader(inputStreamReader);
-            dOut = new DataOutputStream(clientSocket.getOutputStream());
             dIn = new DataInputStream(clientSocket.getInputStream());
+            dOut = new DataOutputStream(clientSocket.getOutputStream());
+            // расшаренный буфер
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -39,8 +41,7 @@ public class ClientHandler implements Runnable {
             ExchangeFormat clientRequest;
             while (true) {
                 System.out.println(ServerStart.clientMap.entrySet() + " <---- current active client list");
-                String message = in.readLine();
-                in.mark(message.length());
+                String message = Tool.readLine(in);
 
                 if (Tool.isClientMessageNull(message)) {
                     killCurrentClient(nicknameOfClient, this);
@@ -48,7 +49,7 @@ public class ClientHandler implements Runnable {
                 }
                 clientRequest = Tool.parseRequest(message);
 
-                System.out.println(message);
+                System.out.println("получена посылка от клиента: " + message);
 
                 if (clientRequest.getParcelType().getStringValue().equals(Tool.RequestType.EXIT.getStringValue())) {
                     closeConnections();
@@ -71,7 +72,7 @@ public class ClientHandler implements Runnable {
     private void greetingNewUser() throws IOException, ClassNotFoundException {
         ExchangeFormat response = new ExchangeFormat();
         ExchangeFormat responseException = new ExchangeFormat();
-        String clientGreetingMessage = in.readLine();
+        String clientGreetingMessage = Tool.readLine(in);
 
         if (Tool.isClientMessageNull(clientGreetingMessage)) {
             killCurrentClient("", this);
@@ -88,7 +89,7 @@ public class ClientHandler implements Runnable {
             responseException.setMessage("1");
             responseException.setTime(Tool.getCurrentTime());
             out.println(responseException.toParcel());
-            clientGreetingMessage = in.readLine();
+            clientGreetingMessage = Tool.readLine(in);
             if (Tool.isClientMessageNull(clientGreetingMessage)) {
                 killCurrentClient(nicknameOfClient, this);
                 return;
@@ -158,11 +159,8 @@ public class ClientHandler implements Runnable {
 
             byte[] bytes = new byte[clientRequest.getAttachmentSize()];
 
-            int count = 0;
-            in.reset();
-            dIn.readFully(bytes);
-
             System.out.println("File received from client ");
+            dIn.readFully(bytes);
             serverResponse.setAttachmentByteArray(bytes);
         }
 

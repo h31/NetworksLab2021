@@ -3,10 +3,17 @@ package util;
 import model.ExchangeFormat;
 import runnable.ServerStart;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Scanner;
 
 public class Tool {
 
@@ -28,8 +35,8 @@ public class Tool {
         }
 
         public static RequestType findByValue(String s) {
-            for(RequestType e : RequestType.values()){
-                if(s.equals(e.getStringValue())) return e;
+            for (RequestType e : RequestType.values()) {
+                if (s.equals(e.getStringValue())) return e;
             }
             return null;
         }
@@ -43,10 +50,25 @@ public class Tool {
 
 
     public static boolean isClientMessageNull(String message) {
-        if(message == null || message.isEmpty()) {
+        if (message == null || message.isEmpty()) {
             return true;
         }
         return false;
+    }
+
+    public static String readLine(InputStream inputStream) throws IOException {
+        InputStreamReader reader = new InputStreamReader(inputStream);
+        //StringBuilder stringBuilder = new StringBuilder();
+        List<Integer> bytesList = new ArrayList<>();
+        int c;
+        while ((c = inputStream.read()) != '\n') {
+            bytesList.add(c);
+        }
+        byte[] krakos = new byte[bytesList.size()];
+        for (int i = 0; i < bytesList.size(); i++) {
+            krakos[i] = (byte) (bytesList.get(i) & 0xFF);
+        }
+        return new String(krakos);
     }
 
 
@@ -80,7 +102,7 @@ public class Tool {
         }
         ExchangeFormat exchangeFormat = new ExchangeFormat();
         try {
-            System.out.println(resultArray);
+            //System.out.println(resultArray);
             exchangeFormat.setParcelType(RequestType.findByValue(resultArray.get(1)));
             exchangeFormat.setMessage(resultArray.get(3));
             exchangeFormat.setUsername(resultArray.get(5));
