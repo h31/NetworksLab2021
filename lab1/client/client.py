@@ -1,5 +1,4 @@
 import socket
-import time
 
 import colorama
 from colorama import Fore, Back, Style
@@ -120,8 +119,7 @@ class Client:
                                 f"'attachmentName':'{name}', 'attachmentSize':'{size}'}}\r\n".encode('utf-8'))
                             # for i in file:
                             #     self.client_socket.send(i)
-                            time.sleep(1)
-                            self.client_socket.sendall(bytes(file))
+                            self.client_socket.sendall(file)
                             print(Fore.GREEN + Back.BLACK + "File sent" + Style.RESET_ALL)
                             attached = True
                         except FileNotFoundError:

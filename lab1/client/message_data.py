@@ -52,7 +52,7 @@ def save_file(username, name, data):
     :type data: byte
     """
     try:
-        with open(f"./Downloads/{username}'s {name}", 'wb+') as filename:
+        with open(f"./Downloads/attachment by {username} {name}", 'wb+') as filename:
             filename.write(data)
     except OSError:
         print("An error occurred while saving the file")
