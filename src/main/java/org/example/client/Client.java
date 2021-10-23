@@ -1,18 +1,25 @@
 package org.example.client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import org.example.server.Server;
+
+import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Client {
 
     private Socket socket;
-    private BufferedReader in;
-    private PrintWriter out;
+    private BufferedInputStream in;
+    private BufferedOutputStream out;
+    private BufferedReader reader;
+    private PrintWriter writer;
     private BufferedReader inputUser;
-    private String nickName;
+    private String nickname;
+    private final Pattern pattern = Pattern.compile(" ?-a (.*)$");
 
     public void startConnection(String ip, int port) {
         try {
@@ -22,8 +29,10 @@ public class Client {
         }
         try {
             inputUser = new BufferedReader(new InputStreamReader(System.in));
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
+            in = new BufferedInputStream(socket.getInputStream());
+            out = new BufferedOutputStream(socket.getOutputStream());
+            reader = new BufferedReader(new InputStreamReader(in));
+            writer = new PrintWriter(new OutputStreamWriter(out), true);
             this.pressNickname();
             new ReadMsg().start();
             new WriteMsg().start();
@@ -34,16 +43,18 @@ public class Client {
     }
 
     private void pressNickname() throws IOException {
-        System.out.print("Enter your nickName: ");
-        nickName = inputUser.readLine();
-        out.write(nickName + "\n");
-        out.flush();
+        System.out.print("Enter your nickname: ");
+        nickname = inputUser.readLine();
+        writer.write(nickname + "\n");
+        writer.flush();
     }
 
     private void downService() {
         try {
             if (!socket.isClosed()) {
                 socket.close();
+                reader.close();
+                writer.close();
                 in.close();
                 out.close();
             }
@@ -55,14 +66,49 @@ public class Client {
         @Override
         public void run() {
 
-            String str;
+            String line;
+            String nickname = "";
+            String text = "";
+            String attName = "";
+            String time = "";
+            int attSize = 0;
             try {
-                while ((str = in.readLine()) != null) {
-                    if (str.equals("stop")) {
-                        Client.this.downService();
-                        break;
+                System.out.println(reader.readLine());
+                while (socket.isConnected()) {
+                    for (int i = 0; i < 5; i++) {
+                        line = reader.readLine();
+                        if (line.equals("stop")) {
+                            Client.this.downService();
+                            break;
+                        }
+                        switch (i) {
+                            case 0:
+                                time = line;
+                                break;
+                            case 1:
+                                nickname = line;
+                                break;
+                            case 2:
+                                text = line;
+                                break;
+                            case 3:
+                                attName = line;
+                                break;
+                            case 4:
+                                attSize = Integer.parseInt(line);
+                                break;
+                        }
                     }
-                    System.out.println(str);
+                    byte[] content = in.readNBytes(attSize);
+                    String message = "(" + time + ")" + " [" + nickname + "] " + text;
+                    System.out.println(message);
+                    String[] f = attName.split("\\.");
+                    File file = File.createTempFile(f[0], "." + f[1]);
+                    BufferedOutputStream fileReader = new BufferedOutputStream(new FileOutputStream(file));
+                    fileReader.write(content);
+                    fileReader.flush();
+                    fileReader.close();
+                    System.out.println(file.getAbsolutePath());
                 }
             } catch (IOException e) {
                 Client.this.downService();
@@ -70,27 +116,40 @@ public class Client {
         }
     }
 
-    public class WriteMsg extends Thread {
+        public class WriteMsg extends Thread {
 
-        @Override
-        public void run() {
-            while (true) {
-                String userWord;
-                try {
-                    userWord = inputUser.readLine();
-                    if (userWord.equals("stop")) {
-                        out.write("stop" + "\n");
-                        Client.this.downService();
-                        break;
-                    } else {
-                        out.write(nickName + ": " + userWord + "\n");
+            @Override
+            public void run() {
+                while (!socket.isClosed()) {
+                    String text;
+                    Matcher matcher;
+                    try {
+                        text = inputUser.readLine();
+                        if (text.isBlank()) continue;
+                        if (text.equals("stop")) {
+                            writer.write("stop" + "\n");
+                            downService();
+                            break;
+                        }
+                        matcher = pattern.matcher(text);
+                        if (matcher.find()) {
+                            String path = matcher.group(1);
+                            File file = new File(path);
+                            if (file.isFile()) {
+                                text = matcher.replaceFirst("(" + file.getName() + " attached)");
+                                BufferedInputStream fileReader = new BufferedInputStream(new FileInputStream(file));
+                                byte[] content = fileReader.readAllBytes();
+                                out.write((nickname + "\n" + text + "\n" + file.getName() + "\n"
+                                        + content.length + "\n").getBytes(StandardCharsets.UTF_8));
+                                out.write(content);
+                                writer.flush();
+                                out.flush();
+                            }
+                        }
+                    } catch (IOException e) {
+                        downService();
                     }
-                    out.flush();
-                } catch (IOException e) {
-                    Client.this.downService();
-
                 }
             }
         }
     }
-}
