@@ -3,8 +3,6 @@ package com.monkeys.ntp
 import com.monkeys.ntp.models.WorkType
 import com.monkeys.ntp.models.WorkType.*
 
-const val DOWNLOADS_DIR = "PCSS downloads/"
-
 const val NTP_PORT = 123
 const val NTP_PACKET_SIZE = 48
 const val NTP_MODE_CLIENT = 3
