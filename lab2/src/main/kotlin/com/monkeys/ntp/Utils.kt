@@ -45,24 +45,27 @@ fun printHelp() {
 
 
 fun writeTimeStamp(buffer: ByteArray, time: Long) {
-    var offset = 0
     var seconds = time / 1000L
     val milliseconds = time % 1000L
 
     seconds += OFFSET_1900_TO_1970
 
-    buffer[offset++] = (seconds shr 24).toByte()
-    buffer[offset++] = (seconds shr 16).toByte()
-    buffer[offset++] = (seconds shr 8).toByte()
-    buffer[offset++] = seconds.toByte()
+    for (i in 3 downTo 0) {
+        buffer[i] = (seconds and 0xff).toCustomByte()
+        seconds = seconds shr 8
+    }
 
-    val fraction = milliseconds * 0x100000000L / 1000L
+    var fraction = milliseconds * 0x100000000L / 1000L
 
-    buffer[offset++] = (fraction shr 24).toByte()
-    buffer[offset++] = (fraction shr 16).toByte()
-    buffer[offset++] = (fraction shr 8).toByte()
-    buffer[offset] = fraction.toByte()
+    for (i in 7 downTo 4) {
+        buffer[i] = (fraction and 0xff).toCustomByte()
+        fraction = fraction shr 8
+    }
 }
+
+fun Int.toCustomByte() = if (this > 127) (128 - this).toByte() else this.toByte()
+
+fun Long.toCustomByte() = this.toInt().toCustomByte()
 
 
 

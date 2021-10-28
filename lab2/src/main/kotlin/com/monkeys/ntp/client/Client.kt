@@ -18,8 +18,9 @@ class Client(val host: String, val port: Int) {
             val packet = DatagramPacket(ntpPacket, ntpPacket.size, InetAddress.getByName("pool.ntp.org"), NTP_PORT)
             val response = DatagramPacket(ntpPacket, ntpPacket.size)
 
-            ntpPacket[0] = (NTP_VERSION.shl(3)).or(NTP_MODE_CLIENT).toByte()
+            ntpPacket[0] = (NTP_VERSION.shl(3)).or(NTP_MODE_CLIENT).toCustomByte()
 
+            //after 1970
             val requestTime = System.currentTimeMillis()
             writeTimeStamp(clientTime, requestTime)
             System.arraycopy(clientTime,0,ntpPacket, TRANSMIT_OFFSET, 8)
@@ -30,6 +31,9 @@ class Client(val host: String, val port: Int) {
             socket.send(packet)
 
             socket.receive(response);
+
+            clientTime.forEach { println(it) }
+            println()
             response.data.forEach { println(it) }
         }
 
