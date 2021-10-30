@@ -1,6 +1,7 @@
 package com.monkeys.ntp.client
 
 import com.monkeys.ntp.*
+import com.monkeys.ntp.models.Header
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -31,6 +32,10 @@ class Client(val host: String, val port: Int) {
 
             socket.receive(response);
             response.data.forEach { println(it) }
+            val responseArray = response.data
+            val h = Header(responseArray)
+            checkValidServerResponse(h.leapIndicator, h.versionNumber, h.mode, h.stratum)
+            h.printHeader()
         }
 
     }

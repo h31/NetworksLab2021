@@ -7,8 +7,18 @@ const val NTP_PORT = 123
 const val NTP_PACKET_SIZE = 48
 const val NTP_MODE_CLIENT = 3
 const val NTP_MODE_SERVER = 4
-const val NTP_VERSION = 3
+const val NTP_VERSION = 4
+const val ROOT_DELAY_OFFSET = 4
+const val ROOT_DISPERSION_OFFSET = 8
+const val REF_ID_OFFSET = 12
+const val REFERENCE_OFFSET = 16
+const val ORIGINATE_OFFSET = 24
+const val RECEIVE_OFFSET = 32
 const val TRANSMIT_OFFSET = 40
+
+const val NTP_LEAP_NO_SYNC = 3
+const val NTP_STRATUM_UNACCEPTABLE: Byte = 0
+const val NTP_STRATUM_MAX = 15
 
 //70 years + 17 days (1904, 1908, ..., 1968) to sec
 const val OFFSET_1900_TO_1970 = (365L * 70L + 17L) * 24L * 60L * 60L
@@ -60,6 +70,17 @@ fun writeTimeStamp(buffer: ByteArray, time: Long) {
     buffer[offset++] = (fraction shr 16).toByte()
     buffer[offset++] = (fraction shr 8).toByte()
     buffer[offset] = fraction.toByte()
+}
+
+fun checkValidServerResponse(leapIndicator: Int,versionNumber: Int, mode: Int, stratum: Byte) {
+    if (leapIndicator == NTP_LEAP_NO_SYNC)
+        throw IllegalStateException("Server isn't synchronized")
+    else if (versionNumber != NTP_VERSION)
+        throw IllegalStateException("Untrusted version")
+    else if (mode != NTP_MODE_SERVER)
+        throw IllegalStateException("Untrusted mode")
+    else if (stratum == NTP_STRATUM_UNACCEPTABLE || stratum > NTP_STRATUM_MAX)
+        throw IllegalStateException("Untrusted mode")
 }
 
 

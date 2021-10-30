@@ -9,8 +9,8 @@ import kotlinx.coroutines.runBlocking
 fun main(args: Array<String>) {
     when(parseArguments(args.toList())) {
         SERVER -> {
-           val server = Server()
-           server.start()
+            val server = Server()
+            server.start()
         }
 
         CLIENT -> {
