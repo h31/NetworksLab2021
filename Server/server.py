@@ -1,3 +1,4 @@
+#coding=utf-8
 import socket
 import threading
 from datetime import datetime
@@ -5,12 +6,12 @@ import os
 
 HEADER_LENGTH = 10  # chiếu dài header
 
-IP = "127.0.0.1"  # địa chỉ localhost
+IP = "0.0.0.0" #"networkslab-ivt.ftp.sh"  # địa chỉ máy chủ
 PORT = 10000  # số port để nghe , số port > 1023
 clients = {}  # danh sách những khách hàng
 SEND_FILE = "SEND_FILE"
 SEPARATOR = "<SEPARATOR>"
-
+UID = "c97ec0d1-df22-41f4-858f-7beee9e1bbc4".encode("utf-8") # string riêng để hiểu rằng tập tin đã kết thúc
 CONNECT = "CONNECT"  # tạo ra const đối với sử dụng chúng sau để hiểu loại của hoạt động khách hàng
 DISCONNECT = "DISCONNECT"  # xem trên
 
@@ -23,31 +24,8 @@ def main():  # chức năng chính
     try:  # sử dụng "try" đối với nắm bắt keyboardInterrupt , ví dụ nếu muốn tắt server
         while True:  # làm "while true" bởi vì muốn luôn luôn làm việc , ngoại trừ tình huống khi muốn tắt server
             (clientsocket, address) = server.accept()  # chấp nhận sự kết nối từ ngoài
-            client = getMessage(clientsocket)  # đọc tên
-            if client:  # nếu đã chấp nhận tên
-                if client in clients.values():
-                    # nếu có một khách hàng với tên này, thì cần phải ngắt kết nối, để tránh tình huống khi có hai
-                    # khách hàng với các tên giống nhau
-                    code_n = f'{DISCONNECT:<{HEADER_LENGTH}}'.encode('utf-8')
-                    notice = f"Xin lỗi, có khách hàng với tên {client['data'].decode('UTF-8')} rồi," \
-                             f"cần phải lựa chọn tên khác".encode('utf-8')
-                    notice_header = f"{len(notice):<{HEADER_LENGTH}}".encode('utf-8')
-                    message = code_n + notice_header + notice
-                    clientsocket.send(message)
-                    clientsocket.close()
-                else:
-                    clients[clientsocket] = client  # thêm khách hàng mới vào danh sách những khách hàng
-                    time = datetime.now().strftime("%H:%M")  # nhận thời gian hiện tại
-                    name = client['data'].decode('UTF-8')
-                    print(
-                        f"At {time}, {name} new client connected ")
-                    #  thông báo rằng, mới có khách hàng đã kết nối
-                    notificationForClient(CONNECT,
-                                          clientsocket)  # thông báo cho những khách hàng khác , rằng khách hàng mới
-                    # đã kết nối
-                    handler_thread = threading.Thread(target=handle_client,
-                                                      args=(clientsocket,))  # tạo ra thread mới cho khách hàng mới
-                    handler_thread.start()  # bắt đầu thread
+            handler_thread = threading.Thread(target=handle_client,args=(clientsocket,))  # tạo ra thread mới cho khách hàng mới
+            handler_thread.start()  # bắt đầu thread
     except KeyboardInterrupt:  # nếu muốn tắt server
         for cl in clients:  # cho mỗi khách hàng
             cl.shutdown(socket.SHUT_WR)  # tắt khách hàng
@@ -57,7 +35,7 @@ def main():  # chức năng chính
         os._exit(0)  # ngừng lập trình
 
 
-def sendToAll(msg, clientsocket):  # chứn năng đối với truền thông báo cho tất cả khách hàng
+def sendToAll(msg, clientsocket):  # chứn năng đối với truyền thông báo cho tất cả khách hàng
     for client in clients:  # cho mỗi khách hàng
         if client != clientsocket:  # không cần gửi thông báo của khách hàng cho mình
             client.send(msg)  # sự gửi
@@ -81,27 +59,32 @@ def getMessage(clientsocket):  # chức năng đối với chấp nhận các th
         message_header = clientsocket.recv(HEADER_LENGTH)  # đọc header của thông báo
         if not len(message_header):  # nếu không có header thì một lỗi đã xảy ra
             return False
-        if message_header.decode('utf-8') == SEND_FILE:  # kiểm tra sẽ nhận file hoặc không
-            file_header_len = int(clientsocket.recv(HEADER_LENGTH).decode())
+        if message_header.decode('utf-8').strip() == SEND_FILE:  # kiểm tra sẽ nhận file hoặc không
+            file_header_len_header = clientsocket.recv(HEADER_LENGTH).decode("utf-8")
+            file_header_len = int(file_header_len_header)
             file_header = clientsocket.recv(file_header_len)  # đọc header của file
             filename, filesize = file_header.decode('utf-8').split(
                 SEPARATOR)  # tách header của file để có tên của file và size
             filename = os.path.basename(filename)  # hàm này cắt bớt đường dẫn đến tệp, chỉ để lại tên tệp
             filesize = int(filesize)  # str -> int
-            bytes_read = clientsocket.recv(filesize)  # đọc cả file
+            total_bytes = bytes() # ở đây sẽ lưu trữ tất cả bytes, những gì đã nhận
+            while not UID in total_bytes: # làm việc trước khi gặp UID , khi gặp UID đây là nghĩa , rằng tập tin đã kết thúc
+                bytes_read = clientsocket.recv(filesize)  # nhận bytes của tập tin
+                total_bytes+=bytes_read # thêm bytes để lưu trữ tất cả những gì đã nhận
             return {
                 'sendFile': True,
                 'header': file_header,
-                'data': bytes_read
+                'data': total_bytes
             }
         else:
-            messsage_length = int(message_header.decode('utf-8').strip())  # tạo ra chiếu dài
+            message_length_header = message_header.decode('utf-8').strip()
+            messsage_length = int(message_length_header)  # tạo ra chiếu dài
             return {
                 'sendFile': False,
                 'header': message_header,
                 'data': clientsocket.recv(messsage_length)}  # đưa header và hạn chế bao nhiều byte cần phải đọc
     except ValueError:  # nếu có vấn đề với loại thông tin, thì một lỗi đâ xảy ra
-        print("Loại của header cần phải sẽ integer // Тип header должен быть int")
+        print("Type header must be int")
         return False
     except:  # nếu các vấn đề khách đã xảy ra
         return False
@@ -109,6 +92,27 @@ def getMessage(clientsocket):  # chức năng đối với chấp nhận các th
 
 def handle_client(clientsocket):
     while True:
+        if clientsocket not in clients.values():
+            client = getMessage(clientsocket)
+            clients[clientsocket] = client  # thêm khách hàng mới vào danh sách những khách hàng
+            time = datetime.now().strftime("%H:%M")  # nhận thời gian hiện tại
+            name = client['data'].decode('UTF-8')
+            print(
+                f"At {time}, {name} new client connected ")
+            #  thông báo rằng, mới có khách hàng đã kết nối
+            notificationForClient(CONNECT,
+                                  clientsocket)  # thông báo cho những khách hàng khác , rằng khách hàng mới
+            # đã kết nối
+        else:
+                # nếu có một khách hàng với tên này, thì cần phải ngắt kết nối, để tránh tình huống khi có hai
+                # khách hàng với các tên giống nhau
+                code_n = f'{DISCONNECT:<{HEADER_LENGTH}}'.encode('utf-8')
+                notice = f"Xin lỗi, có khách hàng với tên {client['data'].decode('UTF-8')} rồi," \
+                         f"cần phải lựa chọn tên khác".encode('utf-8')
+                notice_header = f"{len(notice):<{HEADER_LENGTH}}".encode('utf-8')
+                message = code_n + notice_header + notice
+                clientsocket.send(message)
+                clientsocket.close()
         message = getMessage(clientsocket)  # đọc thông báo
         name = clients[clientsocket]['data'].decode('utf-8')  # đọc tên
         current_time = datetime.now().strftime("%H:%M")  # tạo ra thời gian hiện tại
@@ -137,7 +141,7 @@ def handle_client(clientsocket):
             # viết tin nhắn rằng máy chủ đã chấp nhận tập tin
         else:
             print(
-                f'At {current_time}  received file from {name}: {message["data"].decode("utf-8")}')
+                f'At {current_time}  received message from {name}: {message["data"].decode("utf-8")}')
             # viết tin nhắn rằng máy chủ đã chấp nhận thông báo
             final_message = clients[clientsocket]['header'] + clients[clientsocket]['data'] + message['header'] + \
                             message['data']  # tạo ra thông báo cuối cùng
