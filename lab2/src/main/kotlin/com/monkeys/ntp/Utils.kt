@@ -88,10 +88,10 @@ fun checkValidServerResponse(leapIndicator: Int,versionNumber: Int, mode: Int, s
 
 fun Long.toByteArray() : ByteArray {
     val bytes = ByteArray(4)
-    bytes[3] = (this and 0xFFFF).toByte()
-    bytes[2] = ((this ushr 8) and 0xFFFF).toByte()
-    bytes[1] = ((this ushr 16) and 0xFFFF).toByte()
-    bytes[0] = ((this ushr 24) and 0xFFFF).toByte()
+    bytes[3] = (this and 0xFFFF).toCustomByte()
+    bytes[2] = ((this ushr 8) and 0xFFFF).toCustomByte()
+    bytes[1] = ((this ushr 16) and 0xFFFF).toCustomByte()
+    bytes[0] = ((this ushr 24) and 0xFFFF).toCustomByte()
     return bytes
 }
 
