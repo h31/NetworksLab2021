@@ -70,12 +70,39 @@ class Header(
         return ((sec - OFFSET_1900_TO_1970) * 1000) + ((frac * 1000L) / 0x100000000L);
     }
 
+    fun toByteArray(): ByteArray {
+        val ntpPacket = ByteArray(NTP_PACKET_SIZE)
+        val referenceTime = ByteArray(8)
+        val originateTime = ByteArray(8)
+        val receiveTime = ByteArray(8)
+        val transmitTime = ByteArray(8)
+        val rootDelay = this.rootDelay.toByteArray()
+        val rootDispersion = this.rootDispersion.toByteArray()
+        val refId = this.refId.toByteArray()
+        writeTimeStamp(referenceTime, this.reference)
+        writeTimeStamp(originateTime, this.originate)
+        writeTimeStamp(receiveTime, this.receive)
+        writeTimeStamp(transmitTime, this.transmit)
+        ntpPacket[0] = (NTP_VERSION.shl(3)).or(NTP_MODE_SERVER).toByte()
+        ntpPacket[1] = this.stratum
+        ntpPacket[2] = this.pool
+        ntpPacket[3] = this.precision
+        System.arraycopy(rootDelay, 0, ntpPacket, ROOT_DELAY_OFFSET, 4)
+        System.arraycopy(rootDispersion, 0, ntpPacket, ROOT_DISPERSION_OFFSET, 4)
+        System.arraycopy(refId, 0, ntpPacket, REF_ID_OFFSET, 4)
+        System.arraycopy(referenceTime, 0, ntpPacket, REFERENCE_OFFSET, 8)
+        System.arraycopy(transmitTime, 0, ntpPacket, TRANSMIT_OFFSET,8)
+        System.arraycopy(originateTime, 0, ntpPacket, ORIGINATE_OFFSET, 8)
+        System.arraycopy(receiveTime, 0, ntpPacket, RECEIVE_OFFSET, 8)
+        return ntpPacket
+    }
+
     fun printHeader() {
         println("Leap indicator: $leapIndicator\n" +
                 "Version number: $versionNumber\n" +
                 "Mode: $mode\n" +
                 "Stratum: $stratum\n" +
-                "Pool: $pool\n" +
+                "Poll: $pool\n" +
                 "Precision: $precision\n" +
                 "Root delay: $rootDelay\n" +
                 "Root dispersion: $rootDispersion\n" +

@@ -16,7 +16,7 @@ class Client(val host: String, val port: Int) {
             val ntpPacket = ByteArray(NTP_PACKET_SIZE)
             val clientTime = ByteArray(8)
 
-            val packet = DatagramPacket(ntpPacket, ntpPacket.size, InetAddress.getByName("pool.ntp.org"), NTP_PORT)
+            val packet = DatagramPacket(ntpPacket, ntpPacket.size, InetAddress.getByName("localhost"), 4445)
             val response = DatagramPacket(ntpPacket, ntpPacket.size)
 
             ntpPacket[0] = (NTP_VERSION.shl(3)).or(NTP_MODE_CLIENT).toByte()
@@ -29,9 +29,11 @@ class Client(val host: String, val port: Int) {
             val requestTicks: Long = System.nanoTime() / 1000000L
 
             socket.send(packet)
+            val sendingHeader = Header(packet.data)
+            sendingHeader.printHeader()
 
-            socket.receive(response);
-            response.data.forEach { println(it) }
+            socket.receive(response)
+
             val responseArray = response.data
             val h = Header(responseArray)
             checkValidServerResponse(h.leapIndicator, h.versionNumber, h.mode, h.stratum)
