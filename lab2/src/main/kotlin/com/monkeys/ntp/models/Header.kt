@@ -83,7 +83,7 @@ class Header(
         writeTimeStamp(originateTime, this.originate)
         writeTimeStamp(receiveTime, this.receive)
         writeTimeStamp(transmitTime, this.transmit)
-        ntpPacket[0] = (NTP_VERSION.shl(3)).or(NTP_MODE_SERVER).toByte()
+        ntpPacket[0] = (NTP_VERSION.shl(3)).or(NTP_MODE_SERVER).toCustomByte()
         ntpPacket[1] = this.stratum
         ntpPacket[2] = this.pool
         ntpPacket[3] = this.precision
