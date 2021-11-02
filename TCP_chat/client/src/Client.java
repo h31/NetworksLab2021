@@ -21,7 +21,7 @@ public class Client {
       System.out.println("Enter your username");
       String username = System.console().readLine();
       if (username.length() > USERNAME_SIZE) {
-	System.out.println("Username size is too big");
+        System.out.println("Username size is too big");
         return;
       }
       //creating a socket connected to the server
@@ -79,30 +79,30 @@ public class Client {
     try {
       switch (type) {
         case 0:
-      	  f = new File(filename);
-	  if (!f.exists()) {
-	    System.out.println("File " + filename + "do not exist");
-	    return;
-	  }
-	  msg = msg + "/" + filename + "\n";
-	  send(os, f, msg);	
-          break;
+           f = new File(filename);
+           if (!f.exists()) {
+             System.out.println("File " + filename + "do not exist");
+             return;
+           }
+           msg = msg + "/" + filename + "\n";
+           send(os, f, msg); 
+            break;
         case 1:
-	  msg = msg + "\n";
-	  bw.write(msg);
-	  bw.flush();
-	  break;
+          msg = msg + "\n";
+          bw.write(msg);
+          bw.flush();
+          break;
         case 2:
-	  f = new File(filename);
+          f = new File(filename);
           if (!f.exists()) {
             System.out.println("File " + filename + " do not exist");
             return;
           }
-	  msg = "/" + filename + "\n";
-	  send(os, f, msg);
-	  break;
+          msg = "/" + filename + "\n";
+          send(os, f, msg);
+          break;
       }
-      return;
+    return;
     }
     catch (IOException e) {
       System.out.println("Server lost");
@@ -115,7 +115,7 @@ public class Client {
       byte[] fileBytes = Files.readAllBytes(f.toPath());
       if (fileBytes.length > FILE_SIZE) {
         System.out.println("File size is too big");
-	return;
+        return;
       }
       os.write(msg.getBytes());
       writeInt(os, fileBytes.length);

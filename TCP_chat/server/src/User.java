@@ -26,31 +26,30 @@ class User extends Thread {
   @Override
   public void run() {
     System.out.println("user " + this.username + " is listening");
-
     try {
       MyProtocolServer coder = 
         new MyProtocolServer(this.is);
       byte[] toSend;
       while(true) {
-	MyByteArray arr = new MyByteArray(100);
-	int b;
-	while (true) {
+        MyByteArray arr = new MyByteArray(100);
+        int b;
+        while (true) {
           b = is.read();
-	  if (b == -1)
+          if (b == -1)
             this.removeUser();
-	  if ((byte)b == 10) // new line
-	    break;
-	  arr.add((byte)b);
-	}
-	String msg = new String(arr.getArray(), "UTF-8");
-        System.out.println("new mssadge from user " + this.username);
-	System.out.println("msg = " + msg);
-	toSend = coder.codeMessage(msg, this.username);
-	if (toSend == null) {
-	  System.out.println("Protocol violation by " + this.username);
-	  this.removeUser();
-	}
-        sendAll(toSend);
+          if ((byte)b == 10) // new line
+            break;
+          arr.add((byte)b);
+        }
+      String msg = new String(arr.getArray(), "UTF-8");
+      System.out.println("new mssadge from user " + this.username);
+      System.out.println("msg = " + msg);
+      toSend = coder.codeMessage(msg, this.username);
+      if (toSend == null) {
+        System.out.println("Protocol violation by " + this.username);
+        this.removeUser();
+      }
+      sendAll(toSend);
       }
     } catch (IOException e) {
       //connection lost, need to remove user from list and stop thread
@@ -85,7 +84,7 @@ class User extends Thread {
     synchronized (userList) {
       //remove user from the list, close streams and socket
       try {
-	System.out.println("removing user " + this.username);
+        System.out.println("removing user " + this.username);
         this.is.close();
         this.os.close();
         this.clientSocket.close();

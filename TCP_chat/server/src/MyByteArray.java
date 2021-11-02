@@ -42,9 +42,9 @@ class MyByteArray {
     try {
       while (rec != fileLen) {
         b = is.read();
-	if (b == -1)
-	  return -1;
-	rec++;
+        if (b == -1)
+          return -1;
+        rec++;
         this.add((byte)b);
       }
     System.out.println("RECEIVED = " + rec); 

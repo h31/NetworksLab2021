@@ -21,12 +21,12 @@ public class ServerTCP {
       while(true) {
         //waiting for the connection, return its socket
         Socket clientSocket = serverSocket.accept();
-	System.out.println("new client connected");
+        System.out.println("new client connected");
         //creating buffered reader and buffered writer
         BufferedReader br = new BufferedReader
           (new InputStreamReader(clientSocket.getInputStream()));
-	//reading username
-	String username = br.readLine();
+        //reading username
+        String username = br.readLine();
         //creating a new User
         User newUser = new User(clientSocket, username, clientSocket.getInputStream(), clientSocket.getOutputStream()); 
         //adding to the list
@@ -37,7 +37,7 @@ public class ServerTCP {
       System.out.println("Server error, server closed");
       e.getStackTrace();
       System.exit(1);
-    }	
+    } 
   }
 
   public static LinkedList<User> getUserList() {return ServerTCP.userList;}

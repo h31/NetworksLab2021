@@ -31,37 +31,36 @@ class MyProtocolServer {
     int len = 0;
     switch (type) {
       case 0:
-	if (spl[0].length() > TEXT_SIZE)
-	  return null;	
-	arr.addString(spl[0]); //Text
-	if (spl[spl.length - 1].length() > FILENAME_SIZE)
-	  return null;
-	arr.addString(spl[spl.length - 1]); //Filename
-	len = getInt(); //Filelenght
-	if (len >= FILE_SIZE || len == -1) 
-	  return null;
-	if (arr.receiveFile(len, this.is) == -1) //File
-	  return null;	
+        if (spl[0].length() > TEXT_SIZE)
+          return null; 
+        arr.addString(spl[0]); //Text
+        if (spl[spl.length - 1].length() > FILENAME_SIZE)
+          return null;
+        arr.addString(spl[spl.length - 1]); //Filename
+        len = getInt(); //Filelenght
+        if (len >= FILE_SIZE || len == -1) 
+          return null;
+        if (arr.receiveFile(len, this.is) == -1) //File
+          return null; 
         break;
       case 1:
         if (spl[0].length() > TEXT_SIZE)
-	  return null;	
-	arr.addString(spl[0]); //Text
+          return null; 
+        arr.addString(spl[0]); //Text
         break;
       case 2: 
-	if (spl[spl.length - 1].length() > FILENAME_SIZE)
-	  return null;
-	arr.addString(spl[spl.length - 1]); //Filename
-	len = getInt();
-	if (len > FILE_SIZE || len == -1)  
-	  return null;
-	if (arr.receiveFile(len, this.is) == -1)
- 	  return null;
-	break;
+        if (spl[spl.length - 1].length() > FILENAME_SIZE)
+          return null;
+        arr.addString(spl[spl.length - 1]); //Filename
+        len = getInt();
+        if (len > FILE_SIZE || len == -1)  
+          return null;
+        if (arr.receiveFile(len, this.is) == -1)
+          return null;
+        break;
       default: 
-	return null;
+        return null;
     }
-
     return arr.getArray();
   }
 
@@ -80,10 +79,10 @@ class MyProtocolServer {
     int x;
     int ans = 0;
     try {
-      for (int i = 24; i >= 0; i -= 8) {	
+      for (int i = 24; i >= 0; i -= 8) { 
         x = this.is.read();
-	if (x == -1)
-	  return -1;
+        if (x == -1)
+          return -1;
         ans += (x << i);
       }
     }
@@ -92,6 +91,5 @@ class MyProtocolServer {
     }
     return ans;
   }
-
 }
 
