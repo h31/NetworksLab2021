@@ -1,4 +1,4 @@
-function toLen(str, len, { filler = '0', toEnd } = {}) {
+function toLen(str, len = 2, { filler = '0', toEnd } = {}) {
   const _str = `${str}`;
   const fLen = filler.length;
   const toComplete = len - _str.length;
@@ -41,7 +41,22 @@ function arrIntersectionSize(
   return size;
 }
 
+function capitalize(str) {
+  return `${str[0].toUpperCase()}${str.substring(1)}`;
+}
+
+function formatTime(dt) {
+  const _dt = dt || new Date();
+  const h = toLen(_dt.getHours());
+  const m = toLen(_dt.getMinutes());
+  const s = toLen(_dt.getSeconds());
+  const ms = toLen(_dt.getMilliseconds(), 3);
+  return `[${h}:${m}:${s}.${ms}]`;
+}
+
 module.exports = {
   toLen,
-  arrIntersectionSize
+  arrIntersectionSize,
+  capitalize,
+  formatTime
 };

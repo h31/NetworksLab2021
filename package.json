@@ -4,13 +4,16 @@
   "description": "A simple client-server app implementing a kind of simplified DNS protocol",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "new-server": "index.js server",
+    "new-client": "index.js client"
   },
   "keywords": [],
   "author": "GreenBeaver",
   "license": "ISC",
   "dependencies": {
     "colors": "^1.4.0",
+    "redis": "^4.0.0-rc.3",
     "yargs": "^17.2.1"
   },
   "devDependencies": {

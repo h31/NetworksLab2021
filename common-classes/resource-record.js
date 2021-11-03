@@ -1,6 +1,7 @@
 class ResourceRecord {
   static TYPE = {
     ipv4: 1,
+    canonicalName: 5,
     startOfAuthority: 6,
     mailExchange: 15,
     text: 16,

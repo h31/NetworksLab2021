@@ -1,8 +1,8 @@
 const colors = require('colors');
-const { toLen } = require('../util/misc');
+const { toLen, capitalize } = require('../util/misc');
 
 
-class Logger {
+class UI {
   static status = {
     error: 'error',
     info: 'info',
@@ -16,6 +16,10 @@ class Logger {
       [this.status.info]: 'brightBlue',
       [this.status.plain]: 'white',
       [this.status.bright]: 'cyan'
+    });
+
+    Object.keys(this.status).forEach(s => {
+      this[`display${capitalize(s)}`] = text => console.log(text[s]);
     });
   }
 
@@ -47,7 +51,7 @@ class Logger {
    *
    * @param {Object} data
    * @param {(function(string, Object): string)=} handleNested
-   * @param {number=0} pad
+   * @param {number=} pad
    */
   static asList(
     data,
@@ -61,7 +65,7 @@ class Logger {
     const longestTitleLength = Math.max(...entries.map(e => e[0].length)) + 2;
     for (const [title, message] of entries) {
       let displayMessage = message;
-      if (['Array', 'Object'].includes(message.constructor.name)) {
+      if (message && ['Array', 'Object'].includes(message.constructor.name)) {
         if (multiLevel) {
           console.log(
             padStr,
@@ -81,6 +85,10 @@ class Logger {
       );
     }
   }
+
+  static log() {
+
+  }
 }
 
-module.exports = Logger;
+module.exports = UI;

@@ -1,17 +1,31 @@
-const dgram = require('dgram');
+const GenericDnsAccessor = require('../common-classes/generic-dns-accessor');
+const { useHandlers } = require('../util/hooks');
+const path = require('path');
+const InfoLogger = require('../common-classes/info-logger');
+const { EVENTS } = require('../util/constants');
 
-const server = dgram.createSocket('udp4');
-
-server.on('message', (msg, rinfo) => {
-  console.log({
-    msg,
-    rinfo
+async function run({ port, database }) {
+  const { existing, sock: server } = await GenericDnsAccessor.createAccessor({
+    write: console.log,
+    coloured: true
+  }, {
+    database,
+    mark: 'Server'
   });
-})
 
-server.on('listening', () => {
-  const address = server.address();
-  console.log(`server listening ${address.address}:${address.port}`);
-});
+  if (!existing) {
+    // TODO: Fill the DB with data
+  }
 
-server.bind(41234, 'localhost');
+  useHandlers({
+    applyTo: server,
+    handlersDir: path.join(__dirname, 'event-handlers'),
+    occasionType: InfoLogger.OCCASION_TYPE.event,
+    handledEvents: Object.values(EVENTS),
+    makeExtraArgs: () => [server]
+  });
+
+  server.bind(port);
+}
+
+module.exports = run;

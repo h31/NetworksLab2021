@@ -6,9 +6,8 @@ class BitBuffer {
    * @param {Array<number>} bits
    * @param {number} size
    * @return {Array<number>}
-   * @private
    */
-  _complete(bits, size) {
+  #complete(bits, size) {
     const toComplete = Math.max(0, size - bits.length);
     return [...Array(toComplete).fill(0), ...bits];
   }
@@ -17,9 +16,8 @@ class BitBuffer {
    *
    * @param {number} num
    * @return {Array<number>}
-   * @private
    */
-  _fromNumber(num) {
+  #fromNumber(num) {
     return num.toString(2).split('').map(Number);
   }
 
@@ -27,12 +25,11 @@ class BitBuffer {
    *
    * @param {Buffer} buf
    * @return {Array<number>}
-   * @private
    */
-  _fromBuffer(buf) {
+  #fromBuffer(buf) {
     return Array.from(buf.values()).map(byteVal => {
-      const raw = this._fromNumber(byteVal);
-      return this._complete(raw, 8);
+      const raw = this.#fromNumber(byteVal);
+      return this.#complete(raw, 8);
     }).flat();
   }
 
@@ -41,10 +38,9 @@ class BitBuffer {
    * @param {string} str
    * @param {string=utf8} encoding
    * @return {Array<number>}
-   * @private
    */
-  _fromString(str, encoding = 'utf8') {
-    return this._fromBuffer(Buffer.from(str, encoding));
+  #fromString(str, encoding = 'utf8') {
+    return this.#fromBuffer(Buffer.from(str, encoding));
   }
 
   /**
@@ -53,27 +49,26 @@ class BitBuffer {
    * @param {number=} size
    * @param {number=} eachSize
    * @param {string=utf8} encoding
-   * @return {Array<number>}
-   * @private
+   * @return Array<number>
    */
-  _makeData(rawData, { size, eachSize, encoding = 'utf8' } = {}) {
+  #makeData(rawData, { size, eachSize, encoding = 'utf8' } = {}) {
     let errorText = '';
     let bits;
 
     if (Buffer.isBuffer(rawData)) {
-      bits = this._fromBuffer(rawData);
+      bits = this.#fromBuffer(rawData);
       errorText = `${rawData.byteLength} bytes`;
     } else if (typeof rawData === 'string') {
-      bits = this._fromString(rawData, encoding);
+      bits = this.#fromString(rawData, encoding);
       errorText = `"${rawData}"`;
     } else if (typeof rawData === 'number') {
-      bits = this._fromNumber(rawData);
+      bits = this.#fromNumber(rawData);
       errorText = rawData;
     } else if (Array.isArray(rawData)) {
       const isBitsAlready = !rawData.some(item => ![0, 1].includes(item));
       bits = isBitsAlready
         ? rawData
-        : rawData.map(entry => this._makeData(entry, { encoding, size: eachSize })).flat();
+        : rawData.map(entry => this.#makeData(entry, { encoding, size: eachSize })).flat();
 
       errorText = 'data';
     } else {
@@ -86,21 +81,20 @@ class BitBuffer {
       throw new Error(`Can't fit ${errorText} in ${size} bits`);
     }
 
-    return wSize ? this._complete(bits, size) : bits;
+    return wSize ? this.#complete(bits, size) : bits;
   }
 
   /**
    *
    * @param {BitBuffer|string|number|Array<string|number>}other
    * @return {Array<number>}
-   * @private
    */
-  _useOther(other) {
+  #useOther(other) {
     return other instanceof BitBuffer ? other.data : (new BitBuffer(other)).data;
   }
 
   constructor(rawData, { size, eachSize, encoding = 'utf8' } = {}) {
-    this.data = this._makeData(rawData, { size, eachSize, encoding });
+    this.data = this.#makeData(rawData, { size, eachSize, encoding });
   }
 
   toNumber() {
@@ -126,11 +120,11 @@ class BitBuffer {
   }
 
   append(data) {
-    this.data.push(...this._useOther(data));
+    this.data.push(...this.#useOther(data));
   }
 
   prepend(data) {
-    this.data.unshift(...this._useOther(data));
+    this.data.unshift(...this.#useOther(data));
   }
 
   /**
@@ -152,6 +146,7 @@ class BitBuffer {
   /**
    *
    * @param {Array<number>} prefix
+   * @return {boolean}
    */
   startsWith(prefix) {
     for (const idx in prefix) {
@@ -163,6 +158,12 @@ class BitBuffer {
     return true;
   }
 
+  /**
+   *
+   * @param {Array<BitBuffer>} bufList
+   * @param {number=} totalSize
+   * @return {BitBuffer}
+   */
   static concat(bufList, totalSize) {
     return new BitBuffer(bufList.map(buf => buf.data).flat(), { size: totalSize });
   }

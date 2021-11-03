@@ -1,4 +1,4 @@
-const BitBuffer = require('../bit-buffer/index');
+const BitBuffer = require('../common-classes/bit-buffer');
 
 describe('BitBuffer', () => {
   it('Should make BitBuffer from a number', () => {
