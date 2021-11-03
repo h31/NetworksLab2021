@@ -13,7 +13,7 @@ fun main(args: Array<String>) {
         }
 
         CLIENT -> {
-            val client = Client(null, 4445)
+            val client = Client("pool.ntp.org", NTP_PORT)
             runBlocking { client.start() }
         }
 

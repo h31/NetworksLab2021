@@ -16,7 +16,7 @@ class Client(private val host: String?, private val port: Int?) {
             val clientTime = ByteArray(8)
 
             try {
-                val packet = DatagramPacket(ntpPacket, ntpPacket.size, InetAddress.getByName(host ?: "localhost"), port ?: NTP_PORT)
+                val packet = DatagramPacket(ntpPacket, ntpPacket.size, InetAddress.getByName(host ?: "pool.ntp.org"), port ?: NTP_PORT)
                 val response = DatagramPacket(ntpPacket, ntpPacket.size)
 
                 ntpPacket[0] = (NTP_VERSION.shl(3)).or(NTP_MODE_CLIENT).toByte()
