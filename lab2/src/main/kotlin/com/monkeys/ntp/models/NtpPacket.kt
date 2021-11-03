@@ -4,7 +4,7 @@ import com.monkeys.ntp.*
 
 const val OFFSET_1900_TO_1970 = (365L * 70L + 17L) * 24L * 60L * 60L
 
-class Header(
+class NtpPacket(
     var leapIndicator: Int = 0,                 //2 bits
     var versionNumber: Int = 4,                 //3 bits
     var mode: Int = 3,                          //3 bits      3 - client, 4 - server
@@ -61,14 +61,12 @@ class Header(
         val referenceTime = ByteArray(8)
         val originateTime = ByteArray(8)
         val receiveTime = ByteArray(8)
-        val transmitTime = ByteArray(8)
         val rootDelay = this.rootDelay.toByteArray()
         val rootDispersion = this.rootDispersion.toByteArray()
         val refId = this.refId.toByteArray()
         writeTimeStamp(referenceTime, this.reference)
         writeTimeStamp(originateTime, this.originate)
         writeTimeStamp(receiveTime, this.receive)
-        writeTimeStamp(transmitTime, this.transmit)
         ntpPacket[0] = (NTP_VERSION.shl(3)).or(NTP_MODE_SERVER).toByte()
         ntpPacket[1] = this.stratum
         ntpPacket[2] = this.pool
@@ -77,14 +75,17 @@ class Header(
         System.arraycopy(rootDispersion, 0, ntpPacket, ROOT_DISPERSION_OFFSET, 4)
         System.arraycopy(refId, 0, ntpPacket, REF_ID_OFFSET, 4)
         System.arraycopy(referenceTime, 0, ntpPacket, REFERENCE_OFFSET, 8)
-        System.arraycopy(transmitTime, 0, ntpPacket, TRANSMIT_OFFSET,8)
         System.arraycopy(originateTime, 0, ntpPacket, ORIGINATE_OFFSET, 8)
         System.arraycopy(receiveTime, 0, ntpPacket, RECEIVE_OFFSET, 8)
+        val transmitTime = ByteArray(8)
+        val transmit = System.currentTimeMillis()
+        this.transmit = transmit
+        writeTimeStamp(transmitTime, this.transmit)
+        System.arraycopy(transmitTime, 0, ntpPacket, TRANSMIT_OFFSET, 8)
         return ntpPacket
     }
 
-    fun printHeader() {
-        println("Leap indicator: $leapIndicator\n" +
+    override fun toString(): String ="Leap indicator: $leapIndicator\n" +
                 "Version number: $versionNumber\n" +
                 "Mode: $mode\n" +
                 "Stratum: $stratum\n" +
@@ -96,6 +97,5 @@ class Header(
                 "Reference: $reference\n" +
                 "Originate: $originate\n" +
                 "Receive: $receive\n" +
-                "Transmit: $transmit\n")
-    }
+                "Transmit: $transmit\n"
 }

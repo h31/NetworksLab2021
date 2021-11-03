@@ -2,7 +2,6 @@ package com.monkeys.ntp
 
 import com.monkeys.ntp.client.Client
 import com.monkeys.ntp.models.WorkType.*
-import com.monkeys.ntp.models.parseHostAndPort
 import com.monkeys.ntp.server.Server
 import kotlinx.coroutines.runBlocking
 
@@ -14,7 +13,7 @@ fun main(args: Array<String>) {
         }
 
         CLIENT -> {
-            val client = Client("localhost", 8081)
+            val client = Client(null, 4445)
             runBlocking { client.start() }
         }
 
