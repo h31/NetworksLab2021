@@ -1,6 +1,7 @@
 package com.monkeys.ntp.server
 
 import com.monkeys.ntp.NTP_PACKET_SIZE
+import com.monkeys.ntp.getIpAndCodeInRefId
 import com.monkeys.ntp.models.NtpPacket
 import kotlinx.coroutines.runBlocking
 import java.net.DatagramPacket
@@ -24,12 +25,13 @@ class Server() {
     }
 
     private fun getTimeForClient(inputPacket: DatagramPacket, receiveTime: Long) {
+        val refId = getIpAndCodeInRefId()
         val respond = NtpPacket(
             mode = 4,
             stratum = 2,
             precision = -25,
             rootDispersion = 2,
-            refId = 1347441408,
+            refId = refId,
             reference = receiveTime,
             originate = NtpPacket(inputPacket.data).transmit,
             receive = receiveTime
