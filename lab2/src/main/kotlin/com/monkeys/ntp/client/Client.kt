@@ -24,11 +24,9 @@ class Client(val host: String, val port: Int) {
             ntpPacket[0] = (NTP_VERSION.shl(3)).or(NTP_MODE_CLIENT).toByte()
 
             val requestTime = System.currentTimeMillis()
+            println(requestTime)
             writeTimeStamp(clientTime, requestTime)
             System.arraycopy(clientTime,0,ntpPacket, TRANSMIT_OFFSET, 8)
-
-            //for read response
-            val requestTicks: Long = System.nanoTime() / 1000000L
 
             socket.send(packet)
             val sendingHeader = Header(packet.data)

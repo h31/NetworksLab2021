@@ -51,7 +51,6 @@ fun printHelp() {
     )
 }
 
-
 fun writeTimeStamp(buffer: ByteArray, time: Long) {
     var seconds = time / 1000L
     val milliseconds = time % 1000L
@@ -59,21 +58,17 @@ fun writeTimeStamp(buffer: ByteArray, time: Long) {
     seconds += OFFSET_1900_TO_1970
 
     for (i in 3 downTo 0) {
-        buffer[i] = (seconds and 0xff).toCustomByte()
+        buffer[i] = (seconds and 0xff).toByte()
         seconds = seconds shr 8
     }
 
     var fraction = milliseconds * 0x100000000L / 1000L
 
     for (i in 7 downTo 4) {
-        buffer[i] = (fraction and 0xff).toCustomByte()
+        buffer[i] = (fraction and 0xff).toByte()
         fraction = fraction shr 8
     }
 }
-
-fun Int.toCustomByte() = if (this > 127) (128 - this).toByte() else this.toByte()
-
-fun Long.toCustomByte() = this.toInt().toCustomByte()
 
 fun checkValidServerResponse(leapIndicator: Int,versionNumber: Int, mode: Int, stratum: Byte) {
     if (leapIndicator == NTP_LEAP_NO_SYNC)
@@ -88,12 +83,11 @@ fun checkValidServerResponse(leapIndicator: Int,versionNumber: Int, mode: Int, s
 
 fun Long.toByteArray() : ByteArray {
     val bytes = ByteArray(4)
-    bytes[3] = (this and 0xFFFF).toCustomByte()
-    bytes[2] = ((this ushr 8) and 0xFFFF).toCustomByte()
-    bytes[1] = ((this ushr 16) and 0xFFFF).toCustomByte()
-    bytes[0] = ((this ushr 24) and 0xFFFF).toCustomByte()
+    bytes[3] = (this and 0xFFFF).toByte()
+    bytes[2] = ((this ushr 8) and 0xFFFF).toByte()
+    bytes[1] = ((this ushr 16) and 0xFFFF).toByte()
+    bytes[0] = ((this ushr 24) and 0xFFFF).toByte()
     return bytes
 }
-
 
 

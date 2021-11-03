@@ -19,20 +19,6 @@ class Header(
     var receive: Long = 0,                      //64 bits
     var transmit: Long = 0                      //64 bits
 ){
-    constructor(versionNumber: Int, mode: Int, transmit: Long) : this() {
-        this.versionNumber = versionNumber
-        this.mode = mode
-        this.transmit = transmit
-    }
-
-    constructor(mode: Int, transmit: Long) : this() {
-        this.mode = mode
-        this.transmit = transmit
-    }
-
-    constructor(transmit: Long) : this() {
-        this.transmit = transmit
-    }
 
     constructor(array: ByteArray): this() {
         leapIndicator = array[0].toInt() shr 6 and 0x3
@@ -64,7 +50,7 @@ class Header(
         return (i0.toLong() shl 24) + (i1.toLong() shl 16) + (i2.toLong() shl 8) + i3.toLong()
     }
 
-    fun convertToTimestamp(array: ByteArray, offset: Int): Long {
+    private fun convertToTimestamp(array: ByteArray, offset: Int): Long {
         val sec = convertTo32(array, offset)
         val frac = convertTo32(array, offset + 4)
         return ((sec - OFFSET_1900_TO_1970) * 1000) + ((frac * 1000L) / 0x100000000L);
@@ -83,7 +69,7 @@ class Header(
         writeTimeStamp(originateTime, this.originate)
         writeTimeStamp(receiveTime, this.receive)
         writeTimeStamp(transmitTime, this.transmit)
-        ntpPacket[0] = (NTP_VERSION.shl(3)).or(NTP_MODE_SERVER).toCustomByte()
+        ntpPacket[0] = (NTP_VERSION.shl(3)).or(NTP_MODE_SERVER).toByte()
         ntpPacket[1] = this.stratum
         ntpPacket[2] = this.pool
         ntpPacket[3] = this.precision
