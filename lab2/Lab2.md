@@ -1,4 +1,6 @@
 # Lab2: Реализация Trivial File Transfer Protocol (TFTP)  
+Полное описание протокола приведено в RFC 1350: https://datatracker.ietf.org/doc/html/rfc1350  
+
 **Формат TFTP пакетов:**  
 ![](https://raw.githubusercontent.com/MickeyMouseMouse/NetworksLab2021/lab2/lab2/images/tftp_message_format.PNG "")  
 
