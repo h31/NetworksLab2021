@@ -163,61 +163,57 @@ class Message {
   // TODO: data type ???
   /**
    *
-   * @param {string} data
+   * @param {object} data
    * @param {number} rrType
    * @param {number} rrClass
    * @param {number} ttl
-   * @param {boolean=false} inverse
+   * @param {string} name
    * @return {SectionItem}
    */
-  static #makeRR(data, rrType, rrClass, ttl, inverse) {
+  static #makeRR(data, rrType, rrClass, ttl, name) {
     const common = BitBuffer.concat([
       new BitBuffer(rrType, { size: 16 }),
       new BitBuffer(rrClass, { size: 16 }),
       new BitBuffer(ttl, { size: 32 })
     ]).toBuffer();
 
-    if (inverse) { // for inverse queries
-      let rDataBlock;
+    let rDataBlock;
 
-      switch (rrType) {
-        case ResourceRecord.TYPE.ipv4: {
-          const addrParts = data.split('.').map(Number);
-          rDataBlock = Buffer.from([0, 4, ...addrParts]);
-          break;
-        }
-        case ResourceRecord.TYPE.ipv6: {
-          const addrParts = data.split(':').map(v => Number(`0x${v}`));
-          const addrPartsBuf = (new BitBuffer(addrParts, { eachSize: 16 })).toBuffer();
-          rDataBlock = Buffer.concat([
-            Buffer.from([0, 16]),
-            addrPartsBuf
-          ]);
-          break;
-        }
-        case ResourceRecord.TYPE.text: {
-          const txtBuf = Buffer.from(data);
-          const sizeBuf = (new BitBuffer(txtBuf.byteLength, { size: 16 })).toBuffer();
-          rDataBlock = Buffer.concat([txtBuf, sizeBuf]);
-          break;
-        }
-        case ResourceRecord.TYPE.mailExchange:
-          // TODO
+    switch (rrType) {
+      case ResourceRecord.TYPE.ipv4: {
+        const addrParts = data.a.split('.').map(Number);
+        rDataBlock = Buffer.from([0, 4, ...addrParts]);
+        break;
       }
-
-      return {
-        name: '',
-        otherData: Buffer.concat([common, rDataBlock])
-      };
+      case ResourceRecord.TYPE.ipv6: {
+        const addrParts = data.aaaa.split(':').map(v => Number(`0x${v}`));
+        const addrPartsBuf = (new BitBuffer(addrParts, { eachSize: 16 })).toBuffer();
+        rDataBlock = Buffer.concat([
+          Buffer.from([0, 16]),
+          addrPartsBuf
+        ]);
+        break;
+      }
+      case ResourceRecord.TYPE.text: {
+        const txtBuf = Buffer.from(data);
+        const sizeBuf = (new BitBuffer(txtBuf.byteLength, { size: 16 })).toBuffer();
+        rDataBlock = Buffer.concat([txtBuf, sizeBuf]);
+        break;
+      }
+      case ResourceRecord.TYPE.mailExchange:
+      // TODO
     }
 
-    // TODO
+    return {
+      name,
+      otherData: Buffer.concat([common, rDataBlock])
+    };
+
   }
 
   // === === === === === ===
   // MAKE
   // === === === === === ===
-
 
   /**
    *
@@ -231,7 +227,7 @@ class Message {
    */
   static makeRequest(
     id, questions, {
-      opCode= this.OPCODE.standardQuery,
+      opCode = this.OPCODE.standardQuery,
       recDesired = true,
       qType= ResourceRecord.TYPE.ipv4,
       qClass= ResourceRecord.CLASS.internet
@@ -239,7 +235,8 @@ class Message {
   ) {
     const sections = [...Array(4)].map(() => ({ noCompress: false, sectionData: [] }));
     if (opCode === this.OPCODE.inverseQuery) {
-      sections[1].sectionData = questions.map(q => this.#makeRR(q, qType, qClass, 0, true))
+      const field = qType === ResourceRecord.TYPE.ipv4 ? 'a' : 'aaaa';
+      sections[1].sectionData = questions.map(q => this.#makeRR({ [field]: q }, qType, qClass, 0, ''))
     } else {
       sections[0].sectionData = questions.map(q => this.#makeQuestion(q, qType, qClass));
     }
@@ -253,6 +250,35 @@ class Message {
       sections[0].sectionData.length, sections[1].sectionData.length,
       0, 0
     );
+    return Buffer.concat([header, body]);
+  }
+
+  // return {
+  //       id,
+  //       qr, opCode, authAns, trunc, recDes, recAv, rCode,
+  //       qdCount, anCount, nsCount, arCount,
+  //       questions, answers, authority, additional
+  //     };
+  //  * @return {{qClass: number, currOffset: number, name: string, qType: number}}
+
+  static makeResponse(request, answers, authority, additional) {
+    const header = this.#makeHeader(
+      request.id,
+      this.QR.response,
+      request.opCode,
+      1,
+      0,
+      request.recDes,
+      1, 0, request.qdCount, answers.length, authority.length, additional.length
+    );
+    const sections = [
+      { noCompress: true, sectionData: request.questions.map(q => this.#makeQuestion(q.name, q.qType, q.qClass)) },
+      ...[answers, authority, additional].map(sect =>
+        ({ noCompress: false, sectionData: sect.map(sItem => this.#makeRR(sItem.data, +sItem.type, +sItem.class, +sItem.ttl, sItem.name)) })
+      )
+    ];
+
+    const body = this.#compressMessage(...sections);
     return Buffer.concat([header, body]);
   }
 
@@ -401,7 +427,7 @@ class Message {
         break;
       case ResourceRecord.TYPE.mailExchange:
         const [preferenceBuf] = (new BitBuffer(rDataBuf)).split([16]);
-        const exchange = Array.from(rDataBuf.values()).slice(2).join('.');
+        const exchange = this.#parseName(payload, rDataStart + 2).name;
         rData = {
           preference: preferenceBuf.toNumber(),
           exchange
@@ -409,9 +435,9 @@ class Message {
         break;
       case ResourceRecord.TYPE.ipv6:
         rData = (new BitBuffer(rDataBuf))
-          .split([16, 16, 16, 16])
+          .split([16, 16, 16, 16, 16, 16, 16, 16])
           .map(bb => bb.toNumber().toString(16))
-          .join('.');
+          .join(':');
         break;
       case ResourceRecord.TYPE.startOfAuthority:
         const { currOffset: mNameOffset, name: mName } = this.#parseName(payload, rDataStart);

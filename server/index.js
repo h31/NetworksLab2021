@@ -1,31 +1,19 @@
-const GenericDnsAccessor = require('../common-classes/generic-dns-accessor');
-const { useHandlers } = require('../util/hooks');
-const path = require('path');
-const InfoLogger = require('../common-classes/info-logger');
-const { EVENTS } = require('../util/constants');
+const DnsReplicaServer = require('./dns-replica-server');
 
-async function run({ port, database }) {
-  const { existing, sock: server } = await GenericDnsAccessor.createAccessor({
-    write: console.log,
-    coloured: true
-  }, {
-    database,
-    mark: 'Server'
-  });
 
-  if (!existing) {
-    // TODO: Fill the DB with data
+async function run({ port, database, dump, cli }) {
+  const { accessor: server, existing } = await DnsReplicaServer.createAccessor(database);
+
+  if (dump) {
+    await server.runDbPopulation(dump)
   }
 
-  useHandlers({
-    applyTo: server,
-    handlersDir: path.join(__dirname, 'event-handlers'),
-    occasionType: InfoLogger.OCCASION_TYPE.event,
-    handledEvents: Object.values(EVENTS),
-    makeExtraArgs: () => [server]
-  });
+  const noInitialData = !dump && !existing;
+  if (cli || noInitialData) {
+    await server.runCli(noInitialData);
+  }
 
-  server.bind(port);
+  server.runServer(port);
 }
 
 module.exports = run;

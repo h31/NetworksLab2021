@@ -8,9 +8,20 @@ const EVENTS = {
   error: 'error',
   listening: 'listening',
   message: 'message',
+
+  line: 'line',
 };
+
+const SOCK_EVENTS = [
+  EVENTS.close,
+  EVENTS.error,
+  EVENTS.message,
+  EVENTS.listening,
+  EVENTS.connect
+];
 
 module.exports = {
   SIGNALS,
-  EVENTS
+  EVENTS,
+  SOCK_EVENTS
 };

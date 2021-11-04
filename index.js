@@ -1,78 +1,5 @@
-// // const Message = require('./common-classes');
-// // const Logger = require('./client/logger');
-// // const dgram = require('dgram');
-// // const BitBuffer = require('./common-classes');
-// // const ResourceRecord = require('./common-classes');
-// //
-// // const f = () => {
-// //   Logger.initTheme();
-// //   const client = dgram.createSocket('udp4');
-// //
-// //   process.on('SIGINT', () => client.close(() => {
-// //     console.log('closed!');
-// //   }));
-// //
-// //   try {
-// //     const mes = Message.makeRequest(
-// //       0xaa,
-// //       ['95.211.37.196'],
-// //       { opCode: Message.OPCODE.inverseQuery }
-// //     );
-// //     // console.log(Array.from(mes.values()));
-// //
-// //     // const p = Message.parse(mes);
-// //     // Logger.asList(p);
-// //     console.log('HEADER'.red);
-// //     Logger.asTable([
-// //       [16],
-// //       [1, 4, 1, 1, 1, 1, 3, 4],
-// //       [16], [16], [16], [16]
-// //     ], (new BitBuffer(mes)).data);
-// //     console.log('BODY'.red);
-// //     console.log(Array.from(mes.values()).slice(12));
-// //
-// //     client.send(
-// //       mes, 0, mes.byteLength, 53,
-// //       '8.8.8.8', (error, bytes) => {
-// //         console.log({
-// //           error,
-// //           bytes
-// //         });
-// //       }
-// //     );
-// //
-// //     client.on('message', (msg, rinfo) => {
-// //       console.log({
-// //         msg,
-// //         rinfo
-// //       });
-// //       Logger.asList(Message.parse(msg));
-// //     });
-// //
-// //     client.on('error', err => {
-// //       console.log(err);
-// //       client.close(() => console.log('closed!'));
-// //     });
-// //   } catch (e) {
-// //     console.log(e);
-// //     client.close(() => console.log('closed!'));
-// //   }
-// // };
-// //
-// //
-// // //f();
-// //
-// // const yargs = require('yargs/yargs');
-// //
-// // const a = yargs().parse(['127.0.0.1', '--display', 't']);
-// //
-// // console.log(a);
-//
 const yargs = require('yargs/yargs');
-
-
 const { hideBin } = require('yargs/helpers');
-
 
 const COMMANDS = {
   server: 'server',
@@ -86,7 +13,9 @@ yargs(hideBin(process.argv))
     desc: 'Start server',
     handler: require('./server'),
     builder: (_yargs) => _yargs.options({
-      port: { type: 'number', default: 41234 }
+      port: { type: 'number', default: 41234, alias: 'p', desc: 'Port to bind the server socket to' },
+      dump: { type: 'string', normalize: true, alias: 'd', desc: 'A .json file with the data to fill the database' },
+      cli: { type: 'boolean', default: false, alias: 'c', desc: 'Start in cli mode' }
     })
   })
   .command({
@@ -96,19 +25,6 @@ yargs(hideBin(process.argv))
   })
   .demandCommand(1, 1, DEMAND_COMMAND_MSG, DEMAND_COMMAND_MSG)
   .options({
-    database: { type: 'number', desc: 'Redis database to use (create new if nothing provided)' },
+    database: { type: 'number', desc: 'Redis database to use. A new one is created if nothing provided. #0 is reserved', alias: 'n' },
   })
   .parse();
-
-// const redis = require('redis');
-//
-// const woo = async () => {
-//   const rc = redis.createClient();
-//   await rc.connect();
-//   const nl = await rc.sAdd('aboba', '12');
-//   console.log(nl);
-//
-//   await rc.quit();
-// }
-//
-// woo()
