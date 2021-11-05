@@ -31,5 +31,23 @@ sealed class RecordType(val code: Short, private val str: String) {
     override fun toString(): String {
         return str
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as RecordType
+
+        if (code != other.code) return false
+        if (str != other.str) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = code.toInt()
+        result = 31 * result + str.hashCode()
+        return result
+    }
 }
 
