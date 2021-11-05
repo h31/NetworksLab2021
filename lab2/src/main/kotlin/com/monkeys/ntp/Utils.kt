@@ -2,6 +2,8 @@ package com.monkeys.ntp
 
 import com.monkeys.ntp.models.WorkType
 import com.monkeys.ntp.models.WorkType.*
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 const val NTP_PORT = 123
 const val NTP_PACKET_SIZE = 48
@@ -100,4 +102,25 @@ fun parseHostAndPort(arg: String) : Pair<String, Int> {
     }
 }
 
+fun getIpAndCodeInRefId(): Long {
+    return try {
+        val processBuilder = ProcessBuilder()
+        processBuilder.command("bash", "-c", "ip a | grep inet | grep -v inet6 | grep -v 127.0.0.1 | awk '{print \$2}'")
+        val process = processBuilder.start()
+        val reader = BufferedReader(InputStreamReader(process.inputStream))
+        val ip = reader.readLines()[0].split("/")[0]
+        ipIntoBytes(ip)
+    } catch (e: Exception) {
+        0L
+    }
+}
 
+fun ipIntoBytes(ip: String) : Long {
+    val ipSplit = ip.split(".")
+    var res = 0L
+    for (i in ipSplit.indices) {
+        val ipElementLong = ipSplit[i].toLong()
+        res = res or (ipElementLong shl i * 8)
+    }
+    return res
+}
