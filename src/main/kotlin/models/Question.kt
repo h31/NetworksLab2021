@@ -21,4 +21,3 @@ data class Question(var qname: String,
         }
     }
 }
-

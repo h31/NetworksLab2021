@@ -5,19 +5,24 @@ import models.Question.Companion.getQuestionFromByteArray
 import nameToBytes
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
+import java.lang.IllegalArgumentException
 
 class DNSMessage(var header: Header, var question: Question, var resList: List<Resource>) {
 
     companion object {
         fun parseByteArray(inData: ByteArray) : DNSMessage {
-            val header = getHeaderFromByteArray(inData)
-            val qPair = getQuestionFromByteArray(inData)
-            val question = qPair.first
-            val index = qPair.second
-            val resAmount = header.ancount + header.nscount + header.arcount
-            val resources = getResourcesFromByteArray(inData, index, resAmount)
+            return try {
+                val header = getHeaderFromByteArray(inData)
+                val qPair = getQuestionFromByteArray(inData)
+                val question = qPair.first
+                val index = qPair.second
+                val resAmount = header.ancount + header.nscount + header.arcount
+                val resources = getResourcesFromByteArray(inData, index, resAmount)
 
-            return DNSMessage(header, question, resources)
+                DNSMessage(header, question, resources)
+            } catch (e: IllegalArgumentException) {
+                DNSMessage(Header(), Question(), emptyList())
+            }
         }
 
         private fun getResourcesFromByteArray(inData: ByteArray, index: Int, resAmount: Int): List<Resource> {
