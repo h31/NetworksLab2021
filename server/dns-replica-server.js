@@ -30,7 +30,7 @@ class DnsReplicaServer extends GenericDnsAccessor {
     });
   }
 
-  runServer(port) {
+  runServer(port, address) {
     const { SOCK_EVENTS } = require('../util/constants');
     const { useHandlers } = require('../util/hooks');
 
@@ -42,7 +42,7 @@ class DnsReplicaServer extends GenericDnsAccessor {
       makeExtraArgs: () => [this]
     });
 
-    this.sock.bind(port);
+    this.sock.bind(port, address);
   }
 
   async runCli(withWarning) {

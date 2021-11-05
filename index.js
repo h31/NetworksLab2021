@@ -15,7 +15,8 @@ yargs(hideBin(process.argv))
     builder: (_yargs) => _yargs.options({
       port: { type: 'number', default: 41234, alias: 'p', desc: 'Port to bind the server socket to' },
       dump: { type: 'string', normalize: true, alias: 'd', desc: 'A .json file with the data to fill the database' },
-      cli: { type: 'boolean', default: false, alias: 'c', desc: 'Start in cli mode' }
+      cli: { type: 'boolean', default: false, alias: 'c', desc: 'Start in cli mode' },
+      address: { type: 'string', default: 'localhost', alias: 'a', desc: 'Address to bind the server socket to' }
     })
   })
   .command({

@@ -1,7 +1,7 @@
 const DnsReplicaServer = require('./dns-replica-server');
 
 
-async function run({ port, database, dump, cli }) {
+async function run({ port, database, dump, cli, address }) {
   const { accessor: server, existing } = await DnsReplicaServer.createAccessor(database);
 
   if (dump) {
@@ -13,7 +13,7 @@ async function run({ port, database, dump, cli }) {
     await server.runCli(noInitialData);
   }
 
-  server.runServer(port);
+  server.runServer(port, address);
 }
 
 module.exports = run;
