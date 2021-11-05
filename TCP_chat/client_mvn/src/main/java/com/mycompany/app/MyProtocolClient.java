@@ -76,17 +76,15 @@ class MyProtocolClient {
   private String getText() {
     int len = this.getInt();
     byte[] bytes = new byte[len];
-    int b;
-    int rec = 0;
+    int wasRead = 0;
     try {
-      while (rec != len) {
-        b = this.is.read();
-        if (b == -1) {
+      while (wasRead < len) {
+        int res = this.is.read(bytes, wasRead, len - wasRead);
+        if (res == -1) {
           System.out.println("Server lost");
           System.exit(-1);
         }
-        bytes[rec] = (byte)b;
-        rec++;
+        wasRead += res;
       }
     }
     catch (IOException e) {
@@ -108,17 +106,21 @@ class MyProtocolClient {
     try {
       FileOutputStream os = new FileOutputStream(file);
       int len = this.getInt();
-      int rec = 0;
-      int b;
-      while (rec != len) {
-        b = this.is.read();
-        if (b == -1) {
-        System.out.println("Server lost");
+      int wasRead = 0; //bytes received
+      byte[] bytes = new byte[1024];
+      while(wasRead < len) {
+        int toRead = len - wasRead;
+        if(toRead > 1024)
+          toRead = 1024;
+        int res = is.read(bytes, 0, toRead);
+        if (res == -1) {
+          System.out.println("Server lost");
           System.exit(-1);
         }
-        os.write((byte)b);
-        rec++;
-      } 
+        else
+          wasRead += res;
+        os.write(bytes, 0, res);
+      }
       os.close();
     }
     catch (IOException e) {

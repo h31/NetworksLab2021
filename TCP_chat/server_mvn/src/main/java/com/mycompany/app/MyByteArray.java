@@ -31,23 +31,26 @@ class MyByteArray {
   public void addString(String str) {
     byte[] bytes = str.getBytes();
     this.addInt(bytes.length);
-    this.addAll(bytes);
+    this.addAll(bytes, bytes.length);
     return;
   }
 
   public int receiveFile(int fileLen, InputStream is) {
     addInt(fileLen);
-    int rec = 0; //bytes received
-    int b;
+    int wasRead = 0; //bytes received
+    byte[] bytes = new byte[1024];
     try {
-      while (rec != fileLen) {
-        b = is.read();
-        if (b == -1)
+      while(wasRead < fileLen) {
+        int toRead = fileLen - wasRead;
+        if(toRead > 1024) 
+          toRead = 1024;
+        int res = is.read(bytes, 0, toRead);
+        if (res == -1)
           return -1;
-        rec++;
-        this.add((byte)b);
+        else 
+          wasRead += res;
+	addAll(bytes, res);
       }
-    System.out.println("RECEIVED = " + rec); 
     } catch (IOException e) {return -1;}
     return 0;
   }
@@ -60,8 +63,8 @@ class MyByteArray {
     return;
   }
 
-  private void addAll(byte[] data) {
-    for (int i = 0; i < data.length; i++)
+  private void addAll(byte[] data, int len) {
+    for (int i = 0; i < len; i++)
       this.add(data[i]);
     return;
   }

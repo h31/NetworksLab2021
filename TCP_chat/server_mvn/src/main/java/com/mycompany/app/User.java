@@ -24,7 +24,7 @@ class User extends Thread {
 
   @Override
   public void run() {
-    System.out.println("user " + this.username + " is listening");
+    System.out.println("new user is listening");
     try {
       MyProtocolServer coder = 
         new MyProtocolServer(this.is);
@@ -34,8 +34,10 @@ class User extends Thread {
         int b;
         while (true) {
           b = is.read();
-          if (b == -1)
+          if (b == -1) {
             this.removeUser();
+	    break;
+	  }
           if ((byte)b == '\n') // new line
             break;
           arr.add((byte)b);
