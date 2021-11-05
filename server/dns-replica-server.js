@@ -3,6 +3,7 @@ const path = require('path');
 const InfoLogger = require('../common-classes/info-logger');
 const { insistOnAnswer } = require('../util/rl');
 const { wAmount } = require('../util/misc');
+const { EVENTS } = require('../util/constants');
 
 class DnsReplicaServer extends GenericDnsAccessor {
   static #C_BEHAVIOUR = {
@@ -71,8 +72,20 @@ class DnsReplicaServer extends GenericDnsAccessor {
         await this.runDbPopulation(dump);
         return;
       case DnsReplicaServer.#C_BEHAVIOUR.C:
-        // TODO: cli mode
-        console.log('CLI (kinda...)');
+        console.log('Type "--exit" to exit cli');
+        rl.prompt();
+        await new Promise(resolve => {
+          rl.on(EVENTS.line, async input => {
+            rl.pause();
+            if (input === '--exit') {
+              return resolve();
+            }
+
+            const output = await this.convenientRedis.callCommand(input.split(' '));
+            console.log(output);
+            rl.prompt();
+          });
+        });
         return;
     }
   }

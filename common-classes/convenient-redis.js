@@ -87,7 +87,7 @@ class ConvenientRedis {
       _args[1] = await this.generateId();
     }
 
-    return this.#redisClient.callCommand(_args);
+    return this.#redisClient.sendCommand(_args);
   }
 
   async save() {
