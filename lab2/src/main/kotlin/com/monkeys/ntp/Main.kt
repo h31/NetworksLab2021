@@ -20,13 +20,8 @@ fun main(args: Array<String>) {
         CLIENT_WITH_ARGUMENTS -> {
             val clientArgumentIndex = args.indexOf("-c") + 1
             val arg = parseHostAndPort(args[clientArgumentIndex])
-            try {
-                val client = Client(arg.first, arg.second)
-                runBlocking { client.start() }
-            } catch (e: Exception) {
-                println("Incorrect arguments or it is impossible to establish a connection with the specified server.\n" +
-                        "Connection not establishment")
-            }
+            val client = Client(arg.first, arg.second)
+            runBlocking { client.start() }
         }
 
         HELP -> {

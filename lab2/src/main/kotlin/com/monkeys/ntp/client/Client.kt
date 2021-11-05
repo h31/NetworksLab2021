@@ -7,7 +7,7 @@ import java.net.DatagramSocket
 import java.net.InetAddress
 import java.util.*
 
-class Client(private val host: String?, private val port: Int?) {
+class Client(private val host: String, private val port: Int) {
 
     fun start() {
         val socket = DatagramSocket()
@@ -16,17 +16,17 @@ class Client(private val host: String?, private val port: Int?) {
             val clientTime = ByteArray(8)
 
             try {
-                val packet = DatagramPacket(ntpPacket, ntpPacket.size, InetAddress.getByName(host ?: "pool.ntp.org"), port ?: NTP_PORT)
-                val response = DatagramPacket(ntpPacket, ntpPacket.size)
-
                 ntpPacket[0] = (NTP_VERSION.shl(3)).or(NTP_MODE_CLIENT).toByte()
 
                 val requestTime = System.currentTimeMillis()
                 writeTimeStamp(clientTime, requestTime)
                 System.arraycopy(clientTime, 0, ntpPacket, TRANSMIT_OFFSET, 8)
 
+                val packet = DatagramPacket(ntpPacket, ntpPacket.size, InetAddress.getByName(host), port)
                 socket.send(packet)
 
+                val response = DatagramPacket(ntpPacket, ntpPacket.size)
+                socket.soTimeout = 5 * 1000
                 socket.receive(response)
 
                 val responseArray = response.data
