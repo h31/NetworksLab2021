@@ -56,12 +56,12 @@ class Server(private val serverPort: Int) {
         val result = mutableListOf<Resource>()
         val filePath =
             when (rType) {
-            is RecordType.A -> RECORD_FILE_PATH + RecordType.A().toString()
-            is RecordType.MX -> RECORD_FILE_PATH + RecordType.MX(0).toString()
-            is RecordType.TXT -> RECORD_FILE_PATH + RecordType.TXT(0).toString()
-            is RecordType.AAAA -> RECORD_FILE_PATH + RecordType.AAAA().toString()
-            is RecordType.NotImpl -> return result
-        }
+                is RecordType.A -> RECORD_FILE_PATH + RecordType.A().toString()
+                is RecordType.MX -> RECORD_FILE_PATH + RecordType.MX(0).toString()
+                is RecordType.TXT -> RECORD_FILE_PATH + RecordType.TXT(0).toString()
+                is RecordType.AAAA -> RECORD_FILE_PATH + RecordType.AAAA().toString()
+                is RecordType.NotImpl -> return result
+            }
         //types: 1 15 16 28
         //resource: name type rClass=1 ttl rdlength rdata
         val file = File(filePath)
@@ -70,7 +70,6 @@ class Server(private val serverPort: Int) {
             .map { it.split(SPACE_CHARACTER.toRegex(), 2) }
             .filter { it[0] == name }
             .forEach { res[it[1]] = rType }
-
         for (entry in res) {
             val rdLength: Int = when(rType) {
                 is RecordType.A -> RecordType.A().size()
