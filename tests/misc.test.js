@@ -1,4 +1,4 @@
-const { arrIntersectionSize, toLen, flattenJSON, wAmount, get, set } = require('../util/misc');
+const { arrIntersectionSize, toLen, flattenJSON, wAmount, get, set, getCleanIpV6 } = require('../util/misc');
 
 describe('Misc Functions', () => {
   it('arrIntersectionSize', () => {
@@ -106,5 +106,14 @@ describe('Misc Functions', () => {
     expect(obj2).toEqual({  arr: ['zero', 'one', undefined, undefined, { hidden: '?' }] });
 
     expect(() => set(obj2, ['arr', '1', 'good'], 'bad')).toThrow('Can\'t set value at provided path');
+  });
+
+  it('getCleanIpV6', () => {
+    expect(getCleanIpV6('::')).toBe('0:0:0:0:0:0:0:0');
+    expect(getCleanIpV6('a:b:c:d::')).toBe('a:b:c:d:0:0:0:0');
+    expect(getCleanIpV6('::e:f:g:h')).toBe(null);
+    expect(getCleanIpV6('a:b::c:d')).toBe('a:b:0:0:0:0:c:d');
+    expect(getCleanIpV6('12::a::15')).toBe(null);
+    expect(getCleanIpV6('1:2:3:4:5:6:7:8')).toBe('1:2:3:4:5:6:7:8');
   });
 });

@@ -1,8 +1,9 @@
 const InfoLogger = require('./info-logger');
-const { SIGNALS, EVENTS } = require('../util/constants');
+const { SIGNALS, EVENTS, OPCODE } = require('../util/constants');
 const dgram = require('dgram');
 const ConvenientRedis = require('./convenient-redis');
 const { setupRl } = require('../util/rl');
+const { getAField } = require('../util/dns');
 
 class GenericDnsAccessor {
   sock;
@@ -59,6 +60,51 @@ class GenericDnsAccessor {
     const rl = setupRl();
     rl.on(EVENTS.close, () => this.closeEverything());
     return rl;
+  }
+
+  async processRequest(req) {
+    const questions = [...req.questions];
+    const answers = [];
+    let noDataFor;
+    if (req.opCode === OPCODE.inverseQuery) {
+      answers.push(...req.answers);
+      await this.convenientRedis.scanRecords(dbRecord => {
+        for (const idx in answers) {
+          const fakeAnswer = answers[idx];
+          if (fakeAnswer.type === +dbRecord.type && fakeAnswer.class === +dbRecord.class) {
+            const field = getAField(fakeAnswer.type);
+            if (fakeAnswer.data[field] === dbRecord.data[field]) {
+              answers[idx].name = dbRecord.name;
+              answers[idx].ttl = +dbRecord.ttl;
+              questions[idx] = {
+                name: dbRecord.name,
+                type: +dbRecord.type,
+                class: +dbRecord.class
+              };
+              return false;
+            }
+          }
+        }
+
+        return !answers.some(ans => !ans.name);
+      });
+      noDataFor = answers.reduce((res, ans) =>
+        ans.name ? res : [...res, ans]
+      );
+    } else {
+      noDataFor = [];
+      for (const question of req.questions) {
+        const possibleAnswers = await this.convenientRedis.getAllByTag(question.name);
+        const filteredAnswers = possibleAnswers.filter(ans => +ans.type === question.type && +ans.class === question.class);
+        if (filteredAnswers.length) {
+          answers.push(...filteredAnswers);
+        } else {
+          noDataFor.push(question);
+        }
+      }
+    }
+
+    return { questions, answers, noDataFor };
   }
 }
 

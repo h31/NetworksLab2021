@@ -165,6 +165,62 @@ function wAmount(amt, text) {
   return `${amt} ${_text}${ending}`;
 }
 
+const IPV6_PART_PATTERN = /^[\da-fA-F]{1,4}$/;
+
+/**
+ *
+ * @param {string} address
+ * @return {string | null}
+ */
+function getCleanIpV6(address) {
+  if (address === '::') {
+    return Array(8).fill(0).join(':');
+  }
+
+  const shorthands = address.match(/::/g) || [];
+  const shorthandsAmt = shorthands.length;
+  if (shorthandsAmt > 1) {
+    return null;
+  }
+
+  const shorthandIdx = address.indexOf('::');
+  const start = shorthandIdx === 0;
+  const end = shorthandIdx === address.length - 2;
+
+  let toParse = address;
+
+  if (shorthandsAmt) {
+    const replaceValue = start || end ? '' : ':';
+    toParse = address.replace('::', replaceValue);
+  }
+
+  const parts = toParse.split(':');
+  const len = parts.length;
+  if (!shorthandsAmt && len !== 8 || shorthandsAmt && len > 7) {
+    return null;
+  }
+
+  if (parts.some(part => !IPV6_PART_PATTERN.test(part))) {
+    return null;
+  }
+
+  if (!shorthandsAmt) {
+    return address;
+  }
+
+  const fillerSize = 8 - len;
+  const filler = Array(fillerSize).fill(0).join(':');
+  if (start) {
+    return `${filler}:${toParse}`;
+  }
+
+  if (end) {
+    return `${toParse}:${filler}`;
+  }
+
+  return address.replace('::', `:${filler}:`);
+}
+
 module.exports = {
   toLen,
   arrIntersectionSize,
@@ -174,5 +230,6 @@ module.exports = {
   wAmount,
   get,
   set,
-  swellJSON
+  swellJSON,
+  getCleanIpV6
 };

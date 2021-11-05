@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "new-server": "index.js server",
+    "default-server": "index.js server -n 1",
     "new-client": "index.js client"
   },
   "keywords": [],

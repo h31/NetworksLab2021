@@ -12,7 +12,6 @@ class DnsReplicaClient extends GenericDnsAccessor {
     super(...args);
   }
 
-  history = {};
   rl;
   yargsParser;
   nextRequestId = 1;
@@ -87,9 +86,15 @@ class DnsReplicaClient extends GenericDnsAccessor {
         },
         type: {
           alias: 't',
-          choices: Object.keys(ResourceRecord.TYPE),
-          default: 'ipv4',
-          desc: 'What type of data you want to get (does not have effect for inverse queries)'
+          type: 'array',
+          default: [],
+          desc: 'What type of data you want to get (does not have effect for inverse queries). "ipv4" is used for all questions by default'
+        },
+        class: {
+          alias: 'c',
+          type: 'array',
+          default: [],
+          desc: 'What class of data you want to get. "internet" is used for all questions by default'
         }
       });
 

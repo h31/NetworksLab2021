@@ -20,8 +20,15 @@ const SOCK_EVENTS = [
   EVENTS.connect
 ];
 
+const OPCODE = {
+  standardQuery: 0,
+  inverseQuery: 1,
+  status: 2
+};
+
 module.exports = {
   SIGNALS,
   EVENTS,
-  SOCK_EVENTS
+  SOCK_EVENTS,
+  OPCODE
 };

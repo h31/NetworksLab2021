@@ -106,9 +106,7 @@ class DnsReplicaServer extends GenericDnsAccessor {
     const rawDumpData = await fs.promises.readFile(dump);
     const jsonDumpData = JSON.parse(rawDumpData.toString());
     for (const dataEntry of jsonDumpData) {
-      const id = await this.convenientRedis.generateId();
-      await this.convenientRedis.sAdd(dataEntry.name, id);
-      await this.convenientRedis.insertJSON(id, dataEntry);
+      await this.convenientRedis.insertWithTag(dataEntry, dataEntry.name);
     }
     await this.convenientRedis.save();
     await InfoLogger.log({

@@ -1,6 +1,8 @@
 const BitBuffer = require('./bit-buffer');
 const ResourceRecord = require('./resource-record');
 const { arrIntersectionSize } = require('../util/misc');
+const { getAField } = require('../util/dns');
+const { OPCODE } = require('../util/constants');
 
 
 /**
@@ -9,23 +11,11 @@ const { arrIntersectionSize } = require('../util/misc');
  * @property {string} name
  * @property {Buffer} otherData
  */
-/**
- * @typedef CompressConfig
- * @type Object
- * @property {Array<SectionItem>} sectionData
- * @property {boolean} noCompress
- */
 
 class Message {
   static QR = {
     query: 0,
     response: 1
-  };
-
-  static OPCODE = {
-    standardQuery: 0,
-    inverseQuery: 1,
-    status: 2
   };
 
   static RCODE = {
@@ -46,28 +36,26 @@ class Message {
 
   /**
    *
-   * @param {CompressConfig} questions
-   * @param {CompressConfig} answers
-   * @param {CompressConfig} authority
-   * @param {CompressConfig} additional
+   * @param {Array<SectionItem>} questions
+   * @param {Array<SectionItem>} answers
+   * @param {Array<SectionItem>} authority
+   * @param {Array<SectionItem>} additional
    * @return {Buffer}
    */
   static #compressMessage(questions, answers, authority, additional) {
     const processedNames = [];
     [questions, answers, authority, additional].forEach(section => {
-      section.sectionData.forEach(item => {
+      section.forEach(item => {
         const labels = item.name.split('.');
         const pointsTo = { idx: null, offset: 0 };
 
-        if (!section.noCompress) {
-          processedNames.forEach((pn, idx) => {
-            const intSize = arrIntersectionSize(labels, pn.labels);
-            if (intSize > pointsTo.offset) {
-              pointsTo.offset = intSize;
-              pointsTo.idx = idx;
-            }
-          });
-        }
+        processedNames.forEach((pn, idx) => {
+          const intSize = arrIntersectionSize(labels, pn.labels);
+          if (intSize > pointsTo.offset) {
+            pointsTo.offset = intSize;
+            pointsTo.idx = idx;
+          }
+        });
 
         processedNames.push({ labels, pointsTo, otherData: item.otherData });
       });
@@ -147,39 +135,38 @@ class Message {
   /**
    *
    * @param {string} domainName
-   * @param {number} qType
-   * @param {number} qClass
+   * @param {number} type
+   * @param {number} klass
    * @return {SectionItem}
    */
-  static #makeQuestion(domainName, qType, qClass) {
-    const qTypeBuf = (new BitBuffer(qType, { size: 16 })).toBuffer();
-    const qClassBuf = (new BitBuffer(qClass, { size: 16 })).toBuffer();
+  static #makeQuestion(domainName, type, klass) {
+    const qTypeBuf = (new BitBuffer(type, { size: 16 })).toBuffer();
+    const qClassBuf = (new BitBuffer(klass, { size: 16 })).toBuffer();
     return {
       name: domainName,
       otherData: Buffer.concat([qTypeBuf, qClassBuf])
     };
   }
 
-  // TODO: data type ???
   /**
    *
    * @param {object} data
-   * @param {number} rrType
-   * @param {number} rrClass
+   * @param {number} type
+   * @param {number} klass
    * @param {number} ttl
    * @param {string} name
    * @return {SectionItem}
    */
-  static #makeRR(data, rrType, rrClass, ttl, name) {
+  static #makeRR(data, type, klass, ttl, name) {
     const common = BitBuffer.concat([
-      new BitBuffer(rrType, { size: 16 }),
-      new BitBuffer(rrClass, { size: 16 }),
+      new BitBuffer(type, { size: 16 }),
+      new BitBuffer(klass, { size: 16 }),
       new BitBuffer(ttl, { size: 32 })
     ]).toBuffer();
 
     let rDataBlock;
 
-    switch (rrType) {
+    switch (type) {
       case ResourceRecord.TYPE.ipv4: {
         const addrParts = data.a.split('.').map(Number);
         rDataBlock = Buffer.from([0, 4, ...addrParts]);
@@ -195,20 +182,30 @@ class Message {
         break;
       }
       case ResourceRecord.TYPE.text: {
-        const txtBuf = Buffer.from(data);
+        const txtBuf = Buffer.from(data.text);
         const sizeBuf = (new BitBuffer(txtBuf.byteLength, { size: 16 })).toBuffer();
         rDataBlock = Buffer.concat([txtBuf, sizeBuf]);
         break;
       }
       case ResourceRecord.TYPE.mailExchange:
-      // TODO
+        const prefBuf = (new BitBuffer(+data.preference, { size: 16 })).toBuffer();
+        const labels = data.exchange.split('.');
+        let exchangeBuf = Buffer.alloc(0);
+        labels.forEach(label => {
+          const textBuf = Buffer.from(label);
+          const lenBuf = Buffer.from([textBuf.byteLength]);
+          exchangeBuf = Buffer.concat([exchangeBuf, lenBuf, textBuf]);
+        });
+        const rData = Buffer.concat([prefBuf, exchangeBuf, Buffer.from([0])]);
+        const rdLengthBuf = (new BitBuffer(rData.byteLength, { size: 16 })).toBuffer();
+        rDataBlock = Buffer.concat([rdLengthBuf, rData]);
+        break;
     }
 
     return {
       name,
       otherData: Buffer.concat([common, rDataBlock])
     };
-
   }
 
   // === === === === === ===
@@ -218,27 +215,25 @@ class Message {
   /**
    *
    * @param {number} id
-   * @param {Array<string>} questions
+   * @param {Array<{ name: string, type: number, class: number }>} questions
    * @param {number=} [opCode = 0]
    * @param {boolean=} [recDesired = true]
-   * @param {number=} [qType = 1]
-   * @param {number} [qClass = 1]
    * @return {Buffer}
    */
   static makeRequest(
     id, questions, {
-      opCode = this.OPCODE.standardQuery,
+      opCode = OPCODE.standardQuery,
       recDesired = true,
-      qType= ResourceRecord.TYPE.ipv4,
-      qClass= ResourceRecord.CLASS.internet
     } = {}
   ) {
-    const sections = [...Array(4)].map(() => ({ noCompress: false, sectionData: [] }));
-    if (opCode === this.OPCODE.inverseQuery) {
-      const field = qType === ResourceRecord.TYPE.ipv4 ? 'a' : 'aaaa';
-      sections[1].sectionData = questions.map(q => this.#makeRR({ [field]: q }, qType, qClass, 0, ''))
+    const sections = [...Array(4)].map(() => []);
+    if (opCode === OPCODE.inverseQuery) {
+      sections[1] = questions.map(q => {
+        const field = getAField(q.type);
+        return this.#makeRR({ [field]: q.name }, q.type, q.class, 0, '');
+      });
     } else {
-      sections[0].sectionData = questions.map(q => this.#makeQuestion(q, qType, qClass));
+      sections[0] = questions.map(q => this.#makeQuestion(q.name, q.type, q.class));
     }
     const body = this.#compressMessage(...sections);
 
@@ -247,21 +242,13 @@ class Message {
     const header = this.#makeHeader(
       id, this.QR.query, opCode, 0,
       +trunc, +recDesired, 0, 0,
-      sections[0].sectionData.length, sections[1].sectionData.length,
+      sections[0].length, sections[1].length,
       0, 0
     );
     return Buffer.concat([header, body]);
   }
 
-  // return {
-  //       id,
-  //       qr, opCode, authAns, trunc, recDes, recAv, rCode,
-  //       qdCount, anCount, nsCount, arCount,
-  //       questions, answers, authority, additional
-  //     };
-  //  * @return {{qClass: number, currOffset: number, name: string, qType: number}}
-
-  static makeResponse(request, answers, authority, additional) {
+  static makeResponse(request, questions, answers, authority, additional) {
     const header = this.#makeHeader(
       request.id,
       this.QR.response,
@@ -269,12 +256,12 @@ class Message {
       1,
       0,
       request.recDes,
-      1, 0, request.qdCount, answers.length, authority.length, additional.length
+      1, 0, questions.length, answers.length, authority.length, additional.length
     );
     const sections = [
-      { noCompress: true, sectionData: request.questions.map(q => this.#makeQuestion(q.name, q.qType, q.qClass)) },
+      questions.map(q => this.#makeQuestion(q.name, q.type, q.class)),
       ...[answers, authority, additional].map(sect =>
-        ({ noCompress: false, sectionData: sect.map(sItem => this.#makeRR(sItem.data, +sItem.type, +sItem.class, +sItem.ttl, sItem.name)) })
+        sect.map(sItem => this.#makeRR(sItem.data, +sItem.type, +sItem.class, +sItem.ttl, sItem.name))
       )
     ];
 
@@ -373,19 +360,19 @@ class Message {
    *
    * @param {Buffer} payload
    * @param {number} startOffset
-   * @return {{qClass: number, currOffset: number, name: string, qType: number}}
+   * @return {{class: number, currOffset: number, name: string, type: number}}
    */
   static #parseQuestion(payload, startOffset) {
     const { name, currOffset } = this.#parseName(payload, startOffset);
 
     const typeAndClassBuf = Buffer.alloc(4);
     payload.copy(typeAndClassBuf, 0, currOffset, currOffset + 4);
-    const [qType, qClass] = (new BitBuffer(typeAndClassBuf)).split([16, 16]).map(bb => bb.toNumber());
+    const [type, klass] = (new BitBuffer(typeAndClassBuf)).split([16, 16]).map(bb => bb.toNumber());
 
     return {
       name,
-      qType,
-      qClass,
+      type,
+      class: klass,
       currOffset: currOffset + 4
     };
   }
@@ -397,11 +384,11 @@ class Message {
    * @return {{
    *   rdLength: number,
    *   currOffset: number,
-   *   rrType: number,
+   *   type: number,
    *   name: string,
-   *   rData: string | {preference: number, exchange: string},
+   *   data: { a: string } | { text: string } | { aaaa: string } | { cName: string } | { preference: number, exchange: string },
    *   ttl: number,
-   *   rrClass: number
+   *   class: number
    * }}
    */
   static #parseRR(payload, startOffset) {
@@ -409,32 +396,30 @@ class Message {
     const configBuf = Buffer.alloc(10);
     payload.copy(configBuf, 0, currOffset, currOffset + 10);
     const [
-      rrType, rrClass, ttl, rdLength
+      type, klass, ttl, rdLength
     ] = (new BitBuffer(configBuf)).split([16, 16, 32, 16]).map(bb => bb.toNumber());
 
     const rDataBuf = Buffer.alloc(rdLength);
     const rDataStart = currOffset + 10;
     const rDataEnd = rDataStart + rdLength;
     payload.copy(rDataBuf, 0, rDataStart, rDataEnd);
-    let rData;
+    let data = {};
 
-    switch (rrType) {
+    switch (type) {
       case ResourceRecord.TYPE.ipv4:
-        rData = Array.from(rDataBuf.values()).join('.');
+        data.a = Array.from(rDataBuf.values()).join('.');
         break;
       case ResourceRecord.TYPE.text:
-        rData = rDataBuf.toString();
+        data.text = rDataBuf.toString();
         break;
       case ResourceRecord.TYPE.mailExchange:
         const [preferenceBuf] = (new BitBuffer(rDataBuf)).split([16]);
         const exchange = this.#parseName(payload, rDataStart + 2).name;
-        rData = {
-          preference: preferenceBuf.toNumber(),
-          exchange
-        };
+        data.preference = preferenceBuf.toNumber();
+        data.exchange = exchange;
         break;
       case ResourceRecord.TYPE.ipv6:
-        rData = (new BitBuffer(rDataBuf))
+        data.aaaa = (new BitBuffer(rDataBuf))
           .split([16, 16, 16, 16, 16, 16, 16, 16])
           .map(bb => bb.toNumber().toString(16))
           .join(':');
@@ -446,7 +431,7 @@ class Message {
         payload.copy(otherDataBuf, 0, rNameOffset, rNameOffset + 20);
         const [serial, refresh, retry, expire, minimum] =
           (new BitBuffer(otherDataBuf)).split([32, 32, 32, 32, 32]).map(bb => bb.toNumber());
-        rData = {
+        data = {
           mName, rName,
           serial, refresh,
           retry, expire,
@@ -454,10 +439,10 @@ class Message {
         };
         break;
       case ResourceRecord.TYPE.canonicalName:
-        rData = this.#parseName(payload, rDataStart).name;
+        data.cName = this.#parseName(payload, rDataStart).name;
     }
 
-    return { name, rrType, rrClass, ttl, rdLength, rData, currOffset: rDataEnd };
+    return { name, type, class: klass, ttl, rdLength, data, currOffset: rDataEnd };
   }
 
   // === === === === === ===

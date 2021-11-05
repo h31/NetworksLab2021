@@ -1,5 +1,6 @@
 const Message = require('../../common-classes/message');
 const InfoLogger = require('../../common-classes/info-logger');
+const ResourceRecord = require('../../common-classes/resource-record');
 
 /**
  *
@@ -10,13 +11,9 @@ const InfoLogger = require('../../common-classes/info-logger');
  */
 async function handle(reqMsg, rInfo, server) {
   const parsedReqMessage = Message.parse(reqMsg);
-  const allAnswers = [];
-  for (const question of parsedReqMessage.questions) {
-    const answersForQuestion = await server.convenientRedis.getAllByTag(question.name);
-    allAnswers.push(...answersForQuestion.filter(ans => +ans.type === question.qType && +ans.class === question.qClass));
-  }
+  const { questions, answers } = await server.processRequest(parsedReqMessage);
 
-  const respMsg = Message.makeResponse(parsedReqMessage, allAnswers, [], []);
+  const respMsg = Message.makeResponse(parsedReqMessage, questions, answers, [], []);
   const [sendingErr, bytes] = await new Promise(resolve =>
     server.sock.send(
       respMsg, 0, respMsg.byteLength, rInfo.port, rInfo.address,

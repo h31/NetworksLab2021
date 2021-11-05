@@ -115,7 +115,7 @@ class ConvenientRedis {
 
   async retrieveJSON(key) {
     const redisHashData = await this.#redisClient.hGetAll(key);
-    return swellJSON(redisHashData);
+    return redisHashData ? swellJSON(redisHashData) : null;
   }
 
   async getAllByTag(tag) {
@@ -123,10 +123,46 @@ class ConvenientRedis {
     const valuesWithTag = [];
     for (const key of keysForTag) {
       const value = await this.retrieveJSON(key);
-      valuesWithTag.push(value);
+      if (value) {
+        valuesWithTag.push(value);
+      }
+    }
+
+    if (keysForTag.length && !valuesWithTag.length) {
+      // all cached values have expired
+      await this.#redisClient.sPop(tag, `${keysForTag.length}`);
     }
 
     return valuesWithTag;
+  }
+
+  async insertWithTag(data, tag, ttl) {
+    const id = await this.generateId();
+    await this.sAdd(tag, id);
+    await this.insertJSON(id, data);
+    if (ttl != null) {
+      this.#redisClient.expire(id, `${ttl}`);
+    }
+  }
+
+  /**
+   *
+   * @param {function(object): boolean | void} processEntry
+   * @return {Promise<void>}
+   */
+  async scanRecords(processEntry) {
+    let cursor = 0;
+    do {
+      const [nextCursor, keys] = await this.#redisClient.sendCommand(['scan', `${cursor}`, 'match', 'id:*']);
+      cursor = +nextCursor;
+      for (const key of keys) {
+        const data = await this.retrieveJSON(key);
+        if (processEntry(data)) {
+          cursor = 0; // break the outer loop as well without extra variables
+          break;
+        }
+      }
+    } while (cursor);
   }
 
   async dbSize() {
