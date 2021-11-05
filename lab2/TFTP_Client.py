@@ -11,9 +11,10 @@ def printHelp():
 	print("source\tfilename")
 	exit()
 
+PORT = 69
 if len(sys.argv) == 4:
 	transfer_mode = "netascii"
-	address = (sys.argv[1], 1069)
+	address = (sys.argv[1], PORT)
 	cmd = sys.argv[2].upper()
 	filename = sys.argv[3]
 else:
@@ -22,7 +23,7 @@ else:
 			transfer_mode = "octet"
 		else:
 			printHelp()
-		address = (sys.argv[2], 1069)
+		address = (sys.argv[2], PORT)
 		cmd = sys.argv[3].upper()
 		filename = sys.argv[4]
 	else:

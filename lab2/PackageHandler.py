@@ -20,15 +20,12 @@ class PackageHandler(threading.Thread):
         result["opcode"] = opcode
         if opcode in (1, 2):
             parts = data[2:-1].split(b'\x00')
-            result["filename"] = parts[0].decode()
+            self.filename = parts[0].decode()
             self.transfer_mode = parts[1].decode()
         
         if opcode == 3:
             result["block_number"] = int.from_bytes(bytes = data[2:4], byteorder = "big")
-            if self.transfer_mode == "octet":
-                result["data"] = data[4:]
-            else: # netascii
-                result["data"] = data[4:].decode()
+            result["data"] = data[4:]
 
         if opcode == 4:
             result["block_number"] = int.from_bytes(bytes = data[2:], byteorder = "big")
@@ -111,10 +108,7 @@ class PackageHandler(threading.Thread):
         
         if self.package["opcode"] != 5: # 5 = error
             if self.work_mode == 1: # 1 = GET (download from server)
-                if self.transfer_mode == "octet":
-                    file = open(self.getNonExistentFilename(), "wb")
-                else: # netascii
-                    file = open(self.getNonExistentFilename(), "w")
+                file = open(self.getNonExistentFilename(), "wb")
             else: # 2 = PUT (upload to server)
                 file = open(self.filename, "rb")
     
@@ -175,11 +169,11 @@ class PackageHandler(threading.Thread):
         
         if self.package["opcode"] == 1: # 1 = GET (download from server)
             self.work_mode = 1
-            if not os.path.isfile(os.getcwd() + os.sep + self.package["filename"]):
+            if not os.path.isfile(os.getcwd() + os.sep + self.filename):
                 self.send_error_package(1, "File not found.")
                 return
             else:
-                file = open(self.package["filename"], "rb")
+                file = open(self.filename, "rb")
                 self.block_number = 1
                 buffer = file.read(512)
                 if not self.send_data_package(buffer): return # connection error
@@ -188,14 +182,11 @@ class PackageHandler(threading.Thread):
         
         if self.package["opcode"] == 2: # 2 = PUT (upload to server)
             self.work_mode = 2
-            if os.path.isfile(os.getcwd() + os.sep + self.package["filename"]):
+            if os.path.isfile(os.getcwd() + os.sep + self.filename):
                 self.send_error_package(6, "File already exists.")
                 return
             else:
-                if self.transfer_mode == "octet":
-                    file = open(self.package["filename"], "wb")
-                else: # netascii
-                    file = open(self.package["filename"], "w")
+                file = open(self.filename, "wb")
                 self.block_number = 0
                 if not self.send_acknowledgement_package(): return # connection error    
         
