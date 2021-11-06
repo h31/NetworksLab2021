@@ -1,11 +1,13 @@
 # Lab2: Реализация Trivial File Transfer Protocol (TFTP)  
 Полное описание протокола приведено в RFC 1350: https://datatracker.ietf.org/doc/html/rfc1350  
 
-**Формат TFTP пакетов:**  
+**Формат TFTP пакетов**  
 ![](https://raw.githubusercontent.com/MickeyMouseMouse/NetworksLab2021/lab2/lab2/images/tftp_message_format.PNG "")  
 
-**Тестирование клиент-серверного приложения на удаленном сервере:**  
+**Тестирование клиент-серверного приложения на удаленном сервере**  
+Попытка скачать файл с сервера (ошибка, потому что такого файла на сервере нет) и загрузка файла на сервер:
 ![](https://raw.githubusercontent.com/MickeyMouseMouse/NetworksLab2021/lab2/lab2/images/remote1.PNG "")  
+Скачивание файла с сервера:
 ![](https://raw.githubusercontent.com/MickeyMouseMouse/NetworksLab2021/lab2/lab2/images/remote2.PNG "")  
 
 **Тестирование сервера при работе со встроенным в Windows TFTP клиентом:**  
