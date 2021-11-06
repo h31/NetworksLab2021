@@ -1,8 +1,8 @@
 import socket
-from PackageHandler import PackageHandler
+from ClientHandler import ClientHandler
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind(("", 69))
+sock.bind(("", 1069))
 
 clients = {} # {ip1 : {port1 : clientHandler1, port2 : clientHandler2}, ip2 : {port3 : clientHandler3}}
 while True:
@@ -17,7 +17,7 @@ while True:
 	new_client = False
 	if ip not in clients:
 		new_client = True
-		clients[ip] = {port : PackageHandler(sock, address)}
+		clients[ip] = {port : ClientHandler(socket.socket(socket.AF_INET, socket.SOCK_DGRAM), address)}
 	else:
 		if port not in clients[ip]:
 			new_client = True
@@ -25,7 +25,7 @@ while True:
 			if clients[ip][port] == None:
 				new_client = True
 		if new_client:
-			clients[ip][port] = PackageHandler(sock, address)
+			clients[ip][port] = ClientHandler(socket.socket(socket.AF_INET, socket.SOCK_DGRAM), address)
 	
 	clients[ip][port].new_package(data)
 	if new_client: clients[ip][port].start()

@@ -10,3 +10,6 @@
 
 **Тестирование сервера при работе со встроенным в Windows TFTP клиентом:**  
 ![](https://raw.githubusercontent.com/MickeyMouseMouse/NetworksLab2021/lab2/lab2/images/default_tftp_client.PNG "")  
+
+**Тестирование клиента при работе со сторонним TFTP сервером:**  
+![](https://raw.githubusercontent.com/MickeyMouseMouse/NetworksLab2021/lab2/lab2/images/third_party_tftp_server.PNG "")  
