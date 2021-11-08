@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "default-server": "index.js server -n 1 -a localhost",
-    "new-client": "index.js client",
-    "default-client": "index.js client -n 2"
+    "default-server": "node index.js server -n 1",
+    "new-client": "node index.js client",
+    "default-client": "node index.js client -n 2"
   },
   "keywords": [],
   "author": "GreenBeaver",

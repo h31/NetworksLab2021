@@ -3,9 +3,11 @@ const fs = require('fs');
 const path = require('path');
 const { useHandlers } = require('../util/hooks');
 const InfoLogger = require('../common-classes/info-logger');
-const { SOCK_EVENTS, EVENTS } = require('../util/constants');
+const { SOCK_EVENTS, EVENTS, SIGNALS } = require('../util/constants');
 const yargs = require('yargs/yargs');
 const ResourceRecord = require('../common-classes/resource-record');
+const UI = require('./ui');
+const TypedError = require('../common-classes/typed-error');
 
 class DnsReplicaClient extends GenericDnsAccessor {
   constructor(...args) {
@@ -14,7 +16,12 @@ class DnsReplicaClient extends GenericDnsAccessor {
 
   rl;
   yargsParser;
-  nextRequestId = 1;
+  nextRequestId = 0;
+  lastRequest = {
+    full: false,
+    timeout: null,
+    id: null
+  };
 
   /**
    *
@@ -41,6 +48,7 @@ class DnsReplicaClient extends GenericDnsAccessor {
 
   runClient() {
     this.rl = this.runRl();
+    this.rl.on(SIGNALS.SIGINT, () => UI.displayInfo('The resolver has been closed'));
 
     useHandlers({
       applyTo: this.sock,
@@ -49,6 +57,30 @@ class DnsReplicaClient extends GenericDnsAccessor {
       handlersDir: path.join(__dirname, 'sock-event-handlers'),
       handledEvents: SOCK_EVENTS
     });
+  }
+
+  displayResponse(response) {
+    let toDisplay;
+    if (this.lastRequest.full) {
+      toDisplay = response;
+    } else {
+      toDisplay = {};
+      Object.entries(response).forEach(([key, value]) => {
+        if (!['answers', 'authority', 'additional'].includes(key) || !value.length) {
+          return;
+        }
+
+        toDisplay[key] = value.reduce((res, fullEntry) => ({
+          ...res,
+          [fullEntry.name]: [...(res[fullEntry.name] || []), fullEntry.data]
+        }), {});
+      });
+    }
+    if (Object.keys(toDisplay).length) {
+      UI.asList(toDisplay);
+    } else {
+      UI.displayBright('Nothing found');
+    }
   }
 
   runInteractionLoop() {
@@ -66,11 +98,11 @@ class DnsReplicaClient extends GenericDnsAccessor {
           default: false,
           desc: 'Display full response'
         },
-        host: {
-          alias: 'h',
+        address: {
+          alias: 'a',
           type: 'string',
           default: '127.0.0.1',
-          desc: 'The host of the server you want to use'
+          desc: 'The address of the server you want to use'
         },
         port: {
           alias: 'p',
@@ -86,17 +118,36 @@ class DnsReplicaClient extends GenericDnsAccessor {
         },
         type: {
           alias: 't',
+          choices: Object.keys(ResourceRecord.TYPE_ALIAS),
           type: 'array',
           default: [],
-          desc: 'What type of data you want to get (does not have effect for inverse queries). "ipv4" is used for all questions by default'
+          desc: 'What type of data you want to get (does not have effect for inverse queries). "A" is used for all questions by default'
         },
         class: {
           alias: 'c',
+          choices: Object.keys(ResourceRecord.CLASS_ALIAS),
           type: 'array',
           default: [],
-          desc: 'What class of data you want to get. "internet" is used for all questions by default'
+          desc: 'What class of data you want to get. "IN" is used for all questions by default'
+        },
+        wait: {
+          alias: 'w',
+          type: 'number',
+          default: 15,
+          desc: 'Maximum time to wait for the response in seconds'
         }
-      });
+      })
+      .check(argv => {
+        const availableOptions =
+          ['questions', 'full', 'address', 'port', 'recursive', 'type', 'class', 'wait', '_', '$0', 'help', 'version'];
+        const unknownOptions = Object.keys(argv).filter(providedOpt => !availableOptions.includes(providedOpt));
+        if (unknownOptions.length) {
+          throw new TypedError(`Unknown options: ${unknownOptions.join(',')}`, TypedError.TYPE.validation);
+        }
+
+        return true;
+      })
+      .parserConfiguration({ 'strip-aliased': true });
 
     this.rl.prompt();
     useHandlers({

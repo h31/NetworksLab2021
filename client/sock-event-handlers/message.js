@@ -1,5 +1,5 @@
-const UI = require('../ui');
 const Message = require('../../common-classes/message');
+const InfoLogger = require('../../common-classes/info-logger');
 
 /**
  *
@@ -10,12 +10,22 @@ const Message = require('../../common-classes/message');
  */
 async function handle(respMsg, rInfo, client) {
   const parsedResponse = Message.parse(respMsg);
+  if (parsedResponse.id !== client.lastRequest.id) {
+    await InfoLogger.log({
+      comment: `Received a timed out response for id = ${parsedResponse.id}`
+    });
+    return;
+  }
+
+  clearTimeout(client.lastRequest.timeout);
+
   for (const answer of parsedResponse.answers) {
     if (answer.ttl) {
       await client.convenientRedis.insertWithTag(answer, answer.name, answer.ttl);
     }
   }
-  UI.asList(Message.parse(respMsg));
+  const toDisplay = Message.parse(respMsg);
+  client.displayResponse(toDisplay);
   client.rl.prompt();
 }
 

@@ -2,8 +2,9 @@ const InfoLogger = require('./info-logger');
 const { SIGNALS, EVENTS, OPCODE } = require('../util/constants');
 const dgram = require('dgram');
 const ConvenientRedis = require('./convenient-redis');
-const { setupRl } = require('../util/rl');
 const { getAField } = require('../util/dns');
+const TypedError = require('./typed-error');
+const ConvenientRl = require('./convenient-rl');
 
 class GenericDnsAccessor {
   sock;
@@ -25,6 +26,12 @@ class GenericDnsAccessor {
     this.convenientRedis = new ConvenientRedis(database, mark);
   }
 
+  ensureFinalization() {
+    process.on(SIGNALS.SIGINT, () => this.closeEverything());
+    this.convenientRedis.on(EVENTS.error, err => this.closeEverything(err));
+    this.sock.on(EVENTS.error, err => this.closeEverything(err));
+  }
+
   /**
    *
    * @return {Promise<{existing: boolean, accessor: GenericDnsAccessor}>}
@@ -33,9 +40,7 @@ class GenericDnsAccessor {
     const accessor = new this(...args);
     const existing = await accessor.convenientRedis.init();
 
-    process.on(SIGNALS.SIGINT, () => accessor.closeEverything());
-    accessor.convenientRedis.on(EVENTS.error, err => accessor.closeEverything(err));
-    accessor.sock.on(EVENTS.error, err => accessor.closeEverything(err));
+    accessor.ensureFinalization();
 
     return { existing, accessor };
   }
@@ -45,7 +50,7 @@ class GenericDnsAccessor {
       await InfoLogger.log({
         status: InfoLogger.STATUS.error,
         occasionType: InfoLogger.OCCASION_TYPE.error,
-        occasionName: err.constructor.name,
+        occasionName: err instanceof TypedError ? err.type : err.constructor.name,
         comment: err.message
       });
     }
@@ -57,8 +62,8 @@ class GenericDnsAccessor {
   }
 
   runRl() {
-    const rl = setupRl();
-    rl.on(EVENTS.close, () => this.closeEverything());
+    const rl = new ConvenientRl();
+    rl.on(SIGNALS.SIGINT, () => this.closeEverything());
     return rl;
   }
 

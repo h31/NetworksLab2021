@@ -9,10 +9,7 @@ class ConvenientRedis {
   #mark;
 
   constructor(database, mark) {
-    if (database === 0) {
-      throw new TypedError('Database #0 is reserved', TypedError.TYPE.redis);
-    }
-
+    // No need to check that database is not 0 since it's checked at args parsing level
     this.#mark = mark;
     this.#database = database;
   }
@@ -87,7 +84,13 @@ class ConvenientRedis {
       _args[1] = await this.generateId();
     }
 
-    return this.#redisClient.sendCommand(_args);
+    let output;
+    try {
+      output = await this.#redisClient.sendCommand(_args);
+    } catch (err) {
+      output = err.message;
+    }
+    return output;
   }
 
   async save() {

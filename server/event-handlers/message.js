@@ -1,6 +1,5 @@
 const Message = require('../../common-classes/message');
 const InfoLogger = require('../../common-classes/info-logger');
-const ResourceRecord = require('../../common-classes/resource-record');
 
 /**
  *
@@ -14,10 +13,11 @@ async function handle(reqMsg, rInfo, server) {
   const { questions, answers } = await server.processRequest(parsedReqMessage);
 
   const respMsg = Message.makeResponse(parsedReqMessage, questions, answers, [], []);
-  const [sendingErr, bytes] = await new Promise(resolve =>
+
+  const bytes = await new Promise((resolve, reject) =>
     server.sock.send(
       respMsg, 0, respMsg.byteLength, rInfo.port, rInfo.address,
-      (...res) => resolve([...res])
+      (error, bytes) => error ? reject(error) : resolve(bytes)
     )
   );
   await InfoLogger.log({

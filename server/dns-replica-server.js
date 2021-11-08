@@ -1,7 +1,6 @@
 const GenericDnsAccessor = require('../common-classes/generic-dns-accessor');
 const path = require('path');
 const InfoLogger = require('../common-classes/info-logger');
-const { insistOnAnswer } = require('../util/rl');
 const { wAmount } = require('../util/misc');
 const { EVENTS } = require('../util/constants');
 
@@ -50,33 +49,31 @@ class DnsReplicaServer extends GenericDnsAccessor {
     const rl = this.runRl();
 
     const behaviour = withWarning ?
-      await insistOnAnswer(
+      await rl.insistOnAnswer(
         DnsReplicaServer.#C_BEHAVIOUR,
         'Warning: the database is empty, and no dump was provided.\n'[InfoLogger.STATUS.warn] +
         'Please enter one of the following:\n' +
         ' > D - enter the path to dump right away\n' +
         ' > C - enter the cli mode\n' +
         ' > S - run the server anyway without any further setup\n',
-        'Please enter either D (provide a dump), C (enter cli mode) or S (run the server)  ',
-        rl
+        'Please enter either D (provide a dump), C (enter cli mode) or S (run the server)  '
       )
       : DnsReplicaServer.#C_BEHAVIOUR.C;
 
     switch (behaviour) {
       case DnsReplicaServer.#C_BEHAVIOUR.S:
+        rl.close();
         return;
       case DnsReplicaServer.#C_BEHAVIOUR.D:
-        const dump = await new Promise(resolve => {
-          rl.question('Enter the path to the dump:  ', answer => resolve(path.normalize(answer)));
-        });
-        await this.runDbPopulation(dump);
+        const dump = path.normalize(await rl.question('Enter the path to the dump:  '));
+        await this.runDbPopulation(dump, rl);
         return;
       case DnsReplicaServer.#C_BEHAVIOUR.C:
         console.log('Type "--exit" to exit cli');
         rl.prompt();
         await new Promise(resolve => {
           rl.on(EVENTS.line, async input => {
-            rl.pause();
+            rl.interactive = false;
             if (input === '--exit') {
               return resolve();
             }
@@ -86,21 +83,26 @@ class DnsReplicaServer extends GenericDnsAccessor {
             rl.prompt();
           });
         });
+        rl.close();
         return;
     }
   }
 
-  async runDbPopulation(dump) {
+  async runDbPopulation(dump, rl) {
     const dbSize = await this.convenientRedis.dbSize();
-    const behaviour = dbSize
-      ? await insistOnAnswer(
+    let behaviour;
+    if (dbSize) {
+      const _rl = rl || this.runRl();
+      behaviour = await _rl.insistOnAnswer(
         DnsReplicaServer.#P_BEHAVIOUR,
         `There is some data in the database already (${wAmount(dbSize, 'entry')}). ` +
         'Do you want to rewrite it [R], append the new data to it [A], or cancel [C]?  ',
-        'Please enter R for rewrite, A for append or C for cancel  ',
-        this.runRl()
-      )
-      : DnsReplicaServer.#P_BEHAVIOUR.A;
+        'Please enter R for rewrite, A for append or C for cancel  '
+      );
+      _rl.close();
+    } else {
+      behaviour = DnsReplicaServer.#P_BEHAVIOUR.A
+    }
 
     if (behaviour === DnsReplicaServer.#P_BEHAVIOUR.C) {
       return;

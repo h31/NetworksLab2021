@@ -3,6 +3,7 @@ const ResourceRecord = require('./resource-record');
 const { arrIntersectionSize } = require('../util/misc');
 const { getAField } = require('../util/dns');
 const { OPCODE } = require('../util/constants');
+const TypedError = require('./typed-error');
 
 
 /**
@@ -67,28 +68,47 @@ class Message {
       const originalLength = pn.labels.length
       const pureUntil = originalLength - pn.pointsTo.offset;
 
+      let totalLength = 0;
       const parts = pn.labels.slice(0, pureUntil).map(lbl => {
         if (!lbl) {
           return [];
         }
-        const buf = Buffer.from(lbl);
-        const ln = Buffer.from([buf.byteLength]);
-        return [ln, buf];
+        const txtBuf = Buffer.from(lbl);
+        const ln = txtBuf.byteLength;
+        if (ln > 63) {
+          throw new TypedError(
+            `Encountered a label ${ln} bytes long while max is 63`,
+            TypedError.TYPE.validation
+          );
+        }
+        totalLength += ln + 1;
+        const lnBuf = Buffer.from([ln]);
+        return [lnBuf, txtBuf];
       }).flat();
 
       // no need to check if offset != null since it's NEVER null for pointers with non-zero offset
       let finisher;
       if (pureUntil === originalLength) {
         finisher = Buffer.from([0]);
+        totalLength += 1;
       } else {
-        const { labels: poLabels, offsetFromStart: offsetFromMsgStart } = processedNames[pn.pointsTo.idx];
-        const labelsMakingOffset = poLabels.slice(0, poLabels.length - pn.pointsTo.offset);
+        const { labels: pnLabels, offsetFromStart: offsetFromMsgStart } = processedNames[pn.pointsTo.idx];
+        const labelsMakingOffset = pnLabels.slice(0, pnLabels.length - pn.pointsTo.offset);
         const offsetFromNameStart = labelsMakingOffset.reduce((res, lbl) => res + 1 + Buffer.from(lbl).byteLength, 0);
         finisher = BitBuffer.concat([
           new BitBuffer([1, 1], { size: 2 }),
           new BitBuffer(offsetFromMsgStart + offsetFromNameStart, { size: 14 })
         ]).toBuffer();
+        totalLength += 2;
       }
+
+      if (totalLength > 255) {
+        throw new TypedError(
+          `Encountered a domain name ${totalLength} bytes long while max is 255`,
+          TypedError.TYPE.validation
+        );
+      }
+
       parts.push(finisher, pn.otherData);
 
       processedNames[idx].offsetFromStart = currOffset;
@@ -256,7 +276,7 @@ class Message {
       1,
       0,
       request.recDes,
-      1, 0, questions.length, answers.length, authority.length, additional.length
+      0, 0, questions.length, answers.length, authority.length, additional.length
     );
     const sections = [
       questions.map(q => this.#makeQuestion(q.name, q.type, q.class)),

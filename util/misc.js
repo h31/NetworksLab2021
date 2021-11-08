@@ -221,6 +221,13 @@ function getCleanIpV6(address) {
   return address.replace('::', `:${filler}:`);
 }
 
+function fileExists(path) {
+  const fs = require('fs');
+  return new Promise(resolve => {
+    fs.access(path, fs.constants.F_OK, err => { resolve(!err) });
+  });
+}
+
 module.exports = {
   toLen,
   arrIntersectionSize,
@@ -231,5 +238,6 @@ module.exports = {
   get,
   set,
   swellJSON,
-  getCleanIpV6
+  getCleanIpV6,
+  fileExists
 };
