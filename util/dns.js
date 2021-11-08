@@ -3,7 +3,7 @@ const { getCleanIpV6 } = require('./misc');
 const TypedError = require('../common-classes/typed-error');
 const { OPCODE } = require('../util/constants');
 
-const DOMAIN_NAME_PATTERN = /^([A-Za-z]+[A-za-z\d]*\.)*[A-Za-z]+[A-za-z\d]*$/;
+const DOMAIN_NAME_PATTERN = /^([A-Za-z]+[A-za-z\d-]*\.)*[A-Za-z]+[A-za-z\d-]*$/;
 const IPV4_PATTERN = /^(\d{1,3}\.){3}\d{1,3}$/;
 
 /**
