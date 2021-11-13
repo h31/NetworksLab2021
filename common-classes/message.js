@@ -19,15 +19,6 @@ class Message {
     response: 1
   };
 
-  static RCODE = {
-    noError: 0,
-    formatError: 1,
-    serverFailure: 2,
-    nameError: 3,
-    notImplemented: 4,
-    refused: 5
-  };
-
   static #headerBitSizes = [16, 1, 4, 1, 1, 1, 1, 3, 4, 16, 16, 16, 16];
   static #headerByteSize = 12;
 
