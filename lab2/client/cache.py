@@ -20,18 +20,19 @@ def add(entry: CacheEntry):
 
 
 def update():
+    new_cache = []
     with open('cache.txt', 'rb') as fp:
-        cache = pickle.load(fp) if os.path.getsize('cache.txt') > 0 else []
-    for element in cache:
-        if element.ttl <= time.time() - element.since:
-            cache.remove(element)
+        old_cache = pickle.load(fp) if os.path.getsize('cache.txt') > 0 else []
+    for element in old_cache:
+        if element.ttl > time.time() - element.since:
+            new_cache.append(element)
     with open('cache.txt', 'wb') as fp:
-        pickle.dump(cache, fp)
+        pickle.dump(new_cache, fp)
 
 
 def get(rrtype: str, url: str):
     with open('cache.txt', 'rb') as fp:
         cache = pickle.load(fp)
     for element in cache:
-        if element.data['rrtype'] == rrtype and element.data['QNAME'] == url:
+        if element.data['QTYPE'] == rrtype and element.data['QNAME'] == url:
             return element.data['ANS']

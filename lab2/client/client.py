@@ -25,7 +25,7 @@ class Client:
                 data, _ = self.client_socket.recvfrom(1024)
                 message = message_data.parse_response(data)
                 print(
-                    f"Результатов по {message['rrtype']}-запросу {message['QNAME']}: {int(message['ANCOUNT'], 2)}")
+                    f"Результатов по {message['QTYPE']}-запросу {message['QNAME']}: {int(message['ANCOUNT'], 2)}")
                 for i in range(1, int(message['ANCOUNT'], 2) + 1):
                     print(f"{i}.\t{message['ANS'][i - 1]['RDATA']}")
                     cache.add(cache.CacheEntry(message['ANS'][i - 1]['TTL'], time.time(), message))

@@ -34,16 +34,14 @@ def parse_response(message):
     res['QNAME'] = '.'.join(url)
     res['QTYPE'] = bin_message[bn:bn + 16]
 
-    rr_type = ''
     if res['QTYPE'] == '0000000000000001':
-        rr_type = 'A'
+        res['QTYPE'] = 'A'
     elif res['QTYPE'] == '0000000000001111':
-        rr_type = 'MX'
+        res['QTYPE'] = 'MX'
     elif res['QTYPE'] == '0000000000010000':
-        rr_type = 'TXT'
+        res['QTYPE'] = 'TXT'
     elif res['QTYPE'] == '0000000000011100':
-        rr_type = 'AAAA'
-    res['rrtype'] = rr_type
+        res['QTYPE'] = 'AAAA'
 
     hn += 4
     bn += 16
@@ -67,7 +65,7 @@ def parse_response(message):
         ans['RDLENGTH'] = bin_message[bn:bn + 16]
         hn += 4
         bn += 16
-        if rr_type == 'A':
+        if res['QTYPE'] == 'A':
             ip4 = []
             for _ in range(int(ans['RDLENGTH'], 2)):  # 4
                 ip4.append(str(int(hex_message[hn:hn + 2], 16)))
@@ -75,7 +73,7 @@ def parse_response(message):
                 bn += 8
             ans['RDATA'] = '.'.join(ip4)
             res['ANS'].append(ans)
-        elif rr_type == 'MX':
+        elif res['QTYPE'] == 'MX':
             ans['PREFERENCE'] = bin_message[bn:bn + 16]
             hn += 4
             bn += 16
@@ -99,7 +97,7 @@ def parse_response(message):
             bn += 8
             ans['RDATA'] = '.'.join(mail)
             res['ANS'].append(ans)
-        elif rr_type == 'TXT':
+        elif res['QTYPE'] == 'TXT':
             txt = []
             for _ in range(int(ans['RDLENGTH'], 2)):
                 txt.append(bytearray.fromhex(hex_message[hn:hn + 2]).decode())
@@ -107,7 +105,7 @@ def parse_response(message):
                 bn += 8
             ans['RDATA'] = ''.join(txt[1:])
             res['ANS'].append(ans)
-        elif rr_type == 'AAAA':
+        elif res['QTYPE'] == 'AAAA':
             ip6 = []
             for _ in range(int(ans['RDLENGTH'], 2)):  # 6
                 ip6.append(hex_message[hn:hn + 2])
