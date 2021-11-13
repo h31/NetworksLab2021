@@ -65,7 +65,7 @@ class BitBuffer {
       bits = this.#fromNumber(rawData);
       errorText = rawData;
     } else if (Array.isArray(rawData)) {
-      const isBitsAlready = !rawData.some(item => ![0, 1].includes(item));
+      const isBitsAlready = !rawData.some(item => ![0, 1].includes(item)) && eachSize == null;
       bits = isBitsAlready
         ? rawData
         : rawData.map(entry => this.#makeData(entry, { encoding, size: eachSize })).flat();
