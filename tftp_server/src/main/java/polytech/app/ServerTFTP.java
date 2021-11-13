@@ -9,6 +9,8 @@ import java.util.Arrays;
 public class ServerTFTP {
   private static final int PORT = 69;
   private static byte[] buf = new byte[512];
+  private static Integer i;
+  private static byte[] msg;
 
   public static void main(String[] args) throws IOException{
     try {
@@ -16,20 +18,30 @@ public class ServerTFTP {
       DatagramPacket inputPacket = new DatagramPacket(buf, buf.length);
       while (true) {
         serverSocket.receive(inputPacket);
-        byte[] msg = inputPacket.getData();
+        msg = inputPacket.getData();
         byte type = msg[1];   
         System.out.println("getting filename");
-        String filename = getFilename(msg);
+        i = 2;
+        String filename = getString();
+        String mode = getString();
         if (filename == null)
           continue;
-        System.out.println(filename);
-        if (type == 1) 
-          System.out.println("RRQ");
-        else if (type == 2)
-          System.out.println("WRQ");
-        else {
-          System.out.println("unknown");
-          System.out.println(msg);
+        DatagramSocket handlerSocket = new DatagramSocket();
+        switch (type) {
+          case(1):
+            HandlerRRQ hRRQ = new HandlerRRQ(inputPacket.getAddress(), 
+              inputPacket.getPort(), filename, mode, handlerSocket);
+            hRRQ.start(); 
+            break;
+          case(2):
+            HandlerWRQ hWRQ = new HandlerWRQ(inputPacket.getAddress(),
+              inputPacket.getPort(), filename, mode, handlerSocket);
+            hWRQ.start();
+            break;
+          default:
+            HandlerError.sendError(handlerSocket, 
+              (byte)4, "Illegal TFTP operation");
+            break;
         }
       }
     }
@@ -38,25 +50,26 @@ public class ServerTFTP {
     }
   }
 
-  private static String getFilename(byte[] msg) {
-    int i = 2;
-    while (i < msg.length) {
-      if (msg[i] == 0)
+  private static String getString() {
+    int _i = i;
+    while (_i < msg.length) {
+      if (msg[_i] == 0)
         break;
-      i++;
+      _i++;
     } 
-    System.out.println(i);
-    if (i == msg.length - 1)
+    System.out.println(_i);
+    if (_i == msg.length - 1)
       return null;
     else {
-      String filename = new String();
+      String str = new String();
       try {
-        filename = new String(Arrays.copyOfRange(msg, 2, i), "ASCII");
+        str = new String(Arrays.copyOfRange(msg, i, _i), "ascii");
       }
       catch (UnsupportedEncodingException e) {
         System.exit(1);
       }
-      return filename;
+      i = _i + 1;
+      return str;
     }
   }
 }
