@@ -38,7 +38,7 @@ async function handle(reqMsg, rInfo, server) {
     const processed = await server.processRequest(parsedReqMessage);
     questions = processed.questions;
     answers = processed.answers;
-    respCode = processed.noDataFor.length ? RESP_CODE.noSuchDomainName : RESP_CODE.noError;
+    respCode = processed.noDataFor.length ? RESP_CODE.noRelatedData : RESP_CODE.noError;
   } else {
     await InfoLogger.log({
       status: InfoLogger.STATUS.error,

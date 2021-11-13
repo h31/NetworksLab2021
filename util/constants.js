@@ -30,7 +30,7 @@ const RESP_CODE = {
   noError: 0,
   formatError: 1,
   serverError: 2,
-  noSuchDomainName: 3,
+  noRelatedData: 3,
   notImplemented: 4,
   refusedForPolicyReasons: 5
 };

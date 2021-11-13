@@ -9,6 +9,8 @@ const ResourceRecord = require('../common-classes/resource-record');
 const UI = require('./ui');
 const TypedError = require('../common-classes/typed-error');
 const { startCase } = require('../util/misc');
+const Message = require('../common-classes/message');
+const { getAField } = require('../util/dns');
 
 class DnsReplicaClient extends GenericDnsAccessor {
   constructor(...args) {
@@ -111,12 +113,13 @@ class DnsReplicaClient extends GenericDnsAccessor {
       return `${originalValue} sec.`;
     }
 
-    if (['rCode', 'opCode', 'type', 'class'].includes(originalKey)) {
+    if (['rCode', 'opCode', 'type', 'class', 'qr'].includes(originalKey)) {
       const mapping = {
         rCode: RESP_CODE,
         opCode: OPCODE,
         type: ResourceRecord.TYPE,
-        class: ResourceRecord.CLASS
+        class: ResourceRecord.CLASS,
+        qr: Message.QR
       }[originalKey];
       const comment = startCase(Object.entries(mapping).find(([, val]) => val === +originalValue)[0]);
       return `${originalValue} (${comment})`;
@@ -136,7 +139,15 @@ class DnsReplicaClient extends GenericDnsAccessor {
     } else {
       toDisplay = {};
       Object.entries(response).forEach(([key, value]) => {
-        if (!['answers', 'authority', 'additional'].includes(key) || !value.length) {
+        const isImportantData = ['authority', 'additional', 'answers'].includes(key);
+        if (!isImportantData) {
+          return;
+        }
+
+        const meaningfulLength = (key === 'answers' && response.opCode === OPCODE.inverseQuery
+          ? value.filter(fakeAns => !!fakeAns.name)
+          : value).length;
+        if (!meaningfulLength) {
           return;
         }
 
@@ -146,13 +157,40 @@ class DnsReplicaClient extends GenericDnsAccessor {
         }), {});
       });
     }
+
     if (Object.keys(toDisplay).length) {
       UI.asList(toDisplay, {
         titleMapping: DnsReplicaClient.#TITLE_MAPPING,
         getValue: DnsReplicaClient.#getDisplayedValue
       });
+    }
+
+    if (response.cached) {
+      return;
+    }
+
+    let notFoundText;
+    let notFoundKind;
+    if (response.opCode === OPCODE.inverseQuery) {
+      notFoundText = response.answers
+        .filter(fakeAns => !fakeAns.name)
+        .map(fakeAns => fakeAns.data[getAField(fakeAns.type)])
+        .join(', ');
+      notFoundKind = 'domain name';
     } else {
-      UI.displayBright('Nothing found');
+      notFoundText = response.questions
+        .filter(q => !response.answers.some(ans => ans.name === q.name))
+        .map(q => q.name)
+        .join(', ');
+      notFoundKind = 'data of requested type';
+    }
+
+    if (notFoundText) {
+      UI.displayBright(
+        response.rCode === RESP_CODE.noRelatedData
+          ? `No ${notFoundKind} registered for ${notFoundText}`
+          : `No ${notFoundKind} found for ${notFoundText} at specified name server. Try using some other server`
+      );
     }
   }
 

@@ -74,6 +74,10 @@ class GenericDnsAccessor {
     if (req.opCode === OPCODE.inverseQuery) {
       answers.push(...req.answers);
       await this.convenientRedis.scanRecords(dbRecord => {
+        if (!answers.some(ans => !ans.name)) {
+          return true;
+        }
+
         for (const idx in answers) {
           const fakeAnswer = answers[idx];
           if (fakeAnswer.type === +dbRecord.type && fakeAnswer.class === +dbRecord.class) {
@@ -86,12 +90,12 @@ class GenericDnsAccessor {
                 type: +dbRecord.type,
                 class: +dbRecord.class
               };
-              return false;
+              break;
             }
           }
         }
 
-        return !answers.some(ans => !ans.name);
+        return false;
       });
       noDataFor = answers.filter(ans => !ans.name);
     } else {

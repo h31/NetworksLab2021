@@ -226,7 +226,7 @@ class Message {
   /**
    *
    * @param {number} id
-   * @param {Array<{ name: string, type: number, class: number }>} questions
+   * @param {Array<{ name: string, type: number, class: number, data: object= }>} questions
    * @param {number=} [opCode = 0]
    * @param {boolean=} [recDesired = true]
    * @return {Buffer}
@@ -241,7 +241,7 @@ class Message {
     if (opCode === OPCODE.inverseQuery) {
       sections[1] = questions.map(q => {
         const field = getAField(q.type);
-        return this.#makeRR({ [field]: q.name }, q.type, q.class, 0, '');
+        return this.#makeRR({ [field]: q.data[field] }, q.type, q.class, 0, '');
       });
     } else {
       sections[0] = questions.map(q => this.#makeQuestion(q.name, q.type, q.class));
