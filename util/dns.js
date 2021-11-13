@@ -1,10 +1,9 @@
 const ResourceRecord = require('../common-classes/resource-record');
-const { getCleanIpV6 } = require('./misc');
+const { getCleanIpV6, validateIpV4 } = require('./misc');
 const TypedError = require('../common-classes/typed-error');
 const { OPCODE } = require('../util/constants');
 
 const DOMAIN_NAME_PATTERN = /^([A-Za-z]+[A-za-z\d-]*\.)*[A-Za-z]+[A-za-z\d-]*$/;
-const IPV4_PATTERN = /^(\d{1,3}\.){3}\d{1,3}$/;
 
 /**
  *
@@ -20,7 +19,7 @@ function getQuestionsDescription(questions) {
     if (DOMAIN_NAME_PATTERN.test(question)) {
       _opCode = OPCODE.standardQuery;
       typedQuestions.push({ question, type: null });
-    } else if (IPV4_PATTERN.test(question) && !question.split('.').some(part => +part > 255)) {
+    } else if (validateIpV4(question)) {
       _opCode = OPCODE.inverseQuery;
       typedQuestions.push({ question, type: ResourceRecord.TYPE.ipv4 });
     } else {

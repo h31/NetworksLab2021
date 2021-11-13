@@ -221,6 +221,17 @@ function getCleanIpV6(address) {
   return address.replace('::', `:${filler}:`);
 }
 
+const IPV4_PATTERN = /^(\d{1,3}\.){3}\d{1,3}$/;
+
+/**
+ *
+ * @param {string} address
+ * @return {boolean}
+ */
+function validateIpV4(address) {
+  return IPV4_PATTERN.test(address) && !address.split('.').some(part => +part > 255);
+}
+
 function fileExists(path) {
   const fs = require('fs');
   return new Promise(resolve => {
@@ -252,5 +263,6 @@ module.exports = {
   swellJSON,
   getCleanIpV6,
   fileExists,
-  startCase
+  startCase,
+  validateIpV4
 };

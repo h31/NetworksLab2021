@@ -8,7 +8,7 @@ const yargs = require('yargs/yargs');
 const ResourceRecord = require('../common-classes/resource-record');
 const UI = require('./ui');
 const TypedError = require('../common-classes/typed-error');
-const { startCase } = require('../util/misc');
+const { startCase, validateIpV4 } = require('../util/misc');
 const Message = require('../common-classes/message');
 const { getAField } = require('../util/dns');
 
@@ -225,7 +225,7 @@ class DnsReplicaClient extends GenericDnsAccessor {
           alias: 'r',
           type: 'boolean',
           default: true,
-          desc: 'Desire recursion when processing the request'
+          desc: 'Desire recursion when processing the request (use --no-r to deny default recursive behaviour)'
         },
         type: {
           alias: 't',
@@ -254,6 +254,10 @@ class DnsReplicaClient extends GenericDnsAccessor {
         const unknownOptions = Object.keys(argv).filter(providedOpt => !availableOptions.includes(providedOpt));
         if (unknownOptions.length) {
           throw new TypedError(`Unknown options: ${unknownOptions.join(',')}`, TypedError.TYPE.validation);
+        }
+
+        if (!validateIpV4(argv.address)) {
+          throw new TypedError(`Invalid address: ${argv.address}`, TypedError.TYPE.validation);
         }
 
         return true;

@@ -1,6 +1,6 @@
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
-const { fileExists } = require('./util/misc');
+const { fileExists, validateIpV4 } = require('./util/misc');
 
 const COMMANDS = {
   server: 'server',
@@ -70,6 +70,10 @@ yargs(hideBin(process.argv))
 
     if (argv.dump && !fileExists(argv.dump)) {
       throw new Error(`File ${argv.dump} does not exist`);
+    }
+
+    if (argv._[0] === COMMANDS.server && !validateIpV4(argv.address)) {
+      throw new Error(`Invalid address: ${argv.address}`);
     }
 
     return true;
