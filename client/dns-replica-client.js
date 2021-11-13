@@ -3,11 +3,12 @@ const fs = require('fs');
 const path = require('path');
 const { useHandlers } = require('../util/hooks');
 const InfoLogger = require('../common-classes/info-logger');
-const { SOCK_EVENTS, EVENTS, SIGNALS } = require('../util/constants');
+const { SOCK_EVENTS, EVENTS, SIGNALS, RESP_CODE, OPCODE } = require('../util/constants');
 const yargs = require('yargs/yargs');
 const ResourceRecord = require('../common-classes/resource-record');
 const UI = require('./ui');
 const TypedError = require('../common-classes/typed-error');
+const { startCase } = require('../util/misc');
 
 class DnsReplicaClient extends GenericDnsAccessor {
   constructor(...args) {
@@ -59,6 +60,75 @@ class DnsReplicaClient extends GenericDnsAccessor {
     });
   }
 
+  static #TITLE_MAPPING = {
+    qr: 'QR',
+    opCode: 'Operation code',
+    authAns: 'Authoritative answer',
+    trunc: 'Truncated',
+    recDes: 'Recursion desired',
+    recAv: 'Recursion available',
+    rCode: 'Response code',
+    qdCount: 'Questions amount',
+    anCount: 'Answers amount',
+    nsCount: 'Authority records amount',
+    arCount: 'Additional records amount',
+    questions: 'Questions',
+    answers: 'Answers',
+    authority: 'Authority',
+    additional: 'Additional',
+
+    ttl: 'TTL',
+    rdLength: 'Data section size',
+    class: 'Class',
+    type: 'Type',
+    data: 'Data',
+    cached: 'Pulled from cache',
+    name: 'Domain name',
+
+    a: 'ipv4 address',
+    aaaa: 'ipv6 address',
+
+    mName: 'Responsible domain name',
+    rName: 'Mailbox for the zone',
+    serial: 'Serial number',
+    refresh: 'Refresh interval',
+    retry: 'Retry timeout',
+    expire: 'Expires in',
+    minimum: 'Minimum TTL',
+
+    preference: 'Preference level',
+    exchange: 'Mail exchange host',
+
+    text: 'Text'
+  };
+
+  static #getDisplayedValue(originalKey, originalValue) {
+    if (originalKey === 'rdLength') {
+      return `${originalValue} bytes`;
+    }
+
+    if (['ttl', 'minimum', 'retry', 'expire', 'refresh'].includes(originalKey)) {
+      return `${originalValue} sec.`;
+    }
+
+    if (['rCode', 'opCode', 'type', 'class'].includes(originalKey)) {
+      const mapping = {
+        rCode: RESP_CODE,
+        opCode: OPCODE,
+        type: ResourceRecord.TYPE,
+        class: ResourceRecord.CLASS
+      }[originalKey];
+      const comment = startCase(Object.entries(mapping).find(([, val]) => val === +originalValue)[0]);
+      return `${originalValue} (${comment})`;
+    }
+
+    if (['recAv', 'recDes', 'trunc', 'authAns'].includes(originalKey)) {
+      return `${Boolean(originalValue)}`;
+    }
+
+    return originalValue;
+  }
+
   displayResponse(response) {
     let toDisplay;
     if (this.lastRequest.full) {
@@ -77,7 +147,10 @@ class DnsReplicaClient extends GenericDnsAccessor {
       });
     }
     if (Object.keys(toDisplay).length) {
-      UI.asList(toDisplay);
+      UI.asList(toDisplay, {
+        titleMapping: DnsReplicaClient.#TITLE_MAPPING,
+        getValue: DnsReplicaClient.#getDisplayedValue
+      });
     } else {
       UI.displayBright('Nothing found');
     }

@@ -20,7 +20,7 @@ function getQuestionsDescription(questions) {
     if (DOMAIN_NAME_PATTERN.test(question)) {
       _opCode = OPCODE.standardQuery;
       typedQuestions.push({ question, type: null });
-    } else if (IPV4_PATTERN.test(question)) {
+    } else if (IPV4_PATTERN.test(question) && !question.split('.').some(part => +part > 255)) {
       _opCode = OPCODE.inverseQuery;
       typedQuestions.push({ question, type: ResourceRecord.TYPE.ipv4 });
     } else {

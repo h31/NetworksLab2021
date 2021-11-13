@@ -268,7 +268,7 @@ class Message {
     return Buffer.concat([header, body]);
   }
 
-  static makeResponse(request, questions, answers, authority, additional) {
+  static makeResponse(request, respCode, questions, answers, authority, additional) {
     const header = this.#makeHeader(
       request.id,
       this.QR.response,
@@ -276,7 +276,7 @@ class Message {
       1,
       0,
       request.recDes,
-      0, 0, questions.length, answers.length, authority.length, additional.length
+      0, respCode, questions.length, answers.length, authority.length, additional.length
     );
     const sections = [
       questions.map(q => this.#makeQuestion(q.name, q.type, q.class)),
@@ -474,34 +474,44 @@ class Message {
    * @param {Buffer} payload
    */
   static parse(payload) {
-    if (!(payload instanceof Buffer)) {
-      throw new Error(`Expected a Buffer, got ${payload.constructor.name}`);
+    const parsed = {};
+
+    try {
+      if (!(payload instanceof Buffer)) {
+        throw new Error(`Expected a Buffer, got ${payload.constructor.name}`);
+      }
+
+      const [
+        id,
+        qr, opCode, authAns, trunc, recDes, recAv, , rCode,
+        qdCount, anCount, nsCount, arCount
+      ] = this.#parseHeader(payload);
+      Object.assign(parsed, {
+        id,
+        qr, opCode, authAns, trunc, recDes, recAv, rCode,
+        qdCount, anCount, nsCount, arCount
+      });
+
+      const { results: questions, currOffset: qOffset } =
+        this.#parseBunch(payload, this.#headerByteSize, qdCount, (...args) => this.#parseQuestion(...args));
+      parsed.questions = questions;
+
+      const { results: answers, currOffset: ansOffset } =
+        this.#parseBunch(payload, qOffset, anCount, (...args) => this.#parseRR(...args));
+      parsed.answers = answers;
+
+      const { results: authority, currOffset: authOffset } =
+        this.#parseBunch(payload, ansOffset, nsCount, (...args) => this.#parseRR(...args));
+      parsed.authority = authority;
+
+      const { results: additional } =
+        this.#parseBunch(payload, authOffset, arCount, (...args) => this.#parseRR(...args))
+      parsed.additional = additional;
+    } catch (e) {
+      parsed.error = e;
     }
 
-    const [
-      id,
-      qr, opCode, authAns, trunc, recDes, recAv, , rCode,
-      qdCount, anCount, nsCount, arCount
-    ] = this.#parseHeader(payload);
-
-    const { results: questions, currOffset: qOffset } =
-      this.#parseBunch(payload, this.#headerByteSize, qdCount, (...args) => this.#parseQuestion(...args));
-
-    const { results: answers, currOffset: ansOffset } =
-      this.#parseBunch(payload, qOffset, anCount, (...args) => this.#parseRR(...args));
-
-    const { results: authority, currOffset: authOffset } =
-      this.#parseBunch(payload, ansOffset, nsCount, (...args) => this.#parseRR(...args));
-
-    const { results: additional } =
-      this.#parseBunch(payload, authOffset, arCount, (...args) => this.#parseRR(...args))
-
-    return {
-      id,
-      qr, opCode, authAns, trunc, recDes, recAv, rCode,
-      qdCount, anCount, nsCount, arCount,
-      questions, answers, authority, additional
-    };
+    return parsed;
   }
 }
 

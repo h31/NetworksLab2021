@@ -1,4 +1,4 @@
-const { arrIntersectionSize, toLen, flattenJSON, wAmount, get, set, getCleanIpV6 } = require('../util/misc');
+const { arrIntersectionSize, toLen, flattenJSON, wAmount, get, set, getCleanIpV6, startCase } = require('../util/misc');
 
 describe('Misc Functions', () => {
   it('arrIntersectionSize', () => {
@@ -115,5 +115,14 @@ describe('Misc Functions', () => {
     expect(getCleanIpV6('a:b::c:d')).toBe('a:b:0:0:0:0:c:d');
     expect(getCleanIpV6('12::a::15')).toBe(null);
     expect(getCleanIpV6('1:2:3:4:5:6:7:8')).toBe('1:2:3:4:5:6:7:8');
+  });
+
+  it('startCase', () => {
+    const snakeCase = 'slithery_green_scales';
+    expect(startCase(snakeCase)).toBe('Slithery green scales');
+    const camelCase = 'tourToThePyramids';
+    expect(startCase(camelCase)).toBe('Tour to the pyramids');
+    const kebabCase = 'shwarma-shashlik-donner-kebab';
+    expect(startCase(kebabCase)).toBe('Shwarma shashlik donner kebab')
   });
 });

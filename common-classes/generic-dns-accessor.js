@@ -93,9 +93,7 @@ class GenericDnsAccessor {
 
         return !answers.some(ans => !ans.name);
       });
-      noDataFor = answers.reduce((res, ans) =>
-        ans.name ? res : [...res, ans]
-      );
+      noDataFor = answers.filter(ans => !ans.name);
     } else {
       noDataFor = [];
       for (const question of req.questions) {

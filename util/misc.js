@@ -228,6 +228,18 @@ function fileExists(path) {
   });
 }
 
+/**
+ *
+ * @param {string} str
+ * @return {string}
+ */
+function startCase(str) {
+  return capitalize(str.replace(
+    /[A-Z]|[_\-][a-zA-Z]/g,
+      match => ` ${match[match.length - 1].toLowerCase()}`
+  ));
+}
+
 module.exports = {
   toLen,
   arrIntersectionSize,
@@ -239,5 +251,6 @@ module.exports = {
   set,
   swellJSON,
   getCleanIpV6,
-  fileExists
+  fileExists,
+  startCase
 };

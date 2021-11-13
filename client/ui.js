@@ -51,17 +51,25 @@ class UI {
    *
    * @param {Object} data
    * @param {(function(string, Object): string)=} handleNested
+   * @param {object=} titleMapping
+   * @param {function(string|number): string|number=} getValue
    * @param {number=} pad
    */
   static asList(
-    data,
-    handleNested,
-    pad = 0
-  ) {
+    data, {
+      handleNested,
+      titleMapping = {},
+      getValue = v => v,
+      pad = 0
+    } = {}) {
     const multiLevel = handleNested == null;
     const padStr = '  '.repeat(pad);
 
-    const entries = Object.entries(data);
+    const entries = Object.entries(data)
+      .map(([key, value]) => [
+        titleMapping[key] || key,
+        getValue(key, value) || value
+      ]);
     const longestTitleLength = Math.max(...entries.map(e => e[0].length)) + 2;
     for (const [title, message] of entries) {
       let displayMessage = message;
@@ -71,7 +79,7 @@ class UI {
             padStr,
             toLen(title, longestTitleLength, { filler: ' ', toEnd: true })[this.status.plain]
           );
-          this.asList(message, handleNested, pad + 1);
+          this.asList(message, { handleNested, pad: pad + 1, titleMapping, getValue });
           continue;
         } else {
           displayMessage = handleNested(title, message);
@@ -84,10 +92,6 @@ class UI {
         `${displayMessage}`[this.status.bright]
       );
     }
-  }
-
-  static log() {
-
   }
 }
 

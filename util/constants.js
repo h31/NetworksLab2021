@@ -26,9 +26,19 @@ const OPCODE = {
   status: 2
 };
 
+const RESP_CODE = {
+  noError: 0,
+  formatError: 1,
+  serverError: 2,
+  noSuchDomainName: 3,
+  notImplemented: 4,
+  refusedForPolicyReasons: 5
+};
+
 module.exports = {
   SIGNALS,
   EVENTS,
   SOCK_EVENTS,
-  OPCODE
+  OPCODE,
+  RESP_CODE
 };
