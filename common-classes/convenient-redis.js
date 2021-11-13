@@ -79,6 +79,9 @@ class ConvenientRedis {
    * @return {Promise<*>}
    */
   async callCommand(args) {
+    if (['quit', 'select'].includes(args[0].toLowerCase())) {
+      return `"${args[0].toUpperCase()}" Redis operation is restricted for security and performance reasons`;
+    }
     const _args = [...args];
     if (_args[1] === '*') {
       _args[1] = await this.generateId();
