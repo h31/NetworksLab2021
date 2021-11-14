@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"errors"
 	"strconv"
 	"time"
 )
@@ -21,14 +22,19 @@ func GetCurTime() ([]byte, error) {
 	return []byte{byte(h), byte(m)}, nil
 }
 
-// 40_000_001 -> [1 90 98 2]
-func IntToByteArr(size int) []byte {
+// IntToByteArr converts int number to a slice of bytes
+// 40_000_001 -> [1, 90, 98, 2]
+func IntToByteArr(size int) ([]byte, error) {
+	if size < 0 {
+		return nil, errors.New("negative number")
+	}
 	res := toBitArray(size)
 	res = toByteArray(res)
-	return res
+	return res, nil
 }
 
-// [1 90 98 2] -> 40_000_001
+// ByteArrToInt converts slice of bytes to int number
+// [1, 90, 98, 2] -> 40_000_001
 func ByteArrToInt(arr []byte) int {
 	res := 0
 	arrLen := len(arr)
@@ -39,7 +45,8 @@ func ByteArrToInt(arr []byte) int {
 	return res
 }
 
-// int number to array of bits
+// toBitArray returns int number as an reversed slice of bits divisible by 8,
+// 10 -> [0, 1, 0, 1, 0, 0, 0, 0]
 func toBitArray(n int) []byte {
 	bitArrLen := bitArrLen(n)
 	for bitArrLen%8 != 0 {
@@ -56,7 +63,8 @@ func toBitArray(n int) []byte {
 	return bitArr
 }
 
-// array of bits to array of bytes (bit array group by 8 bits)
+// toByteArray makes bit slice a byte slice (bit slice group by 8 bits),
+// [0, 1, 0, 1, 0, 0, 0, 0] -> [10]
 func toByteArray(bitArr []byte) []byte {
 	byteArr := make([]byte, (len(bitArr) / 8))
 
@@ -81,7 +89,8 @@ func toByteArray(bitArr []byte) []byte {
 	return byteArr
 }
 
-// len of a int number in binary form
+// bitArrLen returns len of a int number in binary form
+// 10 -> 4
 func bitArrLen(n int) int {
 	if n == 0 {
 		return 1
@@ -94,6 +103,8 @@ func bitArrLen(n int) int {
 	return c
 }
 
+// powInt calculates the power of a number
+// 10^3 -> 1000
 func powInt(n int, p int) int {
 	res := 1
 	for p > 0 {
@@ -101,4 +112,15 @@ func powInt(n int, p int) int {
 		p--
 	}
 	return res
+}
+
+func Max(arr []byte) byte {
+	max := byte(0)
+	for _, b := range arr {
+		if b > max {
+			max = b
+		}
+	}
+
+	return max
 }
