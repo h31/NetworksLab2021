@@ -1,6 +1,33 @@
 import binascii
 
 
+def resolve_compression(hn, hm, bn, bm):
+    """
+    Разрешение доменного имени при использовании сокращения
+    :param hn: смещение в шестнадцатеричном формате
+    :param hm: сообщение в шестнадцатеричном формате
+    :param bn: смещение в двоичном формате
+    :param bm: сообщение в двоичном формате
+    """
+    qname = True
+    url = []
+    while qname:
+        if bm[bn:bn + 2] == '11':
+            url.extend(resolve_compression(int(bm[bn + 2:bn + 16], 2) * 2, hm, int(bm[bn + 2:bn + 16], 2) * 8, bm))
+            break
+        seclen = int(hm[hn:hn + 2], 16)
+        hn += 2
+        bn += 8
+        section = ''
+        for _ in range(seclen):
+            section += bytearray.fromhex(hm[hn:hn + 2]).decode()
+            hn += 2
+            bn += 8
+        qname = int(hm[hn:hn + 2], 16)
+        url.append(section)
+    return url
+
+
 def parse_response(message):
     """
     Парсер сообщений от DNS-сервера
@@ -13,6 +40,19 @@ def parse_response(message):
            'TC': bin_message[22], 'RD': bin_message[23], 'RA': bin_message[24], 'Z': bin_message[25:28],
            'RCODE': bin_message[28:32], 'QDCOUNT': bin_message[32:48], 'ANCOUNT': bin_message[48:64],
            'NSCOUNT': bin_message[64:80], 'ARCOUNT': bin_message[80:96]}
+
+    if res['RCODE'] == '0000':
+        res['RCODE'] = ''
+    elif res['RCODE'] == '0001':
+        res['RCODE'] = 'Format error!'
+    elif res['RCODE'] == '0010':
+        res['RCODE'] = 'Server failure!'
+    elif res['RCODE'] == '0011':
+        res['RCODE'] = 'Name Error!'
+    elif res['RCODE'] == '0100':
+        res['RCODE'] = 'Not Implemented!'
+    elif res['RCODE'] == '0101':
+        res['RCODE'] = 'Refused!'
 
     qname = True
     bn = 96
@@ -67,7 +107,7 @@ def parse_response(message):
         bn += 16
         if res['QTYPE'] == 'A':
             ip4 = []
-            for _ in range(int(ans['RDLENGTH'], 2)):  # 4
+            for _ in range(4):
                 ip4.append(str(int(hex_message[hn:hn + 2], 16)))
                 hn += 2
                 bn += 8
@@ -80,8 +120,11 @@ def parse_response(message):
             qname = True
             mail = []
             while qname:
-                if bin_message[bn:bn + 16] == ans['NAME']:
-                    mail.extend(url)
+                if bin_message[bn:bn + 2] == '11':
+                    mail.extend(resolve_compression(int(bin_message[bn + 2:bn + 16], 2) * 2, hex_message,
+                                                    int(bin_message[bn + 2:bn + 16], 2) * 8, bin_message))
+                    hn += 2
+                    bn += 8
                     break
                 seclen = int(hex_message[hn:hn + 2], 16)
                 hn += 2
@@ -107,10 +150,10 @@ def parse_response(message):
             res['ANS'].append(ans)
         elif res['QTYPE'] == 'AAAA':
             ip6 = []
-            for _ in range(int(ans['RDLENGTH'], 2)):  # 6
-                ip6.append(hex_message[hn:hn + 2])
-                hn += 2
-                bn += 8
+            for _ in range(8):
+                ip6.append(hex_message[hn:hn + 4])
+                hn += 4
+                bn += 16
             ans['RDATA'] = ':'.join(ip6)
             res['ANS'].append(ans)
     return res

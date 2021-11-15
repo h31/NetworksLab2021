@@ -15,7 +15,7 @@ class Client:
             self.client_socket.connect(('8.8.8.8', 53))
 
         except TimeoutError:
-            print("Сервер не отвечает")
+            print("Server not responding")
             self.client_socket.close()
 
     def receive(self):
@@ -25,7 +25,7 @@ class Client:
                 data, _ = self.client_socket.recvfrom(1024)
                 message = message_data.parse_response(data)
                 print(
-                    f"Результатов по {message['QTYPE']}-запросу {message['QNAME']}: {int(message['ANCOUNT'], 2)}")
+                    f"{message['RCODE']}\nResults for {message['QTYPE']}-query {message['QNAME']}: {int(message['ANCOUNT'], 2)}")
                 for i in range(1, int(message['ANCOUNT'], 2) + 1):
                     print(f"{i}.\t{message['ANS'][i - 1]['RDATA']}")
                     cache.add(cache.CacheEntry(message['ANS'][i - 1]['TTL'], time.time(), message))
@@ -49,7 +49,7 @@ class Client:
                     entry = cache.get(RRType, URL)
                     if entry:
                         print(
-                            f"Кэш!\nРезультатов по {RRType}-запросу {URL}: {len(entry)}")
+                            f"(cache) Results for {RRType}-query {URL}: {len(entry)}")
                         for i in range(1, len(entry) + 1):
                             print(f"{i}.\t{entry[i - 1]['RDATA']}")
                     else:
@@ -59,5 +59,5 @@ class Client:
                 else:
                     print("Incorrect type")
             except Exception:
-                print("Сервер недоступен")
+                print("Server is not available")
                 break
