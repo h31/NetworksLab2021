@@ -8,18 +8,21 @@ import java.util.Arrays;
 public class NtpServer implements Runnable {
 
     private DatagramSocket socket;
-    private int port = 123;
+    private final int PORT = 123;
     private byte[] buf = new byte[48];
 
     public void run() {
+        System.out.println("Server started");
         try {
-            System.out.println("Server started");
-            socket = new DatagramSocket(port);
+            socket = new DatagramSocket(PORT);
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+        DatagramPacket clientRequestPacket = new DatagramPacket(buf, buf.length);
 
-
-            DatagramPacket clientRequestPacket = new DatagramPacket(buf, buf.length);
-
-            socket.receive(clientRequestPacket);
+        while (true) {
+            try {
+                socket.receive(clientRequestPacket);
             long timeOfReceiptFromClient = System.currentTimeMillis();
 
             NtpPacket clientRequest = Util.unpack(buf);
@@ -29,23 +32,15 @@ public class NtpServer implements Runnable {
             System.out.println("айпишник клиента = " + clientAddress);
 
             byte[] byteArray = Util.pack(clientRequest, timeOfReceiptFromClient).toByteArray();
-            System.out.println(Arrays.toString(byteArray));
+
             DatagramPacket packet
                     = new DatagramPacket(byteArray, byteArray.length, clientAddress, clientPort);
             socket.send(packet);
-            /*System.out.println(Arrays.toString(buf));
 
-            for (byte b1 : buf){
-                String s1 = String.format(
-                        "%8s", Integer.toBinaryString(b1 & 0xFF)).replace(' ', '0');
-
-                System.out.println(s1);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-*/
-            DatagramPacket serverResponsePacket
-                    = new DatagramPacket(buf, buf.length, clientAddress, clientPort);
-        } catch (IOException e) {
-            e.printStackTrace();
+
         }
     }
 }
