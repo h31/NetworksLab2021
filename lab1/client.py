@@ -1,13 +1,16 @@
 import socket
 import threading
-from connection import connection
+
+from clientConnection import Connection
+
 
 sock = socket.socket()
+#sock.connect(('networkslab-ivt.ftp.sh', 12345))
 sock.connect(('localhost', 12345))
 disconnect_event = threading.Event()
-sock_connection = connection(sock, disconnect_event)
+sock_connection = Connection(sock, disconnect_event)
 
-username_limit = 12
+username_limit = 20
 username = input(f'Введите имя (максимальное кол-во символов - {username_limit} ):').encode()
 
 while True:
@@ -29,9 +32,9 @@ listenThread.start()
 
 while True:
     message = input()
-    if sock_connection.disconnect_event.is_set():
+    if sock_connection.disconnect_event.is_set(): # если сервер отключился
         break
-    if '&' in message:
+    if ' & ' in message:
         message_parts = message.split(' & ')
         message = message_parts[0]
         file_path = message_parts[1]
