@@ -1,16 +1,13 @@
-import os
 import re
 import socket
 import threading
 import datetime as dt
 
-from dotenv import load_dotenv
 
-load_dotenv()
-HEADER = int(os.getenv('HEADER'))
-IP = os.getenv('IP')
-PORT = int(os.getenv('PORT'))
-ENCODING = os.getenv('ENCODING')
+HEADER = 10
+IP = '185.183.98.98'
+PORT = 6121
+ENCODING = 'utf-8'
 
 FILE_NAME_TEMPLATE = r'^[a-zA-Z0-9_.+-]+.\w*%$'
 
