@@ -14,17 +14,8 @@ class Server {
 
     fun start() = runBlocking {
         try {
-            ServerSocket(STANDARD_PORT).use { server ->
-                println("Server is running")
-                while (true) {
-                    val client = server.accept()
-                    if (client.isConnected) {
-                        launch(Dispatchers.IO) {
-                            clientCoroutine(client, clientList)
-                        }
-                    }
-                }
-            }
+
+        }
 
         } catch (e: SocketException) {
             println("Error: server was not closed or there was another problem")
