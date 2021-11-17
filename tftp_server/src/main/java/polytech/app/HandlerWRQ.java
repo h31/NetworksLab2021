@@ -17,7 +17,7 @@ class HandlerWRQ extends Thread {
   private String filename;
   private String mode;
   private DatagramSocket socket;
-  private String dirName = "/home/alexandr/Networks/tftpboot";
+  private String dirName = "/tftpboot";
   private FileChannel fc = null;
   private FileLock fl = null; 
 
@@ -53,14 +53,11 @@ class HandlerWRQ extends Thread {
     try {
       int block = 0;
       int counter = 0;
-      FileOutputStream os = new FileOutputStream(file);
-      //fc = new FileOutputStream(file).getChannel();
-      fc = os.getChannel();
+      fc = new FileOutputStream(file).getChannel();
       while (fl == null) {
         fl = fc.tryLock();
       }
       while (true) {
-        System.out.println("Block = " + block);
         sendAck(block);
         byte[] buf = new byte[516];
         DatagramPacket getBuf = new DatagramPacket(buf, buf.length);
@@ -74,12 +71,8 @@ class HandlerWRQ extends Thread {
             if ((bytes[1] == 3) && (block_rec == block + 1)) {
               counter = 0;
               block++;
-              System.out.println("Rec = " + rec);
-              System.out.println("Bytes len = " + bytes.length);
-              ByteBuffer bBuf = ByteBuffer.allocate(rec);
-              bBuf.put(bytes, 0, rec);
-              System.out.println("trying to write");
-              fc.write(bBuf, 4);
+              ByteBuffer bBuf = ByteBuffer.wrap(bytes, 4, rec - 4);
+              fc.write(bBuf);
               if (rec < 516) {
                 sendAck(block);
                 removeHandler();
@@ -132,7 +125,7 @@ class HandlerWRQ extends Thread {
       ack[2] = (byte)(block>>8);
       ack[3] = (byte)(block);
       DatagramPacket packet = new DatagramPacket(ack, ack.length,
-            address, port);
+        address, port);
       socket.send(packet);
     }
     catch (IOException e) {

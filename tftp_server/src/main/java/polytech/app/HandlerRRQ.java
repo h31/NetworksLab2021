@@ -13,7 +13,7 @@ class HandlerRRQ extends Thread {
   private String filename;
   private String mode;
   private DatagramSocket socket;
-  private String dirName = "/home/alexandr/Networks/tftpboot";
+  private String dirName = "/tftpboot";
 
   public HandlerRRQ(InetAddress address, int port, 
     String filename, String modem, DatagramSocket socket) 
@@ -68,10 +68,8 @@ class HandlerRRQ extends Thread {
       int block = 1;
       while (true) {
         int toSend = len - send;
-        System.out.println("block = " + block);
         if (toSend > 512)
           toSend = 512;
-        System.out.println("Sending " + toSend + " bytes");
         byte[] buf = new byte[4 + toSend];
         buf[0] = 0;
         buf[1] = 3; //Data

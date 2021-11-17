@@ -20,7 +20,6 @@ public class ServerTFTP {
         serverSocket.receive(inputPacket);
         msg = inputPacket.getData();
         byte type = msg[1];   
-        System.out.println("getting filename");
         i = 2;
         String filename = getString();
         String mode = getString();
@@ -57,7 +56,6 @@ public class ServerTFTP {
         break;
       _i++;
     } 
-    System.out.println(_i);
     if (_i == msg.length - 1)
       return null;
     else {
