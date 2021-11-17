@@ -13,7 +13,7 @@ class HandlerRRQ extends Thread {
   private String filename;
   private String mode;
   private DatagramSocket socket;
-  private String dirName = "/tftpboot";
+  private String dirName = "/home/alexandr/Networks/tftpboot";
 
   public HandlerRRQ(InetAddress address, int port, 
     String filename, String modem, DatagramSocket socket) 
@@ -31,7 +31,7 @@ class HandlerRRQ extends Thread {
       socket.setSoTimeout(5000); // set timeout 
     }
     catch (SocketException e) {
-      HandlerError.sendError(socket, (byte)0, "Server error");
+      HandlerError.sendError(socket, address, port, (byte)0, "Server error");
       removeHandler();
     }
     send();
@@ -49,12 +49,12 @@ class HandlerRRQ extends Thread {
         sendFile(file);
       }
       catch (SocketTimeoutException e) {
-        HandlerError.sendError(socket, (byte)0, "Server error");
+        HandlerError.sendError(socket, address, port, (byte)0, "Server error");
         removeHandler();
       }
     }
     else {
-      HandlerError.sendError(socket, (byte)1, "File not found");
+      HandlerError.sendError(socket, address, port, (byte)1, "File not found");
       removeHandler(); 
     }
   }
@@ -104,8 +104,9 @@ class HandlerRRQ extends Thread {
               } 
             }
             else {
-              if (counter == 10) {
-                HandlerError.sendError(socket, (byte)0, "Connection lost"); 
+              if (counter == 5) {
+                HandlerError.sendError(socket, address, port,
+                  (byte)0, "Connection lost"); 
                 removeHandler();
               }
               counter++;
@@ -113,8 +114,9 @@ class HandlerRRQ extends Thread {
             } 
           }
           catch (SocketTimeoutException e) {
-            if (counter == 10) {
-              HandlerError.sendError(socket, (byte)0, "Connection lost");
+            if (counter == 5) {
+              HandlerError.sendError(socket, address, port, 
+                (byte)0, "Connection lost");
               removeHandler();
             }
             counter++;
@@ -124,7 +126,8 @@ class HandlerRRQ extends Thread {
       }
     }
     catch (IOException e) {
-      HandlerError.sendError(socket, (byte)2, "Accsess violation");
+      HandlerError.sendError(socket, address, port, 
+        (byte)2, "Accsess violation");
       removeHandler();
     }
   }

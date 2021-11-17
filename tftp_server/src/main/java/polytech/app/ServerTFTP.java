@@ -39,8 +39,8 @@ public class ServerTFTP {
             hWRQ.start();
             break;
           default:
-            HandlerError.sendError(handlerSocket, 
-              (byte)4, "Illegal TFTP operation");
+            HandlerError.sendError(handlerSocket, inputPacket.getAddress(), 
+              inputPacket.getPort(), (byte)4, "Illegal TFTP operation");
             break;
         }
       }
