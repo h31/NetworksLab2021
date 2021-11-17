@@ -1,50 +1,125 @@
 #coding=utf-8
 import socket
-import threading
 from datetime import datetime
 import os
+import select
+import time
 
-HEADER_LENGTH = 10  # chiếu dài header
-
-IP = "0.0.0.0" #"networkslab-ivt.ftp.sh"  # địa chỉ máy chủ
-PORT = 10000  # số port để nghe , số port > 1023
-clients = {}  # danh sách những khách hàng
+HEADER_LENGTH = 10
+IP = "127.0.0.1"
+PORT = 10000
+clients = {}
 SEND_FILE = "SEND_FILE"
 SEPARATOR = "<SEPARATOR>"
-UID = "c97ec0d1-df22-41f4-858f-7beee9e1bbc4".encode("utf-8") # string riêng để hiểu rằng tập tin đã kết thúc
-CONNECT = "CONNECT"  # tạo ra const đối với sử dụng chúng sau để hiểu loại của hoạt động khách hàng
-DISCONNECT = "DISCONNECT"  # xem trên
+CONNECT = "CONNECT"
+DISCONNECT = "DISCONNECT"
+UID = "c97ec0d1-df22-41f4-858f-7beee9e1bbc4".encode("utf-8")
 
 
-def main():  # chức năng chính
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # tạo ra INET, STREAMing socket
-    server.bind((IP, PORT))  # kết nối cho địa chỉ với port
-    server.listen(5)  # lựa chọn bao nhiếu khách hàng có thể đợi truy cập với server
-    print(" Server start work!!! ")
-    try:  # sử dụng "try" đối với nắm bắt keyboardInterrupt , ví dụ nếu muốn tắt server
-        while True:  # làm "while true" bởi vì muốn luôn luôn làm việc , ngoại trừ tình huống khi muốn tắt server
-            (clientsocket, address) = server.accept()  # chấp nhận sự kết nối từ ngoài
-            handler_thread = threading.Thread(target=handle_client,args=(clientsocket,))  # tạo ra thread mới cho khách hàng mới
-            handler_thread.start()  # bắt đầu thread
-    except KeyboardInterrupt:  # nếu muốn tắt server
-        for cl in clients:  # cho mỗi khách hàng
-            cl.shutdown(socket.SHUT_WR)  # tắt khách hàng
+def main():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((IP, PORT))
+    server.listen(5)
+    server.setblocking(False)
+    print("Server started!!!")
+    inputs = [server]
+    try:
+        while True:
+            reads, send, excepts = select.select(inputs, [], inputs)
+            for conn in reads:
+                if conn == server:
+                    new_conn, client_addr = conn.accept()
+                    new_conn.setblocking(False)
+                    inputs.append(new_conn)
+                else:
+                    current_time = datetime.now().strftime("%H:%M")
+                    if conn not in clients.keys():
+                        while True:
+                            header = conn.recv(HEADER_LENGTH)
+                            header_len = int(header.decode('utf-8').strip())
+                            name = conn.recv(header_len).decode("utf-8")
+                            if name in clients.values():
+                                code_n = f'{DISCONNECT:<{HEADER_LENGTH}}'.encode('utf-8')
+                                notice = f"Xin lỗi, có khách hàng với tên {name} rồi," \
+                                         f"cần phải lựa chọn tên khác".encode('utf-8')
+                                notice_header = f"{len(notice):<{HEADER_LENGTH}}".encode('utf-8')
+                                message = code_n + notice_header + notice
+                                conn.send(message)
+                                conn.close()
+                            else:
+                                clients[conn] = name
+                                print(f"In {current_time} connected new client - {name}")
+                                notificationForClient(CONNECT, conn)
+                            break
+                    else:
+                        while True:
+                            try:
+                                header = conn.recv(HEADER_LENGTH)
+                                name = clients[conn].encode("utf-8")
+                                if header.decode('utf-8').strip() != SEND_FILE:
+                                    header_name = f'{len(name):<{HEADER_LENGTH}}'.encode('utf-8')
+                                    message = conn.recv(int(header))
+                                    print(
+                                        f'in {current_time}  recieved message from {clients[conn]}: {message.decode("utf-8")}')
+                                    final_message = header_name + name + header + message
+                                    sendToAll(final_message, conn)
+                                else:
+                                    file_header_len_header = conn.recv(HEADER_LENGTH).decode("utf-8")
+                                    file_header_len = int(file_header_len_header)
+                                    file_header = conn.recv(file_header_len)
+                                    filename, filesize = file_header.decode('utf-8').split(
+                                        SEPARATOR)
+                                    filesize = int(filesize)
+                                    total_bytes = bytes()
+                                    time.sleep(1)
+                                    try:
+                                        while not UID in total_bytes:
+                                            bytes_read = conn.recv(filesize)
+                                            total_bytes += bytes_read
+                                    finally:
+                                        file_header_len = f'{len(file_header):<{HEADER_LENGTH}}'.encode('utf-8')
+                                        name_header =  f'{len(name):<{HEADER_LENGTH}}'.encode('utf-8')
+                                        sendFileFlag = f'{SEND_FILE:<{HEADER_LENGTH}}'.encode('utf-8')
+                                        fileMessage = sendFileFlag + name_header + name + file_header_len + file_header + total_bytes
+                                        print(
+                                            f"In {current_time} client {clients[conn]} send file {filename}")
+                                        sendToAll(fileMessage, conn)
+                            except:
+                                inputs.remove(conn)
+                                print(f"{clients[conn]} disconnected")
+                                notificationForClient(DISCONNECT, conn)
+                                del clients[conn]
+                                conn.close()
+                                break
+
+                            break
+
+            for conn in excepts:
+                print(f"{clients[conn]} disconnected")
+                notificationForClient(DISCONNECT, conn)
+                inputs.remove(conn)
+                conn.close()
+                del clients[conn]
+
+    except KeyboardInterrupt:
+        for cl in clients:
+            cl.shutdown(socket.SHUT_WR)
             cl.close()
-        server.shutdown(socket.SHUT_WR)  # tắt server
+        server.shutdown(socket.SHUT_WR)
         server.close()
-        os._exit(0)  # ngừng lập trình
+        os._exit(0)
 
 
-def sendToAll(msg, clientsocket):  # chứn năng đối với truyền thông báo cho tất cả khách hàng
-    for client in clients:  # cho mỗi khách hàng
-        if client != clientsocket:  # không cần gửi thông báo của khách hàng cho mình
-            client.send(msg)  # sự gửi
+def sendToAll(msg, clientsocket):
+    for client in clients:
+        if client != clientsocket:
+            client.send(msg)
 
 
 def notificationForClient(type, clientsocket):  # chức năng đối với sự gửi cảnh báo cho tất cả khách hàng
     code_n = f'{type:<{HEADER_LENGTH}}'.encode('utf-8')  # tạo ra code cho những khách
     notice: bytes  # tạo ra biến cho tin nhắn
-    name = clients[clientsocket]['data'].decode('utf-8')  # đọc tên của khách hàng
+    name = clients[clientsocket]  # đọc tên của khách hàng
     if type == CONNECT:
         notice = f"{name} join chat ".encode('utf-8')
     if type == DISCONNECT:
@@ -53,100 +128,5 @@ def notificationForClient(type, clientsocket):  # chức năng đối với sự
     message = code_n + notice_header + notice  # tạo ra thông báo toàn bộ
     sendToAll(message, clientsocket)  # gửi thông báo
 
-
-def getMessage(clientsocket):  # chức năng đối với chấp nhận các thông báo từ những khách hàng khác
-    try:
-        message_header = clientsocket.recv(HEADER_LENGTH)  # đọc header của thông báo
-        if not len(message_header):  # nếu không có header thì một lỗi đã xảy ra
-            return False
-        if message_header.decode('utf-8').strip() == SEND_FILE:  # kiểm tra sẽ nhận file hoặc không
-            file_header_len_header = clientsocket.recv(HEADER_LENGTH).decode("utf-8")
-            file_header_len = int(file_header_len_header)
-            file_header = clientsocket.recv(file_header_len)  # đọc header của file
-            filename, filesize = file_header.decode('utf-8').split(
-                SEPARATOR)  # tách header của file để có tên của file và size
-            filename = os.path.basename(filename)  # hàm này cắt bớt đường dẫn đến tệp, chỉ để lại tên tệp
-            filesize = int(filesize)  # str -> int
-            total_bytes = bytes() # ở đây sẽ lưu trữ tất cả bytes, những gì đã nhận
-            while not UID in total_bytes: # làm việc trước khi gặp UID , khi gặp UID đây là nghĩa , rằng tập tin đã kết thúc
-                bytes_read = clientsocket.recv(filesize)  # nhận bytes của tập tin
-                total_bytes+=bytes_read # thêm bytes để lưu trữ tất cả những gì đã nhận
-            return {
-                'sendFile': True,
-                'header': file_header,
-                'data': total_bytes
-            }
-        else:
-            message_length_header = message_header.decode('utf-8').strip()
-            messsage_length = int(message_length_header)  # tạo ra chiếu dài
-            return {
-                'sendFile': False,
-                'header': message_header,
-                'data': clientsocket.recv(messsage_length)}  # đưa header và hạn chế bao nhiều byte cần phải đọc
-    except ValueError:  # nếu có vấn đề với loại thông tin, thì một lỗi đâ xảy ra
-        print("Type header must be int")
-        return False
-    except:  # nếu các vấn đề khách đã xảy ra
-        return False
-
-
-def handle_client(clientsocket):
-    while True:
-        if clientsocket not in clients.values():
-            client = getMessage(clientsocket)
-            clients[clientsocket] = client  # thêm khách hàng mới vào danh sách những khách hàng
-            time = datetime.now().strftime("%H:%M")  # nhận thời gian hiện tại
-            name = client['data'].decode('UTF-8')
-            print(
-                f"At {time}, {name} new client connected ")
-            #  thông báo rằng, mới có khách hàng đã kết nối
-            notificationForClient(CONNECT,
-                                  clientsocket)  # thông báo cho những khách hàng khác , rằng khách hàng mới
-            # đã kết nối
-        else:
-                # nếu có một khách hàng với tên này, thì cần phải ngắt kết nối, để tránh tình huống khi có hai
-                # khách hàng với các tên giống nhau
-                code_n = f'{DISCONNECT:<{HEADER_LENGTH}}'.encode('utf-8')
-                notice = f"Xin lỗi, có khách hàng với tên {client['data'].decode('UTF-8')} rồi," \
-                         f"cần phải lựa chọn tên khác".encode('utf-8')
-                notice_header = f"{len(notice):<{HEADER_LENGTH}}".encode('utf-8')
-                message = code_n + notice_header + notice
-                clientsocket.send(message)
-                clientsocket.close()
-        message = getMessage(clientsocket)  # đọc thông báo
-        name = clients[clientsocket]['data'].decode('utf-8')  # đọc tên
-        current_time = datetime.now().strftime("%H:%M")  # tạo ra thời gian hiện tại
-        if message is False:  # nếu vấn đề đã xảy ra ( tại sao vấn đề đã xảy ra -  xem chức năng "client" )
-            clientsocket.shutdown(socket.SHUT_WR)  # tắt khách hàng
-            clientsocket.close()
-            print(f"{name} disconnected")
-            notificationForClient(DISCONNECT,
-                                  clientsocket)  # gửi tin nhắn cho những khách hàng khác , rằng một khách hàng đã
-            # ngắt kết nối
-            del clients[clientsocket]  # hủy bỏ khác hàng này từ danh sách những khách hàng
-            return None
-        if message['sendFile']:  # nếu có loại SEND_FILE
-            final_message = f'{SEND_FILE:<{HEADER_LENGTH}}'.encode('utf-8') + clients[clientsocket]['header'] + \
-                            clients[clientsocket]['data'] + f'{len(message["header"]):<{HEADER_LENGTH}}'.encode(
-                'utf-8') + message["header"] + message["data"]
-            sendToAll(final_message,clientsocket)
-            # f'{SEND_FILE:<{HEADER_LENGTH}}'.encode('utf-8') - Nói cho tất cả khách hàng rằng sẽ gửi file
-            # clients[clientsocket]['header'] + clients[clientsocket]['data'] - # gửi tến của khách hàng, ai đã gửi file này
-            # f'{len(message["header"]):<{HEADER_LENGTH}}'.encode('utf-8') - # gửi chiếu dài của header
-            # message["header"] - gửi header của file ( tên của file và size )
-            # message["data"] - # gửi file
-            filename = message["header"].decode('utf-8').split(SEPARATOR)[0]  # đọc tên của file để tạo ra tin nhắn
-            print(
-                f"At {current_time} client {name} sended file {filename}")
-            # viết tin nhắn rằng máy chủ đã chấp nhận tập tin
-        else:
-            print(
-                f'At {current_time}  received message from {name}: {message["data"].decode("utf-8")}')
-            # viết tin nhắn rằng máy chủ đã chấp nhận thông báo
-            final_message = clients[clientsocket]['header'] + clients[clientsocket]['data'] + message['header'] + \
-                            message['data']  # tạo ra thông báo cuối cùng
-            sendToAll(final_message, clientsocket)  # gửi thông báo cho tất cả khách hàng
-
-
-if __name__ == '__main__':  # để bắt đầu lập trình
+if __name__ == '__main__':
     main()

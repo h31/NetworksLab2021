@@ -11,7 +11,7 @@ HEADER_LENGTH = 10  # header chiếu dài
 SEPARATOR = "<SEPARATOR>"
 SEND_FILE = "SEND_FILE"
 
-IP = "networkslab-ivt.ftp.sh"  # địa chỉ localhost
+IP = "127.0.0.1" #"networkslab-ivt.ftp.sh"  # địa chỉ localhost
 PORT = 10000  # số port được dùng bởi máy chủ
 UID = "c97ec0d1-df22-41f4-858f-7beee9e1bbc4".encode("utf-8") # string riêng để hiểu rằng tập tin đã kết thúc
 CONNECT = "CONNECT"  # tạo ra const đối với sử dụng chúng sau để hiểu loại của hoạt động khách hàng
