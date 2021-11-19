@@ -24,6 +24,12 @@ class MyTestCase(unittest.TestCase):
             data
         )
 
+    def test_difference(self):
+        arr = [2, 3, 4, 1, 5, 7]
+        other = [7, 5, 3]
+
+        self.assertEqual([2, 4, 1], _.difference(arr, other))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,7 @@
 from datetime import datetime
 from os import path
 from re import split
+from typing import TypeVar, List, Callable
 
 
 def get_clean_type(val) -> str:
@@ -74,3 +75,14 @@ def set_v(data: dict or list, route: str or list, val):
             else:
                 data[curr] = container
         set_v(data[curr], r_parts[1:], val)
+
+
+T = TypeVar('T')
+
+
+def difference(arr: List[T], other: List[T]) -> List[T]:
+    diff = []
+    for item in arr:
+        if not includes(other, item):
+            diff.append(item)
+    return diff
