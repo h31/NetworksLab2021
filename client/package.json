@@ -1,0 +1,21 @@
+{
+  "name": "toss-a-message",
+  "version": "2.0.0",
+  "description": "A primitive chat based on Berkeley Sockets API",
+  "main": "index.js",
+  "scripts": {
+    "default-client": "node index.js client",
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "GreenBeaver",
+  "license": "ISC",
+  "dependencies": {
+    "colors": "^1.4.0",
+    "lodash": "^4.17.21",
+    "yargs": "^17.1.1"
+  },
+  "devDependencies": {
+    "jest": "^27.2.0"
+  }
+}
