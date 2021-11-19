@@ -1,1 +1,3 @@
 venv
+tests/parsed-files
+__pycache__
