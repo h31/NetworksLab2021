@@ -30,6 +30,24 @@ class MyTestCase(unittest.TestCase):
 
         self.assertEqual([2, 4, 1], _.difference(arr, other))
 
+    def test_includes(self):
+        self.assertTrue(_.includes('Hello!', 'll'))
+        self.assertFalse(_.includes([1, 2, 3], 5))
+
+    def test_snake_case(self):
+        self.assertEqual(
+            'green_slithery_scales',
+            _.snake_case('greenSlitheryScales')
+        )
+        self.assertEqual(
+            'green_slithery_scales',
+            _.snake_case('green Slithery Scales')
+        )
+        self.assertEqual(
+            'green_slithery_scales',
+            _.snake_case('GreenSlitheryScales')
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

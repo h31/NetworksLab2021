@@ -121,7 +121,7 @@ def parse_list(buf: bytes) -> list:
     as_dict = deserialize(buf)
     as_list = list(as_dict.items())
     as_list.sort()
-    return list(map(lambda entry: entry[1], as_list))
+    return _.l_map(lambda entry: entry[1], as_list)
 
 
 def deserialize(payload: bytes) -> dict:

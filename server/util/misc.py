@@ -1,15 +1,16 @@
 from datetime import datetime
 from os import path
-from re import split
-from typing import TypeVar, List, Callable
+from re import split, sub
+from typing import TypeVar, List
 
 
 def get_clean_type(val) -> str:
     return type(val).__name__
 
 
-def includes(list_like, val) -> bool:
-    return list(list_like).count(val) != 0
+def includes(search_in, val) -> bool:
+    s = search_in if type(search_in) == str else list(search_in)
+    return s.count(val) != 0
 
 
 def invert(initial: dict) -> dict:
@@ -86,3 +87,27 @@ def difference(arr: List[T], other: List[T]) -> List[T]:
         if not includes(other, item):
             diff.append(item)
     return diff
+
+
+def l_map(mapper, collection):
+    return list(map(mapper, collection))
+
+
+def is_empty(obj) -> bool:
+    if not obj:
+        return True
+    return not bool(len(obj.keys()))
+
+
+def repl_snake(match_obj):
+    m = match_obj.group()
+    start = f'{m[0]}_' if not includes(['-', ' '], m[0]) else '_'
+    return f'{start}{m[1].lower()}'
+
+
+def snake_case(text: str) -> str:
+    return sub(
+        pattern=r'([- ]\w)|([a-z\d][A-Z])',
+        repl=repl_snake,
+        string=text
+    ).lower()
