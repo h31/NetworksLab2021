@@ -3,21 +3,20 @@ from pathlib import Path
 from datetime import datetime
 from SocketConnection import SocketConnection
 
-# launch example: python Client.py Ivan_Ivanov
-if len(sys.argv) != 2:
-	print("Missed nickname")
+if len(sys.argv) != 4:
+	print("Args: <ip address or domain name> <port number> <nickname>")
 	exit()
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
-	client_socket.connect(("127.0.0.1", 23480)) # networkslab-ivt.ftp.sh / 127.0.0.1
+	client_socket.connect((sys.argv[1], int(sys.argv[2])))
 except socket.error:
 	print("Server is unavailable")
 	exit()
 sock = SocketConnection(client_socket)
 
 # registration on the server
-message = {"nickname":sys.argv[1]}
+message = {"nickname":sys.argv[3]}
 sock.send(Serialization.dump(message))
 dictionary = Serialization.load(sock.recv())
 if "status" in dictionary:

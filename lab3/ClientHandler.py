@@ -33,7 +33,7 @@ class ClientHandler():
 			else:
 				answer = {"status":"error: this nickname is already taken"}
 				result = False
-		self.sock.send(Serialization.dump(answer))
+		await self.sock.async_send(Serialization.dump(answer))
 		return result
 	
 	async def run(self):
@@ -44,18 +44,19 @@ class ClientHandler():
 		# notify everyone about the connection of a new user
 		message = {"time":self.getCurrentTimeInUTC(), "nickname":"SERVER",
 				"text":"User \"" + self.nickname + "\" connected"}
-		self.sendToEveryone(message)
+		await self.sendToEveryone(message)
 		
 		while True:
 			data = await self.sock.async_recv()
 			if len(data) == 0: # socket is closed
 				message = {"time":self.getCurrentTimeInUTC(), "nickname":"SERVER",
 						"text":"User \"" + self.nickname + "\" disconnected"}
-				self.sendToEveryone(message)
+				await self.sendToEveryone(message)
 				
 				self.nickname = None
 				self.sock.close()
 				break
+			
 			dictionary = Serialization.load(data)
 			if not ("text" in dictionary): continue # error	
 			
@@ -68,20 +69,20 @@ class ClientHandler():
 				message["attachment"] = dictionary["attachment"]
 				file_data = await self.sock.async_recv()
 			
-			self.sendToEveryone(message)
+			await self.sendToEveryone(message)
 			if file_data != None:
-				self.sendToEveryone(file_data, serialize = False)
+				await self.sendToEveryone(file_data, serialize = False)
 	
 	def getCurrentTimeInUTC(self):
 		return str(datetime.now(tz = timezone.utc))
 	
-	def sendToEveryone(self, msg, serialize = True):
+	async def sendToEveryone(self, msg, serialize = True):
 		for handler in self.handlers:
 			if handler.ip_address != self.ip_address:
 				if serialize:
-					handler.send(Serialization.dump(msg))
+					await handler.send(Serialization.dump(msg))
 				else:
-					handler.send(msg)
+					await handler.send(msg)
 	
-	def send(self, data):
-		self.sock.send(data)
+	async def send(self, data):
+		await self.sock.async_send(data)
