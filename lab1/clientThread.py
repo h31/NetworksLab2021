@@ -30,13 +30,6 @@ class ClientThread(threading.Thread):
             message_tmp = self.sock.recv(size)
             size -= len(message_tmp)
             message += message_tmp
-            # except ConnectionResetError:
-            #     print(self.username, 'отключился')
-            #     global clientList
-            #     clientList.remove(self.username)
-            #     create_message = self.serverMessage(f'{self.username} отключился')
-            #     self.sendToEveryone(create_message)
-            #     break
         return message
 
     def recvFromClient(self):

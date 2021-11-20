@@ -1,12 +1,18 @@
 import socket
 import threading
+import os
 
 from clientConnection import Connection
 
-
 sock = socket.socket()
-#sock.connect(('networkslab-ivt.ftp.sh', 12345))
-sock.connect(('localhost', 12345))
+
+address = input(f'Введите адрес, если вы хотите подключиться к серверу на удалённом компьютере. \nЕсли вы хотите '
+                f'подключиться к серверу на локальном компьютере, нажмите enter:')
+
+if address == '':
+    address = 'localhost'
+
+sock.connect((address, 12345))
 disconnect_event = threading.Event()
 sock_connection = Connection(sock, disconnect_event)
 
@@ -32,12 +38,15 @@ listenThread.start()
 
 while True:
     message = input()
-    if sock_connection.disconnect_event.is_set(): # если сервер отключился
+    if sock_connection.disconnect_event.is_set():  # если сервер отключился
         break
     if ' & ' in message:
         message_parts = message.split(' & ')
         message = message_parts[0]
         file_path = message_parts[1]
+        if not os.path.isfile(file_path):
+            print('Проверьте корректность ввода сообщения, система не нашла файл')
+            continue
     else:
         file_path = None
     sock_connection.sendToServer(message.encode(), file_path)
