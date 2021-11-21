@@ -3,8 +3,8 @@ import random
 import socket
 import time
 
+import cache
 import message_data
-from lab2.client import cache
 
 
 class Client:
@@ -25,8 +25,9 @@ class Client:
                 data, _ = self.client_socket.recvfrom(1024)
                 message = message_data.parse_response(data)
                 print(
-                    f"{message['RCODE']}\nResults for {message['QTYPE']}-query {message['QNAME']}: {int(message['ANCOUNT'], 2)}")
-                for i in range(1, int(message['ANCOUNT'], 2) + 1):
+                    f"{message['RCODE']}\nResults for {message['QTYPE']}-query {message['QNAME']}: "
+                    f"{message['ANCOUNT']}")
+                for i in range(1, message['ANCOUNT'] + 1):
                     print(f"{i}.\t{message['ANS'][i - 1]['RDATA']}")
                     cache.add(cache.CacheEntry(message['ANS'][i - 1]['TTL'], time.time(), message))
 
@@ -39,22 +40,22 @@ class Client:
     def write(self):
         """Метод отправки DNS-запроса от клиента
            Запрос представляет собой шестнадцатеричную строку"""
-        print("Usage: enter Resource Record Type (A, AAAA, MX, TXT) and URL")
+        print("Usage: enter Resource Record Type (A, AAAA, MX, TXT) and domain name")
         while True:
             try:
                 RRType = input()
                 if RRType in ["A", "AAAA", "MX", "TXT"]:
-                    URL = input()
+                    domain_name = input()
                     cache.update()
-                    entry = cache.get(RRType, URL)
+                    entry = cache.get(RRType, domain_name)
                     if entry:
                         print(
-                            f"(cache) Results for {RRType}-query {URL}: {len(entry)}")
+                            f"(cache) Results for {RRType}-query {domain_name}: {len(entry)}")
                         for i in range(1, len(entry) + 1):
                             print(f"{i}.\t{entry[i - 1]['RDATA']}")
                     else:
                         id = '{0:016b}'.format(random.getrandbits(16))
-                        message = message_data.build_request(id, RRType, URL)
+                        message = message_data.build_request(id, RRType, domain_name)
                         self.client_socket.send(binascii.unhexlify(message))
                 else:
                     print("Incorrect type")
