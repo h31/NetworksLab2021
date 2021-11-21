@@ -1,26 +1,62 @@
 const fs = require('fs');
 const path = require('path');
+const { formatTime } = require('./util/misc')
 
 class Logger {
-  #uniqueDateSuffix = '!';
+  static #writeTo = null;
+  static #ready = false;
 
-  constructor() {
-    this.#uniqueDateSuffix = (new Date()).getTime();
-  }
+  static LOG_STATE = {
+    handled: 'Handled',
+    skipped: 'Skipped',
+    failed: 'Failed',
 
-  async setup() {
+    enqueued: 'Entry Enqueued',
+    written: 'Entry Written',
+
+    proceeded: 'Queue Proceeded'
+  };
+
+  static OCCASION_TYPE = {
+    event: 'Event',
+    action: 'Action',
+    error: 'Error'
+  };
+
+  static async init() {
+    const uniqueDateSuffix = (new Date()).getTime();
+    this.#writeTo = path.join(__dirname, 'logs', `${uniqueDateSuffix}.txt`);
     try {
       await fs.promises.mkdir(path.join(__dirname, 'logs'));
     } catch {}
+    this.#ready = true;
   }
 
-  async log({
+  static async log({
     occasionName,
     occasionType,
     comment,
     state
   }) {
+    if (!this.#ready) {
+      throw new Error('No setup done for Logger');
+    }
 
+    const toWrite = [formatTime()];
+
+    if (occasionType && occasionName) {
+      toWrite.push(`  ${occasionType}: ${occasionName}`);
+    }
+
+    if (state) {
+      toWrite.push(`  State: ${state}`);
+    }
+
+    if (comment) {
+      toWrite.push(`  -->  ${comment}`);
+    }
+
+    await fs.promises.appendFile(this.#writeTo, `${toWrite.join('')}\n`);
   }
 }
 

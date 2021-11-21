@@ -52,6 +52,27 @@ class Slip {
     return date;
   }
 
+  /**
+   *
+   * @param {Buffer} data
+   * @return {Buffer}
+   */
+  static makeHeader(data) {
+    let size = data.byteLength.toString(2);
+    const headerBytes = [];
+    let left = size.length;
+    while (left > 0) {
+      const currLen = size.length;
+      const firstBit = size.length < 8 ? '0' : '1';
+      const part = Number(`0b${firstBit}${size.substring(currLen - 7, currLen)}`);
+      headerBytes.push(part);
+      size = size.substring(0, currLen - 7);
+      left -= 7;
+    }
+
+    return Buffer.from(headerBytes);
+  }
+
   static serialize(obj, files = {}) {
     let result = null;
 

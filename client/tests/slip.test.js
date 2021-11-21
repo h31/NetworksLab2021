@@ -125,5 +125,10 @@ describe(
         });
       });
     });
+
+    it('Should make correct headers', () => {
+      const data = Buffer.from([...Array(30000)].map((_, i) => i % 256));
+      expect(Slip.makeHeader(data).equals(Buffer.from([0xb0, 0xea, 0x1]))).toBeTruthy();
+    });
   }
 );

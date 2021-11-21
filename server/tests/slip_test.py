@@ -93,7 +93,7 @@ class MyTestCase(unittest.TestCase):
         parsed_file_data = _.get_v(deserialized_data, route)
         self.assertEqual(f_bytes, parsed_file_data['file'])
 
-        parsed_dir = path.join(_.dirname(__file__), 'parsed-files')
+        parsed_dir = path.join(_.dirname(__file__), 'parsed_files')
         if not path.exists(parsed_dir):
             makedirs(parsed_dir)
 
@@ -116,6 +116,10 @@ class MyTestCase(unittest.TestCase):
             'time': '3.20'
         }
         self.attachment_fixture(doc_payload, 'doc.txt', 'text')
+
+    def test_make_header(self):
+        data = bytes(map(lambda x: x % 256, range(30000)))
+        self.assertEqual('b0 ea 01', slip.make_header(data).hex(' '))
 
 
 if __name__ == '__main__':

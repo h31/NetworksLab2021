@@ -24,7 +24,7 @@ describe('Pillow', () => {
     const messedUpChoices = { action: 'find-the-chest', data: { whatWeHave: 'A drawing of a key' } };
     expect(() => Pillow.validateRequest(messedUpChoices)).toThrow(
       new PillowError({
-        action: ['Unsupported value find-the-chest, expected one of log-in, send-message, chunks']
+        action: ['Unsupported value find-the-chest, expected one of log-in, send-message']
       })
     );
   });

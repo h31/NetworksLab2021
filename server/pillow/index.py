@@ -1,22 +1,26 @@
 from .validators import check_shape
 import util.misc as _
 from .pillow_error import PillowError
+from enum import Enum
+
+
+class Actions(Enum):
+    log_in = 'log-in'
+    log_out = 'log-out'
+    send_message = 'send-message'
+    close_server = 'close-server'
+
+
+class ResponseStatus(Enum):
+    OK = 100
+    OK_EMPTY = 101
+
+    ERR_REQ_DATA = 200
+    ERR_REQ_FORMAT = 201
+    ERR_SERVER = 202
+
 
 SUCCESS_THRESHOLD = 200
-response_status = {
-    'OK': {'code': 100, 'comment': 'Client data received, answer sent'},
-    'OK_EMPTY': {'code': 101, 'comment': 'Client data received, no data to send back'},
-    'ERR_REQ_DATA': {'code': 200, 'comment': 'Invalid request data'},
-    'ERR_REQ_FORMAT': {'code': 201, 'comment': 'Invalid request format'},
-    'ERR_SERVER': {'code': 202, 'comment': 'Server error'}
-}
-actions = {
-    'log_in': 'log-in',
-    'log_out': 'log-out',
-    'send_message': 'send-message',
-    'chunks': 'chunks',
-    'close_server': 'close-server'
-}
 request_shape = {
     'name': 'payload',
     'type': dict,
@@ -28,7 +32,7 @@ request_shape = {
             'type': str,
             'required': True,
             # logOut and closeServer can only be sent by the server
-            'choices': [actions['log_in'], actions['send_message'], actions['chunks']]
+            'choices': [Actions.log_in.value, Actions.send_message.value]
         },
         {
             'name': 'data',

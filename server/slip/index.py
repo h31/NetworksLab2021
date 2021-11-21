@@ -51,6 +51,19 @@ def get_date(date_str: str) -> datetime.datetime:
     return date
 
 
+def make_header(data: bytes) -> bytes:
+    size = '{0:b}'.format(len(data))
+    header_bytes = []
+    left = len(size)
+    while left > 0:
+        first_bit = '0' if len(size) < 8 else '1'
+        part = int(f'{first_bit}{size[-7:]}', 2)
+        header_bytes.append(part)
+        size = size[:-7]
+        left -= 7
+    return bytes(header_bytes)
+
+
 def serialize(data: dict or list, files_dict: dict = None) -> bytes:
     result = b''
 

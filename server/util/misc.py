@@ -1,7 +1,10 @@
 from datetime import datetime
 from os import path
-from re import split, sub
-from typing import TypeVar, List
+from re import split, sub, match
+from typing import TypeVar, List, Callable
+
+
+T = TypeVar('T')
 
 
 def get_clean_type(val) -> str:
@@ -11,6 +14,14 @@ def get_clean_type(val) -> str:
 def includes(search_in, val) -> bool:
     s = search_in if type(search_in) == str else list(search_in)
     return s.count(val) != 0
+
+
+def find(arr: List[T], comparator: Callable[[T, int, List[T]], bool]) -> T:
+    for i in range(len(arr)):
+        item = arr[i]
+        if comparator(item, i, arr):
+            return item
+    return None
 
 
 def invert(initial: dict) -> dict:
@@ -30,6 +41,13 @@ def num(text: str) -> int or float:
 def now() -> datetime:
     raw = datetime.utcnow()
     return raw.replace(microsecond=round(raw.microsecond / 1000) * 1000)
+
+
+def format_time(dt: datetime = None) -> str:
+    _dt = dt if dt else now()
+    res = _dt.strftime('%H:%M:%S.')
+    res += str(round(_dt.microsecond / 1000))
+    return f'[{res}]'
 
 
 def dirname(file: str) -> str:
@@ -78,19 +96,16 @@ def set_v(data: dict or list, route: str or list, val):
         set_v(data[curr], r_parts[1:], val)
 
 
-T = TypeVar('T')
-
-
 def difference(arr: List[T], other: List[T]) -> List[T]:
-    diff = []
-    for item in arr:
-        if not includes(other, item):
-            diff.append(item)
-    return diff
+    return list(filter(lambda item: not includes(other, item), arr))
 
 
 def l_map(mapper, collection):
     return list(map(mapper, collection))
+
+
+def l_filter(filter_func, collection):
+    return list(filter(filter_func, collection))
 
 
 def is_empty(obj) -> bool:
@@ -111,3 +126,21 @@ def snake_case(text: str) -> str:
         repl=repl_snake,
         string=text
     ).lower()
+
+
+def w_amount(amt: int, text: str):
+    _text = text
+    ending = ''
+    if amt != 1:
+        if text.endswith('y'):
+            _text = text[:len(text) - 1]
+            ending = 'ies'
+        elif match(r'^[a-zA-Z]{2,}[qwrtpsdfghjklzxcvbnm][uo]s$', text):
+            ending = 'i'
+            _text = text[:len(text) - 2]
+        elif text.endswith('s'):
+            ending = 'es'
+        else:
+            ending = 's'
+
+    return f'{amt} {_text}{ending}'

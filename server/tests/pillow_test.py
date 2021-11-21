@@ -1,5 +1,5 @@
 import unittest
-from pillow import validate_request, PillowError, actions
+from pillow import validate_request, PillowError, Actions
 
 
 class MyTestCase(unittest.TestCase):
@@ -46,7 +46,7 @@ class MyTestCase(unittest.TestCase):
             'data': {'what_we_have': 'A drawing of a key'}
         }
         err_obj_3 = {
-            'action': ['Unsupported value find-the-chest, expected one of log-in, send-message, chunks']
+            'action': ['Unsupported value find-the-chest, expected one of log-in, send-message']
         }
         self.assertRaisesProperly(
             func=validate_request,
@@ -56,7 +56,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_action_specific_validation(self):
         log_in_payload = {
-            'action': actions['log_in'],
+            'action': Actions.log_in.value,
             'data': {'message': 'Are you afraid of death?'}
         }
         err_obj_1 = {
@@ -72,7 +72,7 @@ class MyTestCase(unittest.TestCase):
         )
 
         send_message_payload = {
-            'action': actions['send_message'],
+            'action': Actions.send_message.value,
             'data': {}
         }
         err_obj_2 = {
@@ -86,7 +86,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_valid_payload(self):
         valid_payload = {
-            'action': actions['send_message'],
+            'action': Actions.send_message.value,
             'data': {
                 'message': 'Call the Kraken!',
                 'attachment': {'file': bytes([1, 2, 3, 4]), 'name': 'davy-jones-theme.mp3'}

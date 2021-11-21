@@ -14,7 +14,7 @@ const EVENTS = {
 
   line: 'line',
 
-  queue: 'queue',
+  pingQueue: 'ping-queue',
   proceedQueue: 'proceed-queue',
 };
 
@@ -27,7 +27,10 @@ const SOCKET_EVENTS = [
   EVENTS.error,
   EVENTS.lookup,
   EVENTS.ready,
-  EVENTS.timeout
+  EVENTS.timeout,
+
+  EVENTS.pingQueue,
+  EVENTS.proceedQueue
 ];
 
 const SIGNALS = {
@@ -37,31 +40,6 @@ const SIGNALS = {
 const ERRORS = {
   ECONNREFUSED: 'ECONNREFUSED',
   ECONNRESET: 'ECONNRESET'
-};
-
-const LOG_STATES = {
-  skipped: 'Skipped',
-  passedToHandle: 'Passed to handle',
-  error: 'Error',
-
-  collectingChunks: 'Collecting',
-  doneChunks: 'Done',
-
-  enqueued: 'Data Enqueued',
-  stopped: 'Queue Stopped',
-  proceeded: 'Queue Proceeded',
-  written: 'Queue entry fully written',
-};
-
-const LOG_NAMES = {
-  chunksSent: 'Sent',
-  chunksReceived: 'Received',
-}
-
-const LOG_TYPES = {
-  Action: 'Action',
-  Event: 'Event',
-  Chunks: 'Chunks',
 };
 
 const MESSAGES = {
@@ -87,18 +65,17 @@ const SAFE_MIME_TYPES = [
   'application/msword', // Old MS Office Word
   'application/vnd.ms-excel' // Old MS Office Excel
 ];
-
-const QUEUE_STOPPER = '__STOP__';
+const MESSAGE_PART = {
+  HEADER: 'Header',
+  BODY: 'Body',
+};
 
 module.exports = {
   EVENTS,
   SIGNALS,
   ERRORS,
-  LOG_STATES,
-  LOG_TYPES,
   SOCKET_EVENTS,
   MESSAGES,
   SAFE_MIME_TYPES,
-  QUEUE_STOPPER,
-  LOG_NAMES
+  MESSAGE_PART
 };
