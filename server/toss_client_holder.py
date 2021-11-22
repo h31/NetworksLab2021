@@ -1,16 +1,11 @@
 import asyncio
 from typing import Callable
-from enum import Enum
+
 import logger
 from slip import SlipError, SlipHandler, PeekEvent
 import pillow
 import util.misc as _
 from toss_error import TossError
-
-
-class MessagePart(Enum):
-    HEADER = 'header'
-    BODY = 'body'
 
 
 class TossClientHolder:
