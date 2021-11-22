@@ -1,11 +1,11 @@
-const { MESSAGES, SIGNALS, EVENTS, SOCKET_EVENTS, MESSAGE_PART } = require('./util/constants');
+const { MESSAGES, SIGNALS, EVENTS, SOCKET_EVENTS } = require('./util/constants');
 const readline = require('readline')
 const net = require('net')
 const UI = require('./ui');
 const { useHandlers } = require('./util/hooks');
 const path = require('path');
 const Logger = require('./logger');
-const Slip = require('./slip');
+const SlipHandler = require('./slip');
 const Pillow = require('./pillow');
 const { mimeTypeIsSafe, wAmount } = require('./util/misc');
 const fs = require('fs');
@@ -16,11 +16,7 @@ class TossClient {
   #rl;
   username;
 
-  currentMessagePart = MESSAGE_PART.HEADER;
-  headerChunkIdx = 0;
-  toCollect = 0;
-  body = Buffer.alloc(0)
-  isBodyCollected = false;
+  headerParser;
 
   isServerActive = true;
   rlLoopStarted = false;
@@ -36,7 +32,13 @@ class TossClient {
       output: process.stdout,
       prompt: 'TOSS >'
     });
-    this.#sock = new net.Socket()
+    this.#sock = new net.Socket();
+    this.slipHandler = new SlipHandler();
+    useHandlers(this.slipHandler, {
+      handlersDir: path.join(__dirname, 'peek-events'),
+      handledOccasions: [...Object.values(SlipHandler.PEEK_EVENTS)],
+      occasionType: Logger.OCCASION_TYPE.peekEvent
+    });
     UI.init();
 
     process.on(SIGNALS.SIGINT, () => this.finish());
@@ -60,16 +62,14 @@ class TossClient {
    * @return {Promise<boolean>}
    */
   async writeRaw(toSend, files) {
-    const body = Slip.serialize(toSend, { data: files });
-    const header = Slip.makeHeader(body);
-    const fullMessage = Buffer.concat([header, body]);
+    const { message, bodySize, headerSize } = this.slipHandler.makeMessage(toSend, files)
     let sentInOneChunk;
     await Logger.log({
       comment:
-        `Sending ${wAmount(body.byteLength, 'byte')} (Body) + ${wAmount(header.byteLength, 'byte')} (Header)`
+        `Sending ${wAmount(bodySize, 'byte')} (Body) + ${wAmount(headerSize, 'byte')} (Header)`
     });
     await new Promise((resolve, reject) => {
-      sentInOneChunk = this.#sock.write(fullMessage, err => err ? reject(err) : resolve());
+      sentInOneChunk = this.#sock.write(message, err => err ? reject(err) : resolve());
     });
     return sentInOneChunk;
   }

@@ -20,7 +20,8 @@ class Logger {
   static OCCASION_TYPE = {
     event: 'Event',
     action: 'Action',
-    error: 'Error'
+    error: 'Error',
+    peekEvent: 'SlipPeek'
   };
 
   static async init() {
