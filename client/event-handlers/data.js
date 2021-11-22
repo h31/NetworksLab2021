@@ -20,7 +20,8 @@ async function handle(dataChunk, client) {
     makeExtraArgs: a => [{ action: a, data, client, status }],
     handlersDir,
     extractOne: action || '',
-    occasionType: Logger.OCCASION_TYPE.action
+    occasionType: Logger.OCCASION_TYPE.action,
+    defaultHandler: ({ data, status }) => client.displayMessage(data, status)
   })();
 }
 

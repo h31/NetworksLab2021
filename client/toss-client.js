@@ -16,7 +16,7 @@ class TossClient {
   #rl;
   username;
 
-  headerParser;
+  slipHandler;
 
   isServerActive = true;
   rlLoopStarted = false;
@@ -35,7 +35,7 @@ class TossClient {
     this.#sock = new net.Socket();
     this.slipHandler = new SlipHandler();
     useHandlers(this.slipHandler, {
-      handlersDir: path.join(__dirname, 'peek-events'),
+      handlersDir: path.join(__dirname, 'slip-peek'),
       handledOccasions: [...Object.values(SlipHandler.PEEK_EVENTS)],
       occasionType: Logger.OCCASION_TYPE.peekEvent
     });
@@ -62,12 +62,8 @@ class TossClient {
    * @return {Promise<boolean>}
    */
   async writeRaw(toSend, files) {
-    const { message, bodySize, headerSize } = this.slipHandler.makeMessage(toSend, files)
+    const message = this.slipHandler.makeMessage(toSend, files)
     let sentInOneChunk;
-    await Logger.log({
-      comment:
-        `Sending ${wAmount(bodySize, 'byte')} (Body) + ${wAmount(headerSize, 'byte')} (Header)`
-    });
     await new Promise((resolve, reject) => {
       sentInOneChunk = this.#sock.write(message, err => err ? reject(err) : resolve());
     });

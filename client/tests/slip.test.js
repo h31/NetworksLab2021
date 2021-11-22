@@ -202,6 +202,13 @@ describe(
       expect(() => slipHandler.feed(invalidDate.pseudoMessage)).toThrow(
         'Could not parse Date from 1979-05-32T12:00:00.000Z'
       );
+
+      const someData = Buffer.from('some-string|l5|Hello;isOk|b1;');
+      slipHandler = new SlipHandler();
+      const withInvalidHeader = Buffer.concat([Buffer.from([5]), someData]);
+      expect(() => slipHandler.feed(withInvalidHeader)).toThrow(
+        'Received 24 bytes more then expected while collecting Body'
+      );
     });
 
     it('Should read data with attached text files', done => {

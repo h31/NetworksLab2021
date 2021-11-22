@@ -11,8 +11,8 @@ class Logger {
     skipped: 'Skipped',
     failed: 'Failed',
 
-    enqueued: 'Entry Enqueued',
-    written: 'Entry Written',
+    enqueued: 'Queue Entry Enqueued',
+    written: 'Queue Entry Written',
 
     proceeded: 'Queue Proceeded'
   };
