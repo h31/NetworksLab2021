@@ -18,7 +18,7 @@
             <td>action</td>
             <td>✓</td>
             <td>String</td>
-            <td>Must be one of ['send-message', 'log-in', 'chunks']</td>
+            <td>Must be one of ['send-message', 'log-in']</td>
         </tr>
         <tr>
             <td>data</td>
@@ -57,12 +57,6 @@
             <td>'send-message'</td>
             <td>Object</td>
             <td>Must have exactly two subfields: 'file' (a Byte Array) and 'name' (a String)</td>
-        </tr>
-        <tr>
-            <td>chunks</td>
-            <td>'chunks'</td>
-            <td>Number</td>
-            <td></td>
         </tr>
     </tbody>
 </table>
@@ -191,12 +185,6 @@ Overall, the statuses with codes above 199 represent that some error occurred
             <td>status >= 200</td>
             <td>Object</td>
             <td>Each key is the name of the field that's invalid, each value is an array of errors</td>
-        </tr>
-        <tr>
-            <td>chunks</td>
-            <td>action == 'chunks'</td>
-            <td>Number</td>
-            <td></td>
         </tr>
     </tbody>
 </table>

@@ -1,10 +1,15 @@
 # Slip
+
 **Slip** is the serialization scheme <u>Toss-a-Message</u> supports.
 
-Each **Slip** is a raw byte array, a concatenation of byte arrays representing the fields of the serialized object. The
-byte arrays for fields, in turn, are concatenations of arrays representing slices of information about these fields.
+## Body
+
+Each **Slip**'s body is a raw byte array, a concatenation of byte arrays representing the fields of the serialized
+object. The byte arrays for fields, in turn, are concatenations of arrays representing slices of information about these
+fields.
 
 The parts of any field, in order:
+
 - *key*: the name of the field. Each of the special characters(`|`, `>` and `;`) should be escaped with an extra `>`.
   Example: `'This is a fence > |-|-|;'` becomes `'This is a fence >> >|->|->|>;'`
 - *key delimiter*: a single non-escaped `|`
@@ -96,3 +101,21 @@ These Strings should be converted to byte arrays using utf8 encoding and concate
         </tr>
     </tbody>
 </table>
+
+## Header
+
+Each **Slip** should start with a Header holding the byte size of its Body. To compose a Header, one should go through
+following steps:
+
+- Convert the size of the Body to binary form
+- Split the binary number into chunks, each containing 7 bits
+- Prepend each chunk which is not the last one (counting from right to left, from lower digits to higher)
+  with a 1
+- Add the resulting octets to the Slip Message before Body, in reverse order
+
+Example:
+
+- Body size is 300<sub>10</sub> bytes = 100101100<sub>2</sub>
+- First chunk: 0000010, second chunk: 0101100
+- Adjusted chunks: **0** 0000010, **1** 0101100
+- Resulting Message: 10101100 00000010 <...300 bytes of Body...>
