@@ -1,9 +1,10 @@
 import unittest
-import slip
+from slip import SlipHandler, SlipError
 import util.misc as _
 from os import path, makedirs
 from datetime import datetime
 from copy import deepcopy
+from random import randint
 
 original_str = 'key|with|sticks>and>>arrows>and se;micolons'
 original_data = {
@@ -17,109 +18,146 @@ original_data = {
 }
 
 
-class MyTestCase(unittest.TestCase):
+class SlipTestCase(unittest.TestCase):
     def test_escape_characters(self):
         self.assertEqual(
             'key>|with>|sticks>>and>>>>arrows>>and se>;micolons',
-            slip.escape_characters(original_str)
+            SlipHandler.escape_characters(original_str)
         )
 
     def test_unescape_characters(self):
-        escaped = slip.escape_characters(original_str)
-        unescaped = slip.unescape_characters(escaped)
+        escaped = SlipHandler.escape_characters(original_str)
+        unescaped = SlipHandler.unescape_characters(escaped)
         self.assertEqual(unescaped, original_str)
 
     def test_find_border(self):
         original_key = '|key-made-by-s>>ome-weirdo'
         info_after_key = '||>|gone wild with these!|||>||;<>|'
-        serialized_data = f'{slip.escape_characters(original_key)}|{info_after_key}'
-        found_key = slip.find_border(serialized_data, 0, '|')
-        parsed_key = slip.unescape_characters(found_key)
+        serialized_data = f'{SlipHandler.escape_characters(original_key)}|{info_after_key}'
+        found_key = SlipHandler.find_border(serialized_data, 0, '|')
+        parsed_key = SlipHandler.unescape_characters(found_key)
         self.assertEqual(parsed_key, original_key)
+
+    @staticmethod
+    def serialization_fixture(payload, files=None):
+        slip_handler = SlipHandler()
+        serialized_data = slip_handler.make_message(payload, files)
+        return slip_handler, serialized_data
+
+    @staticmethod
+    def imitate_chunks(byte_data: bytes, max_sz: int = 1024):
+        chunks = []
+        sz = len(byte_data)
+        offset = 0
+        while sz - offset > 0:
+            chunk_size = min(randint(1, max_sz), sz - offset)
+            chunk = byte_data[offset:offset + chunk_size]
+            chunks.append(chunk)
+            offset += chunk_size
+        return chunks
+
+    def use_chunks_fixture(self, slip_handler: SlipHandler, byte_data: bytes, max_sz: int = 1024):
+        chunks = self.imitate_chunks(byte_data, max_sz)
+        deserialized_data = None
+        for chunk in chunks:
+            deserialized_data = slip_handler.feed(chunk)
+        return deserialized_data
 
     def test_serialize(self):
         payload = {
             'str': 'A String',
             'num': 12,
             'none': None,
-            'empty_obj': {},
-            'encoded_str': 'Привет! Ô'
+            'emptyObj': {},
+            'encodedStr': 'Привет! Ô'
         }
-        serialized_data = slip.serialize(payload)
+        _, serialized_data = self.serialization_fixture(payload)
         self.assertEqual(
-            'str|l8|A String;num|n2|12;none|x;empty_obj|s0|;encoded_str|l16|Привет! Ô;',
+            # N is the Header: one byte containing number 78
+            'Nstr|l8|A String;num|n2|12;none|x;emptyObj|s0|;encodedStr|l16|Привет! Ô;',
             str(serialized_data, 'utf8')
         )
 
     def test_deserialize(self):
-        serialized_data = slip.serialize(original_data)
-        deserialized_data = slip.deserialize(serialized_data)
+        slip_handler, serialized_data = self.serialization_fixture(original_data)
+        deserialized_data = self.use_chunks_fixture(slip_handler, serialized_data)
         self.assertEqual(original_data, deserialized_data)
 
     def test_deserialize_invalid(self):
-        with self.assertRaises(slip.SlipError):
+        with self.assertRaises(SlipError):
             empty_key = 'first_key|l4|wooo;|b1'
-            slip.deserialize(bytes(empty_key, 'utf8'))
+            SlipHandler.parse_body(bytes(empty_key, 'utf8'))
 
-        with self.assertRaises(slip.SlipError):
+        with self.assertRaises(SlipError):
             invalid_bool = 'is_good|b1;is_bad|b8;'
-            slip.deserialize(bytes(invalid_bool, 'utf8'))
+            SlipHandler.parse_body(bytes(invalid_bool, 'utf8'))
 
-        with self.assertRaises(slip.SlipError):
+        with self.assertRaises(SlipError):
             file_no_filename = 'str|l5|Hello;num|n1|5the-file-no-one-needs.txt;'
-            slip.deserialize(bytes(file_no_filename, 'utf8'))
+            SlipHandler.parse_body(bytes(file_no_filename, 'utf8'))
 
-        with self.assertRaises(slip.SlipError):
+        with self.assertRaises(SlipError):
             non_iso_date = 'who|l2|me;dob|d10|2000-07-17;'
-            slip.deserialize(bytes(non_iso_date, 'utf8'))
+            SlipHandler.parse_body(bytes(non_iso_date, 'utf8'))
 
-        with self.assertRaises(slip.SlipError):
+        with self.assertRaises(SlipError):
             invalid_date = 'suggestedBy|l12|Münchhausen;whatSuggested|d24|1979-05-32T12:00:00.000Z'
-            slip.deserialize(bytes(invalid_date, 'utf8'))
+            SlipHandler.parse_body(bytes(invalid_date, 'utf8'))
 
-    def attachment_fixture(self, _payload: dict, original_name: str, route: str or list):
-        f_path = path.join(_.dirname(__file__), f'original_files/{original_name}')
+    def attachment_fixture(
+            self,
+            original_name: str,
+            payload: dict,
+            route: str or list,
+            old_handler: SlipHandler = None
+    ):
+        f_path = path.join(_.dirname(__file__), 'original_files', original_name)
         with open(f_path, 'rb') as file:
             f_bytes = file.read()
 
-        payload = deepcopy(_payload)
+        to_serialize = deepcopy(payload)
         files_dict = {}
-        _.set_v(payload, route, f_bytes)
+        _.set_v(to_serialize, route, f_bytes)
         _.set_v(files_dict, route, original_name)
 
-        serialized_data = slip.serialize(payload, files_dict)
-        deserialized_data = slip.deserialize(serialized_data)
+        new_handler, serialized_data = self.serialization_fixture(to_serialize, files_dict)
+        handler = old_handler if old_handler else new_handler
+        deserialized_data = self.use_chunks_fixture(handler, serialized_data, 2048)
 
-        parsed_file_data = _.get_v(deserialized_data, route)
-        self.assertEqual(f_bytes, parsed_file_data['file'])
+        to_compare = deepcopy(payload)
+        _.set_v(to_compare, route, {'file': f_bytes, 'name': original_name})
+
+        self.assertEqual(to_compare, deserialized_data)
 
         parsed_dir = path.join(_.dirname(__file__), 'parsed_files')
         if not path.exists(parsed_dir):
             makedirs(parsed_dir)
 
+        parsed_file_data = _.get_v(deserialized_data, route)
         path_to_parsed_file = path.join(parsed_dir, parsed_file_data['name'])
 
         with open(path_to_parsed_file, 'wb+') as parsed_img_file:
             parsed_img_file.write(parsed_file_data['file'])
 
     def test_attachments(self):
+        handler = SlipHandler()
         img_payload = {
             'user': 'Barash',
             'message': 'Беее...',
             'profile_data': {'created': datetime(2002, 11, 20)}
         }
-        self.attachment_fixture(img_payload, 'good.jpg', 'profile_data.avatar')
+        self.attachment_fixture('good.jpg', img_payload, 'profile_data.avatar', handler)
 
         doc_payload = {
             'band': 'Smash Mouth',
             'date': datetime(year=2005, month=8, day=23),
             'time': '3.20'
         }
-        self.attachment_fixture(doc_payload, 'doc.txt', 'text')
+        self.attachment_fixture('doc.txt', doc_payload, 'text', handler)
 
     def test_make_header(self):
         data = bytes(map(lambda x: x % 256, range(30000)))
-        self.assertEqual('b0 ea 01', slip.make_header(data).hex(' '))
+        self.assertEqual('b0 ea 01', SlipHandler.make_header(data).hex(' '))
 
 
 if __name__ == '__main__':

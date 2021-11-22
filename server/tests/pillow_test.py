@@ -2,7 +2,7 @@ import unittest
 from pillow import validate_request, PillowError, Actions
 
 
-class MyTestCase(unittest.TestCase):
+class PillowTestCase(unittest.TestCase):
     def assertRaisesProperly(self, func, err_obj, **func_args):
         raised = False
         try:

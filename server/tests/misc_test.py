@@ -2,7 +2,7 @@ import unittest
 import util.misc as _
 
 
-class MyTestCase(unittest.TestCase):
+class MiscTestCase(unittest.TestCase):
     def test_get_v(self):
         data = {
             'ladder': {'step1': {'step2': {'step3': 'finish'}}},
