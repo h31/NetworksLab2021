@@ -43,7 +43,6 @@ class SlipHandler extends EventEmitter {
         this.#currentMessagePart = SlipHandler.#MESSAGE_PART.BODY;
         this.#body = Buffer.alloc(this.#toCollect);
         this.emit(SlipHandler.PEEK_EVENTS.collectedHeader, this.#toCollect);
-        // await this.log(`Collected the full Header, expecting ${wAmount(this.#toCollect, 'byte')} of Body`);
         break;
       }
     }

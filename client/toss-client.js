@@ -62,7 +62,7 @@ class TossClient {
    * @return {Promise<boolean>}
    */
   async writeRaw(toSend, files) {
-    const message = this.slipHandler.makeMessage(toSend, files)
+    const message = this.slipHandler.makeMessage(toSend, { data: files })
     let sentInOneChunk;
     await new Promise((resolve, reject) => {
       sentInOneChunk = this.#sock.write(message, err => err ? reject(err) : resolve());
