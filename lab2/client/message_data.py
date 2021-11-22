@@ -1,5 +1,8 @@
 import binascii
 
+RRTYPE = {1: 'A', 15: 'MX', 16: 'TXT', 28: 'AAAA'}
+RCODE = ['', 'Format error!', 'Server failure!', 'Name Error!', 'Not Implemented!', 'Refused!']
+
 
 class Message:
     def __init__(self, raw):
@@ -48,6 +51,26 @@ class Message:
             domain_name.append(section)
         return domain_name
 
+    def resolve(self):
+        qname = True
+        domain_name = []
+        while qname:
+            if self.get_field(0, 0, 2) == '11':
+                domain_name.extend(self.resolve_compression(int(self.get_field(0, 2, 16), 2) * 2,
+                                                            int(self.get_field(0, 2, 16), 2) * 8))
+                self.shift_pointer(2)
+                break
+            seclen = int(self.get_field(1, 0, 2), 16)
+            self.shift_pointer(2)
+            section = ''
+            for _ in range(seclen):
+                section += bytearray.fromhex(self.get_field(1, 0, 2)).decode()
+                self.shift_pointer(2)
+            qname = int(self.get_field(1, 0, 2), 16)
+            domain_name.append(section)
+        self.shift_pointer(2)
+        return '.'.join(domain_name)
+
 
 def parse_response(message):
     """
@@ -60,53 +83,21 @@ def parse_response(message):
            'AA': message.bit_message[21],
            'TC': message.bit_message[22], 'RD': message.bit_message[23], 'RA': message.bit_message[24],
            'Z': message.bit_message[25:28],
-           'RCODE': message.bit_message[28:32], 'QDCOUNT': message.bit_message[32:48],
+           'RCODE': int(message.bit_message[28:32], 2), 'QDCOUNT': message.bit_message[32:48],
            'ANCOUNT': int(message.bit_message[48:64], 2),
            'NSCOUNT': message.bit_message[64:80], 'ARCOUNT': message.bit_message[80:96]}
 
-    if res['RCODE'] == '0000':
-        res['RCODE'] = ''
-    elif res['RCODE'] == '0001':
-        res['RCODE'] = 'Format error!'
-    elif res['RCODE'] == '0010':
-        res['RCODE'] = 'Server failure!'
-    elif res['RCODE'] == '0011':
-        res['RCODE'] = 'Name Error!'
-    elif res['RCODE'] == '0100':
-        res['RCODE'] = 'Not Implemented!'
-    elif res['RCODE'] == '0101':
-        res['RCODE'] = 'Refused!'
+    res['RCODE'] = RCODE[res['RCODE']]
 
-    qname = True
     message.shift_pointer(24)
-    domain_name = []
-    while qname:
-        seclen = int(message.get_field(1, 0, 2), 16)
-        message.shift_pointer(2)
-        section = ''
-        for _ in range(seclen):
-            section += bytearray.fromhex(message.get_field(1, 0, 2)).decode()
-            message.shift_pointer(2)
-        qname = int(message.get_field(1, 0, 2), 16)
-        domain_name.append(section)
-    message.shift_pointer(2)
-    res['QNAME'] = '.'.join(domain_name)
-    res['QTYPE'] = message.get_field(0, 0, 16)
-
-    if res['QTYPE'] == '0000000000000001':
-        res['QTYPE'] = 'A'
-    elif res['QTYPE'] == '0000000000001111':
-        res['QTYPE'] = 'MX'
-    elif res['QTYPE'] == '0000000000010000':
-        res['QTYPE'] = 'TXT'
-    elif res['QTYPE'] == '0000000000011100':
-        res['QTYPE'] = 'AAAA'
+    res['QNAME'] = message.resolve()
+    res['QTYPE'] = RRTYPE[int(message.get_field(0, 0, 16), 2)]
 
     message.shift_pointer(4)
     res['QCLASS'] = message.get_field(0, 0, 16)
     message.shift_pointer(4)
     res['ANS'] = []
-    for _ in range(int(res['ANCOUNT'], 2)):
+    for _ in range(res['ANCOUNT']):
         ans = {'NAME': message.get_field(0, 0, 16)}
         message.shift_pointer(4)
         ans['TYPE'] = message.get_field(0, 0, 16)
@@ -115,7 +106,7 @@ def parse_response(message):
         message.shift_pointer(4)
         ans['TTL'] = message.get_field(0, 0, 32)
         message.shift_pointer(8)
-        ans['RDLENGTH'] = message.get_field(0, 0, 16)
+        ans['RDLENGTH'] = int(message.get_field(0, 0, 16), 2)
         message.shift_pointer(4)
         if res['QTYPE'] == 'A':
             ip4 = []
@@ -127,28 +118,11 @@ def parse_response(message):
         elif res['QTYPE'] == 'MX':
             ans['PREFERENCE'] = message.get_field(0, 0, 16)
             message.shift_pointer(4)
-            qname = True
-            mail = []
-            while qname:
-                if message.get_field(0, 0, 2) == '11':
-                    mail.extend(message.resolve_compression(int(message.get_field(0, 2, 16), 2) * 2,
-                                                            int(message.get_field(0, 2, 16), 2) * 8))
-                    message.shift_pointer(2)
-                    break
-                seclen = int(message.get_field(1, 0, 2), 16)
-                message.shift_pointer(2)
-                section = ''
-                for _ in range(seclen):
-                    section += bytearray.fromhex(message.get_field(1, 0, 2)).decode()
-                    message.shift_pointer(2)
-                qname = int(message.get_field(1, 0, 2), 16)
-                mail.append(section)
-            message.shift_pointer(2)
-            ans['RDATA'] = '.'.join(mail)
+            ans['RDATA'] = message.resolve()
             res['ANS'].append(ans)
         elif res['QTYPE'] == 'TXT':
             txt = []
-            for _ in range(int(ans['RDLENGTH'], 2)):
+            for _ in range(ans['RDLENGTH']):
                 txt.append(bytearray.fromhex(message.get_field(1, 0, 2)).decode())
                 message.shift_pointer(2)
             ans['RDATA'] = ''.join(txt[1:])
@@ -157,7 +131,7 @@ def parse_response(message):
             ip6 = []
             for _ in range(8):
                 ip6.append(message.get_field(1, 0, 2))
-                message.shift_pointer(8)
+                message.shift_pointer(2)
             ans['RDATA'] = ':'.join(ip6)
             res['ANS'].append(ans)
     return res
@@ -184,15 +158,7 @@ def build_request(request_id, RRType, domain_name):
         for ch in domain_name_section:
             message += "{0:08b}".format(ord(ch))  # ASCII-код символа в секции доменного имени
     message += '00000000'  # Завершение секции QNAME
-
-    if RRType == 'A':
-        message += '0000000000000001'  # QTYPE - A
-    elif RRType == 'MX':
-        message += '0000000000001111'  # QTYPE - MX
-    elif RRType == 'TXT':
-        message += '0000000000010000'  # QTYPE - TXT
-    elif RRType == 'AAAA':
-        message += '0000000000011100'  # QTYPE - AAAA
+    message += "{0:016b}".format((list(RRTYPE.keys())[list(RRTYPE.values()).index(RRType)]))  # QTYPE
 
     message += '0000000000000001'  # QCLASS - Internet
     return str(hex(int(message, 2)))[2:]
