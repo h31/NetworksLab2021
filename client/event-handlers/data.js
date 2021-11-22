@@ -2,7 +2,7 @@ const { MESSAGE_PART } = require('../util/constants');
 const Logger = require('../logger');
 const Slip = require('../slip');
 const path = require('path');
-const { getParentDir } = require('../util/misc');
+const { getParentDir, wAmount } = require('../util/misc');
 const { useHandlers } = require('../util/hooks');
 
 /**
@@ -18,19 +18,20 @@ async function collectHeader(dataChunk, client) {
   while (idx < size) {
     const oneByte = dataChunk[idx++];
     const meaningfulPart = oneByte % 128;
-    client.toCollect += meaningfulPart * (2 ** client.headerChunkIdx++)
+    client.toCollect += meaningfulPart * (2 ** client.headerChunkIdx);
+    client.headerChunkIdx += 7;
 
     if (oneByte < 128) {
       client.currentMessagePart = MESSAGE_PART.BODY;
       client.body = Buffer.alloc(0);
       await Logger.log({
-        comment: `Collected the full Header, expecting ${client.toCollect} bytes of Body`,
+        comment: `Collected the full Header, expecting ${wAmount(client.toCollect, 'byte')} of Body`,
       });
       break;
     }
   }
 
-  if (idx !== size - 1) {
+  if (idx !== size) {
     const bodyChunk = Buffer.alloc(size - idx);
     dataChunk.copy(bodyChunk, 0, idx, size);
     await collectBody(bodyChunk, client);
@@ -47,7 +48,7 @@ async function collectBody(dataChunk, client) {
   const size = dataChunk.byteLength;
   if (size > client.toCollect) {
     await Logger.log({
-      comment: `Received ${size - client.toCollect} bytes more then expected while collecting Body`
+      comment: `Received ${wAmount(size - client.toCollect, 'byte')} more then expected while collecting Body`
     });
   }
 
@@ -75,7 +76,7 @@ async function collectBody(dataChunk, client) {
  */
 async function handle(dataChunk, client) {
   await Logger.log({
-    comment: `Received ${dataChunk.byteLength} bytes of data (collecting ${client.currentMessagePart})`
+    comment: `Received ${wAmount(dataChunk.byteLength, 'byte')} of data (collecting ${client.currentMessagePart})`
   });
   client.isBodyCollected = false;
   if (client.currentMessagePart === MESSAGE_PART.HEADER) {

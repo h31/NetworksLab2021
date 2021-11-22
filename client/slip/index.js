@@ -73,6 +73,12 @@ class Slip {
     return Buffer.from(headerBytes);
   }
 
+  /**
+   *
+   * @param {Object} obj
+   * @param {Object=} files
+   * @return {Buffer}
+   */
   static serialize(obj, files = {}) {
     let result = null;
 

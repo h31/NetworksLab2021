@@ -1,5 +1,5 @@
 import socket
-from signal import SIGINT, SIGTERM, signal
+from signal import SIGINT, signal
 import asyncio
 import logger
 from toss_client_holder import TossClientHolder
@@ -40,7 +40,7 @@ class TossServer:
         if files is None:
             files = {}
 
-        writeable_clients = list(filter(lambda c: not c.writer.is_closing(), self.clients))
+        writeable_clients = list(filter(lambda c: not c.writer.is_closing() and c.username, self.clients))
         filtered_clients = filter_clients(writeable_clients)
         amount = len(filtered_clients)
         error_count = 0
@@ -90,9 +90,7 @@ class TossServer:
             )
 
             for client in self.clients:
-                if not client.writer.is_closing():
-                    client.writer.close()
-                    await client.writer.wait_closed()
+                await client.finish()
 
         self.sock.close()
         await self.sock.wait_closed()
@@ -121,13 +119,15 @@ class TossServer:
                 }
                 await client.write_safely(to_send)
 
-    async def unregister_client(self, client):
+    async def unregister_client(self, client: TossClientHolder):
         self.clients = _.l_filter(lambda c: c != client, self.clients)
+        await client.finish()
         logger.log(
             status=logger.Status.info,
             comment=f'Closed connection for {client}. {self.get_handling_now()}'
         )
-        await self.broadcast(action=Actions.log_out.value, get_data=lambda *_: {'username': client.username})
+        if client.username:
+            await self.broadcast(action=Actions.log_out.value, get_data=lambda *_: {'username': client.username})
 
     async def __run(self):
         # AF_INET means we use address + port for address
@@ -141,7 +141,6 @@ class TossServer:
         )
 
         signal(SIGINT, self.__raise_graceful_exit)
-        signal(SIGTERM, self.__raise_graceful_exit)
         running_on = self.get_running_on()
         logger.log(comment=f'Toss Server is running on {running_on}', status=logger.Status.info)
 

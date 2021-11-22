@@ -53,10 +53,6 @@ class TossClient {
     this.#sock.emit(EVENTS.pingQueue);
   }
 
-  sockOnce(event, listener) {
-    this.#sock.once(event, listener);
-  }
-
   /**
    *
    * @param {Object=} toSend
@@ -68,6 +64,10 @@ class TossClient {
     const header = Slip.makeHeader(body);
     const fullMessage = Buffer.concat([header, body]);
     let sentInOneChunk;
+    await Logger.log({
+      comment:
+        `Sending ${wAmount(body.byteLength, 'byte')} (Body) + ${wAmount(header.byteLength, 'byte')} (Header)`
+    });
     await new Promise((resolve, reject) => {
       sentInOneChunk = this.#sock.write(fullMessage, err => err ? reject(err) : resolve());
     });
@@ -90,6 +90,7 @@ class TossClient {
       handlersDir: path.join(__dirname, 'event-handlers'),
       handledOccasions: SOCKET_EVENTS,
       occasionType: Logger.OCCASION_TYPE.event,
+      catcherFunc: e => this.finish(e)
     });
     this.#sock.connect(port, address);
   }

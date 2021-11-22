@@ -31,7 +31,7 @@ request_shape = {
             'name': 'action',
             'type': str,
             'required': True,
-            # logOut and closeServer can only be sent by the server
+            # log_out and close_server can only be sent by the server
             'choices': [Actions.log_in.value, Actions.send_message.value]
         },
         {

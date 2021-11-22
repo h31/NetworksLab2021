@@ -21,6 +21,7 @@ async function handle(hadError, client) {
   await Logger.log({
     comment: hadError ? 'The Toss Client was closed due to an error' : 'The Toss Client was gracefully closed'
   });
+  process.exit(+hadError);
 }
 
 module.exports = handle;

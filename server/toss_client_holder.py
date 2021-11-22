@@ -32,6 +32,11 @@ class TossClientHolder:
         self.server_ref = server_ref
         self.key = key
 
+    async def finish(self):
+        if not self.writer.is_closing():
+            self.writer.close()
+        await self.writer.wait_closed()
+
     def collect_header(self, data: bytes):
         sz = len(data)
         idx = 0
@@ -40,25 +45,27 @@ class TossClientHolder:
             idx += 1
             meaningful_part = one_byte % 128
             self.to_collect += meaningful_part * (2 ** self.header_chunk_idx)
-            self.header_chunk_idx += 1
+            self.header_chunk_idx += 7
             if one_byte < 128:  # highest bit is not 1
                 self.curr_message_part = MessagePart.BODY
                 self.body = b''
+                byte_str = _.w_amount(self.to_collect, 'byte')
                 logger.log(
-                    comment=f'Collected the full Header for {self}, expecting {self.to_collect} bytes of Body',
+                    comment=f'Collected the full Header for {self}, expecting {byte_str} of Body',
                     status=logger.Status.success
                 )
                 break
-        if idx != sz - 1:
+        if idx != sz:
             self.collect_body(data[idx:])
 
     def collect_body(self, data):
         sz = len(data)
         # for some strange cases when we receive more data then expected
         if sz > self.to_collect:
+            byte_str = _.w_amount(sz - self.to_collect, 'byte')
             logger.log(
                 status=logger.Status.warn,
-                comment=f'Received {sz - self.to_collect} bytes more then expected while collecting message body'
+                comment=f'Received {byte_str} bytes more then expected while collecting message body'
             )
         to_append = min(self.to_collect, sz)
         self.body += data[:to_append]
@@ -73,9 +80,15 @@ class TossClientHolder:
             self.body_collected = True
 
     async def write_safely(self, to_send: dict, files: dict = None, cb: Callable = lambda: None):
-        data = slip.serialize(to_send, {'data': files})
-        header = slip.make_header(data)
-        self.writer.write(header + data)
+        body = slip.serialize(to_send, {'data': files})
+        header = slip.make_header(body)
+        body_byte_str = _.w_amount(len(body), 'byte')
+        hdr_byte_str = _.w_amount(len(header), 'byte')
+        logger.log(
+            comment=f'Sending {body_byte_str} (Body) + {hdr_byte_str} (Header)',
+            status=logger.Status.info
+        )
+        self.writer.write(header + body)
         await self.writer.drain()
         cb()
 
@@ -102,16 +115,17 @@ class TossClientHolder:
 
     async def run(self):
         while True:
-            chunk = await self.reader.read(1024)
+            chunk = await self.reader.read(2 ** 30)
 
             # EOF, means the client side of the socket has been closed
             if len(chunk) == 0:
                 await self.server_ref.unregister_client(self)
                 return
 
+            byte_str = _.w_amount(len(chunk), "byte")
             logger.log(
                 status=logger.Status.prefix,
-                comment=f'Received {len(chunk)} bytes of data from {self} (collecting {self.curr_message_part.value})'
+                comment=f'Received {byte_str} of data from {self} (collecting {self.curr_message_part.value})'
             )
             self.body_collected = False
             if self.curr_message_part == MessagePart.HEADER:
@@ -152,7 +166,8 @@ class TossClientHolder:
                     occasion_type=logger.OccasionType.error.value,
                     occasion_name=pillow.PillowError.__name__,
                     status=logger.Status.error,
-                    comment=f'Payload validation failed with {_.w_amount(len(err.errors), "error")} for {self}'
+                    comment=f'Payload validation failed with {_.w_amount(len(err.errors), "error")} '
+                            f'for {self}:\n{err.to_representation()}'
                 )
                 await self.respond_w_err(action_to_respond, err.errors, pillow.ResponseStatus.ERR_REQ_DATA.value)
                 continue

@@ -1,5 +1,6 @@
 const Pillow = require('../pillow');
 const { MESSAGES } = require('../util/constants');
+const Logger = require('../logger');
 
 
 /**
@@ -13,12 +14,16 @@ const { MESSAGES } = require('../util/constants');
 async function handle({ data, client, status, action }) {
   if (Pillow.isError(status)) {
     client.displayMessage(data, status);
-    const newUsername = await new Promise(resolve => client.rl.question(
-      MESSAGES.askUsername, answer => resolve(answer)
-    ));
+    const newUsername = await client.getAnswer(MESSAGES.askUsername);
     client.username = newUsername;
-    await client.writeSafely({ username: newUsername, action });
+    await client.writeSafely({ data: { username: newUsername }, action });
     return;
+  }
+
+  if (!data.username) {
+    await Logger.log({
+      comment: `/=/=/=/=/   USERNAME: ${client.username}   /=/=/=/=/`
+    })
   }
 
   client.displayMessage(
