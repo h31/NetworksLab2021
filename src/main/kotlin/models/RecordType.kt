@@ -18,6 +18,13 @@ sealed class RecordType(val code: Short, private val str: String) {
             16 -> TXT(0)
             else -> NotImpl(code)
         }
+        fun of(type: String): RecordType = when (type) {
+            "A" -> A()
+            "AAAA" -> AAAA()
+            "MX" -> MX(0)
+            "TXT" -> TXT(0)
+            else -> NotImpl(0)
+        }
     }
 
     fun size(): Int = when(this) {

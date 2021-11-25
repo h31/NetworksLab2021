@@ -23,23 +23,26 @@ class Server(private val serverPort: Int) {
             val retAddress = packet.address
             val retPort = packet.port
             val dnsMsg = DNSMessage.parseByteArray(packet.data)
+
             dnsMsg.header.flags.qr = true //sending an answer
 
             var resources = listOf<Resource>()
             val responseCode = checkHeader(dnsMsg)
-            if (responseCode == ResponseCode.of(0)) {
-                val type = dnsMsg.question.qtype
-                val qName = dnsMsg.question.qname
-                val clazz = dnsMsg.question.qclass
-                val ttl = 6000
-                resources = getResource(qName, type, clazz, ttl)
-                if (resources.isNotEmpty()) {
-                    dnsMsg.header.ancount = countResources(resources, type).toShort()
-                    dnsMsg.header.arcount = (resources.size - dnsMsg.header.ancount).toShort()
+            if (dnsMsg.header.flags.rcode == ResponseCode.of(0)) {
+                if (responseCode == ResponseCode.of(0)) {
+                    val type = dnsMsg.question.qtype
+                    val qName = dnsMsg.question.qname
+                    val clazz = dnsMsg.question.qclass
+                    val ttl = 6000
+                    resources = getResource(qName, type, clazz, ttl)
+                    if (resources.isNotEmpty()) {
+                        dnsMsg.header.ancount = countResources(resources, type).toShort()
+                        dnsMsg.header.arcount = (resources.size - dnsMsg.header.ancount).toShort()
+                    }
+                    else errorFunc(dnsMsg, ResponseCode.of(3))
                 }
-                else errorFunc(dnsMsg, ResponseCode.of(3))
+                else errorFunc(dnsMsg, responseCode)
             }
-            else errorFunc(dnsMsg, responseCode)
 
             dnsMsg.resList = resources
             val sentData = dnsMsg.toByteArray()
@@ -82,10 +85,10 @@ class Server(private val serverPort: Int) {
         }
         val additionalRes = mutableListOf<Resource>()
         for (resource in result) {
-            if (resource.type == RecordType.of(15)) {
+            if (resource.type == RecordType.of("MX")) {
                 val resName = resource.rdata.split(COLON_CHARACTER).last()
-                val resA = getResource(resName, RecordType.of(1), rClass, ttl)
-                val resAAAA = getResource(resName, RecordType.of(28), rClass, ttl)
+                val resA = getResource(resName, RecordType.of("A"), rClass, ttl)
+                val resAAAA = getResource(resName, RecordType.of("AAAA"), rClass, ttl)
                 additionalRes.addAll(resA)
                 additionalRes.addAll(resAAAA)
             }

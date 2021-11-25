@@ -5,7 +5,7 @@ import byteSubsequence
 import bytesToName
 
 data class Question(var qname: String = "",
-                    var qtype: RecordType = RecordType.of(1),
+                    var qtype: RecordType = RecordType.of("A"),
                     var qclass: RecordClass = RecordClass.of(1)) {
     companion object {
         fun getQuestionFromByteArray(question: ByteArray) : Pair<Question, Int> {

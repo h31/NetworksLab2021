@@ -21,6 +21,8 @@ class DNSMessage(var header: Header, var question: Question, var resList: List<R
 
                 DNSMessage(header, question, resources)
             } catch (e: IllegalArgumentException) {
+                val header = Header()
+                header.flags.rcode = ResponseCode.of(1)
                 DNSMessage(Header(), Question(), emptyList())
             }
         }
