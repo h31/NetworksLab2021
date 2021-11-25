@@ -1,12 +1,10 @@
 public class ClientTFTP { 
 
+  private static String address = "localhost";
+
   public static void main(String[] args) {
-    if (args.length > 0) {
-      try {
-        InetAddress address = InetAddress.getByName(adr);
-      }   
-      catch () {}
-    }
+    if (args.length > 0) 
+      address = args[0];
     while (true) {
       String cmd = System.console().readLine();
       cmd = cmd.trim();
@@ -22,8 +20,6 @@ public class ClientTFTP {
           }
           else {
             HandlerRRQ handler = new HandlerRRQ(address, spl[1]);
-            byte[] rrq = HandlerAssistant.getRequest((byte)1, spl[1], "octet");
-            HandlerAssistant.sendPacket()
             handler.handle();
           }
           break;

@@ -1,4 +1,8 @@
 import java.io.UnsupportedEncodingException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.io.IOException;
 
 class HandlerAssistant {
 
@@ -41,7 +45,7 @@ class HandlerAssistant {
     return 0;
   }
 
-  private void sendPacket(byte[] msg, InetAddress address, int port) {
+  public static void sendPacket(byte[] msg, DatagramSocket socket, InetAddress address, int port) {
     try {
       DatagramPacket packet = new DatagramPacket(msg, msg.length,
         address, port);

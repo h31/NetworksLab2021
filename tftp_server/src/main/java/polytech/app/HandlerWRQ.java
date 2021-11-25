@@ -68,17 +68,17 @@ class HandlerWRQ extends Thread {
           int block_h = (bytes[2] & 0xff);
           int block_l = (bytes[3] & 0xff); 
           int block_rec = (block_h << 8) + (block_l);
-            if ((bytes[1] == 3) && (block_rec == block + 1)) {
-              counter = 0;
-              block++;
-              ByteBuffer bBuf = ByteBuffer.wrap(bytes, 4, rec - 4);
-              fc.write(bBuf);
-              if (rec < 516) {
-                sendAck(block);
-                removeHandler();
-              } 
-              else {
-                if (counter == 5) {
+          if ((bytes[1] == 3) && (block_rec == block + 1)) {
+            counter = 0;
+            block++;
+            ByteBuffer bBuf = ByteBuffer.wrap(bytes, 4, rec - 4);
+            fc.write(bBuf);
+            if (rec < 516) {
+              sendAck(block);
+              removeHandler();
+            } 
+            else {
+              if (counter == 5) {
                 HandlerError.sendError(socket, address, port,
                   (byte)0, "Connection lost");
                 removeHandler();
@@ -87,17 +87,7 @@ class HandlerWRQ extends Thread {
                 continue;
               }
             }
-            else {
-              if (counter == 5) {
-                HandlerError.sendError(socket, address, port,
-                  (byte)0, "Connection lost");
-                removeHandler();
-              }
-              counter++;
-              continue;
-            }
-          }
-          catch (SocketTimeoutException e) {
+          else {
             if (counter == 5) {
               HandlerError.sendError(socket, address, port,
                 (byte)0, "Connection lost");
@@ -106,8 +96,16 @@ class HandlerWRQ extends Thread {
             counter++;
             continue;
           }
-
-
+        }
+        catch (SocketTimeoutException e) {
+          if (counter == 5) {
+            HandlerError.sendError(socket, address, port,
+              (byte)0, "Connection lost");
+            removeHandler();
+          }
+          counter++;
+          continue;
+        }
       }
     } 
     catch (IOException e) {

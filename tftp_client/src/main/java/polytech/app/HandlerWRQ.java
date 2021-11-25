@@ -9,61 +9,53 @@ import java.net.SocketTimeoutException;
 
 class HandlerRRQ extends Thread {
   private InetAddress address;
-  private int port;
+  private static final int wrqPort = 69;
   private String filename;
-  private String mode;
   private DatagramSocket socket;
-  private String dirName = "/tftpboot";
 
-  public HandlerRRQ(InetAddress address, int port, 
-    String filename, String mode, DatagramSocket socket) 
-  {
-    this.address = address;
-    this.port = port;
-    this.filename = filename;
-    this.mode = mode;
-    this.socket = socket; 
+  public HandlerRRQ(String adr, String filename) {
+    try {
+      this.address = InetAddress.getByName(adr);
+      this.filename = filename;
+    }
+    catch (UnknownHostException e) {
+      System.out.println("Wrong IP");
+      System.exit(1);
+    }
   }
 
-  @Override
-  public void run() {
+  public void handle() {
     try {
-      socket.setSoTimeout(5000); // set timeout 
+      socket.setSoTimeout(3000); // set timeout 
     }
     catch (SocketException e) {
-      HandlerError.sendError(socket, address, port, (byte)0, "Server error");
+      System.out.println("Socket error");
       removeHandler();
     }
     send();
     return;
   }
-  
   private void send() {
-    File directory = new File(dirName);
-    if (!directory.exists()) {
-        directory.mkdir();
-    }
-    File file = new File(dirName + "/" + filename);
+    File file = new File(filename);
     if (file.exists()) {
       try {
         sendFile(file);
       }
       catch (SocketTimeoutException e) {
-        HandlerError.sendError(socket, address, port, (byte)0, "Server error");
+        System.out.println("Socket error");
         removeHandler();
       }
     }
     else {
-      HandlerError.sendError(socket, address, port, (byte)1, "File not found");
-      removeHandler(); 
+      System.out.println("File " + filename + " doesn't exist");
+      removeHandler();
     }
   }
-
   private void sendFile(File file) throws SocketTimeoutException {
     try {
       byte[] fileBytes = Files.readAllBytes(file.toPath());
-      
-      int len = fileBytes.length; 
+
+      int len = fileBytes.length;
       int send = 0;
       int block = 1;
       while (true) {
@@ -77,9 +69,9 @@ class HandlerRRQ extends Thread {
         buf[3] = (byte)block;
         merge(buf, fileBytes, send, toSend);
         int counter = 0;
-        while (true) { 
+        while (true) {
           //send datagram
-          DatagramPacket packet = new DatagramPacket(buf, buf.length, 
+          DatagramPacket packet = new DatagramPacket(buf, buf.length,
             address, port);
           socket.send(packet);
           //waiting for ACK
@@ -98,22 +90,22 @@ class HandlerRRQ extends Thread {
                 send += toSend;
                 block++;
                 counter = 0;
-                break; 
-              } 
+                break;
+              }
             }
             else {
               if (counter == 5) {
                 HandlerError.sendError(socket, address, port,
-                  (byte)0, "Connection lost"); 
+                  (byte)0, "Connection lost");
                 removeHandler();
               }
               counter++;
               continue;
-            } 
+            }
           }
           catch (SocketTimeoutException e) {
             if (counter == 5) {
-              HandlerError.sendError(socket, address, port, 
+              HandlerError.sendError(socket, address, port,
                 (byte)0, "Connection lost");
               removeHandler();
             }
@@ -124,12 +116,11 @@ class HandlerRRQ extends Thread {
       }
     }
     catch (IOException e) {
-      HandlerError.sendError(socket, address, port, 
+      HandlerError.sendError(socket, address, port,
         (byte)2, "Accsess violation");
       removeHandler();
     }
   }
-
   //add bytes to buf from data[off] to data[off+len]
   private void merge (byte[] buf, byte[] data, int off, int len) {
      int i = off;
@@ -138,14 +129,15 @@ class HandlerRRQ extends Thread {
        buf[j] = data[i];
        i++;
        j++;
-     } 
+     }
   }
-  
+
 
   private void removeHandler() {
-    
+
     socket.close();
     this.stop();
   }
-  
+
 }
+
