@@ -37,13 +37,20 @@ listenThread = threading.Thread(target=sock_connection.recvAndPrint)
 listenThread.start()
 
 while True:
-    message = input()
+    text = input()
+    message = ''
     if sock_connection.disconnect_event.is_set():  # если сервер отключился
         break
-    if ' & ' in message:
-        message_parts = message.split(' & ')
-        message = message_parts[0]
-        file_path = message_parts[1]
+    if ' & ' in text:
+        message_parts = text.split(' & ')
+        if len(message_parts) > 2:
+            for i in range(len(message_parts) - 2):
+                message += message_parts[i] + ' & '
+            message += message_parts[len(message_parts)-2]
+            file_path = message_parts[len(message_parts)-1]
+        else:
+            message = message_parts[0]
+            file_path = message_parts[1]
         if not os.path.isfile(file_path):
             print('Проверьте корректность ввода сообщения, система не нашла файл')
             continue
