@@ -10,7 +10,7 @@ import bytesToName
 import nameToBytes
 import shortToByteArray
 
-data class Resource(var name: String = String(), var type: RecordType = RecordType.of(1),
+data class Resource(var name: String = String(), var type: RecordType = RecordType.of("A"),
                     var rclass: RecordClass = RecordClass.of(1), var ttl: Int = 0,
                     var rdlength: Short = 0, var rdata: String = String()) {
 

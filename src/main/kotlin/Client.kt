@@ -10,14 +10,14 @@ class Client {
 
     fun run() {
         println("Enter the type (A, AAAA, MX, TXT)")
-        val type: RecordType = when (scanner.nextLine().toUpperCase()) {
-            "A" -> RecordType.of(1)
-            "AAAA" -> RecordType.of(28)
-            "MX" -> RecordType.of(15)
-            "TXT" -> RecordType.of(16)
+        val type: RecordType = when (val type = scanner.nextLine().toUpperCase()) {
+            "A" -> RecordType.of(type)
+            "AAAA" -> RecordType.of(type)
+            "MX" -> RecordType.of(type)
+            "TXT" -> RecordType.of(type)
             else -> {
-                println("This record type is not implemented")
-                exitProcess(1)
+                println("Record type: \"$type\" is not implemented")
+                return
             }
         }
 
@@ -34,7 +34,7 @@ class Client {
 
         if (ipText.isBlank() || domainName.isBlank()) {
             println("One of the field was empty.")
-            exitProcess(1)
+            return
         }
 
         try { port = portText.toInt() }
@@ -50,7 +50,7 @@ class Client {
             addr = InetSocketAddress(ipText, port)
         } catch (e: IllegalArgumentException) {
             println("IP/port combination is incorrect ($ipText:$port)")
-            exitProcess(1)
+            return
         }
 
         val reqId = rndShort()
@@ -72,27 +72,32 @@ class Client {
 
             val data = response.data
             val retDNSMessage = DNSMessage.parseByteArray(data)
-            if (retDNSMessage.resList.isNotEmpty()) {
-                var i = 0
-                val res = retDNSMessage.resList.size
-                println("answers = $res")
-                println("anCount = ${retDNSMessage.header.ancount}")
-                for (j in 0 until retDNSMessage.header.ancount) {
-                    println("\t${retDNSMessage.resList[i].name} : ${retDNSMessage.resList[i].rdata}")
-                    i++
-                }
-                println("nsCount = ${retDNSMessage.header.nscount}")
-                for (j in 0 until retDNSMessage.header.nscount) {
-                    println("\t${retDNSMessage.resList[i].name} : ${retDNSMessage.resList[i].rdata}")
-                    i++
-                }
-                println("arCount = ${retDNSMessage.header.arcount}")
-                for (j in 0 until retDNSMessage.header.arcount) {
-                    println("\t${retDNSMessage.resList[i].name} : ${retDNSMessage.resList[i].rdata}")
-                    i++
-                }
-            }
-            else println("No results")
+
+            printResult(retDNSMessage)
         }
+    }
+
+    private fun printResult(result: DNSMessage) {
+        if (result.resList.isNotEmpty()) {
+            var i = 0
+            val res = result.resList.size
+            println("answers = $res")
+            println("anCount = ${result.header.ancount}")
+            for (j in 0 until result.header.ancount) {
+                println("\t${result.resList[i].name} : ${result.resList[i].rdata}")
+                i++
+            }
+            println("nsCount = ${result.header.nscount}")
+            for (j in 0 until result.header.nscount) {
+                println("\t${result.resList[i].name} : ${result.resList[i].rdata}")
+                i++
+            }
+            println("arCount = ${result.header.arcount}")
+            for (j in 0 until result.header.arcount) {
+                println("\t${result.resList[i].name} : ${result.resList[i].rdata}")
+                i++
+            }
+        }
+        else println("No results")
     }
 }
