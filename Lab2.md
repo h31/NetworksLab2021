@@ -1,0 +1,5 @@
+1. Формат сообщений в протоколе TFTP ![Format](https://raw.githubusercontent.com/TsaplinIA/NetworksLab2021/Lab1/images/ClientToServer.png)
+2. Проверка работы на удалённом сервере(Загрузка)![ServerIVTUpload](https://raw.githubusercontent.com/TsaplinIA/NetworksLab2021/Lab1/images/ClientToServer.png)
+3. Проверка работы на удалённом сервере(Скачивание)![ServerIVTDownload](https://raw.githubusercontent.com/TsaplinIA/NetworksLab2021/Lab1/images/ClientToServer.png)
+4. Проверка работы сервера с стандартным в Windows клиентом tftp![WinClient](https://raw.githubusercontent.com/TsaplinIA/NetworksLab2021/Lab1/images/ClientToServer.png)
+5. Проверка работы клиента с сторонним сервером![OutServer](https://raw.githubusercontent.com/TsaplinIA/NetworksLab2021/Lab1/images/ClientToServer.png)
