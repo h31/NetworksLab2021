@@ -4,9 +4,9 @@ import HEADER_SIZE
 import byteSubsequence
 import bytesToName
 
-data class Question(var qname: String,
-                    var qtype: RecordType,
-                    var qclass: RecordClass) {
+data class Question(var qname: String = "",
+                    var qtype: RecordType = RecordType.of("A"),
+                    var qclass: RecordClass = RecordClass.of(1)) {
     companion object {
         fun getQuestionFromByteArray(question: ByteArray) : Pair<Question, Int> {
             if (question.size - HEADER_SIZE < 6) throw IllegalArgumentException()

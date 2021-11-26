@@ -1,3 +1,4 @@
+import java.lang.IllegalArgumentException
 import java.nio.ByteBuffer
 import kotlin.random.Random
 
@@ -51,9 +52,11 @@ fun nameToBytes(inName: String): ByteArray {
     val qName = ByteArray(inName.length + 2)
     var byteIter = 0
     for (subDomain in parsedDomain) {
-        qName[byteIter] = subDomain.length.toByte()
+        var correctSubDomain = subDomain
+        if (subDomain.length > 63) correctSubDomain = subDomain.substring(0, 63)
+        qName[byteIter] = correctSubDomain.length.toByte()
         byteIter++
-        for (letter in subDomain) {
+        for (letter in correctSubDomain) {
             qName[byteIter] = letter.toByte()
             byteIter++
         }

@@ -10,12 +10,28 @@ sealed class ResponseCode(val code: Short) {
 
     companion object {
         fun of(code: Short): ResponseCode = when (code.toInt()) {
-                0 -> NoError()
-                1 -> FormatError()
-                2 -> ServerFailure()
-                3 -> NameError()
-                5 -> Refused()
-                else -> NotImpl(code)
+            0 -> NoError()
+            1 -> FormatError()
+            2 -> ServerFailure()
+            3 -> NameError()
+            5 -> Refused()
+            else -> NotImpl(code)
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ResponseCode
+
+        if (code != other.code) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return code.toInt()
+    }
+
 }

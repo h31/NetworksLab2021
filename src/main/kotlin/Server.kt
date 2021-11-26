@@ -27,20 +27,21 @@ class Server(private val serverPort: Int) {
 
             var resources = listOf<Resource>()
             val responseCode = checkHeader(dnsMsg)
-            println(responseCode.code)
-            if (responseCode.code.toInt() == 0) {
-                val type = dnsMsg.question.qtype
-                val qName = dnsMsg.question.qname
-                val clazz = dnsMsg.question.qclass
-                val ttl = 6000
-                resources = getResource(qName, type, clazz, ttl)
-                if (resources.isNotEmpty()) {
-                    dnsMsg.header.ancount = countResources(resources, type).toShort()
-                    dnsMsg.header.arcount = (resources.size - dnsMsg.header.ancount).toShort()
+            if (dnsMsg.header.flags.rcode == ResponseCode.of(0)) {
+                if (responseCode == ResponseCode.of(0)) {
+                    val type = dnsMsg.question.qtype
+                    val qName = dnsMsg.question.qname
+                    val clazz = dnsMsg.question.qclass
+                    val ttl = 6000
+                    resources = getResource(qName, type, clazz, ttl)
+                    if (resources.isNotEmpty()) {
+                        dnsMsg.header.ancount = countResources(resources, type).toShort()
+                        dnsMsg.header.arcount = (resources.size - dnsMsg.header.ancount).toShort()
+                    }
+                    else errorFunc(dnsMsg, ResponseCode.of(3))
                 }
-                else errorFunc(dnsMsg, ResponseCode.of(3))
+                else errorFunc(dnsMsg, responseCode)
             }
-            else errorFunc(dnsMsg, responseCode)
 
             dnsMsg.resList = resources
             val sentData = dnsMsg.toByteArray()
@@ -54,7 +55,6 @@ class Server(private val serverPort: Int) {
     private fun countResources(res: List<Resource>, type: RecordType) = res.count { it.type == type }
 
     private fun getResource(name: String, rType: RecordType, rClass: RecordClass, ttl: Int): List<Resource>  {
-        println("in getresource")
         val result = mutableListOf<Resource>()
         val filePath =
             when (rType) {
@@ -67,7 +67,6 @@ class Server(private val serverPort: Int) {
         //types: 1 15 16 28
         //resource: name type rClass=1 ttl rdlength rdata
         val file = File(filePath)
-        for (i in file.readLines()) println(i)
         val res = mutableMapOf<String, RecordType>()
         file.readLines()
             .map { it.split(SPACE_CHARACTER.toRegex(), 2) }
