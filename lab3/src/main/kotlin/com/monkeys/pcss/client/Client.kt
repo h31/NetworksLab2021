@@ -2,31 +2,36 @@ package com.monkeys.pcss.client
 
 import com.monkeys.pcss.*
 import com.monkeys.pcss.models.message.*
+import io.ktor.network.selector.*
+import io.ktor.network.sockets.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import java.io.BufferedInputStream
-import java.io.BufferedOutputStream
 import java.io.File
 import java.net.FileNameMap
-import java.net.Socket
+import java.net.InetSocketAddress
 import java.net.SocketException
 import java.net.URLConnection
+import java.nio.ByteBuffer
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.*
 
-class Client(host: String, port: Int) {
+class Client(host_: String, port_: Int) {
 
-    private var socket: Socket = Socket(host, port)
-    private val receiver = BufferedInputStream(socket.getInputStream())
-    private val sender = BufferedOutputStream(socket.getOutputStream())
+    private val host = host_
+    private val port = port_
     private lateinit var name: String
     private var stillWorking = true
 
     suspend fun start() = coroutineScope {
+        val socket = aSocket(ActorSelectorManager(Dispatchers.IO))
+            .tcp().connect(InetSocketAddress(host, port))
+        val receiver = socket.openReadChannel()
+        val sender = socket.openWriteChannel(true)
 
         var nameExist = false
         var isSingingInNow = true
@@ -40,7 +45,7 @@ class Client(host: String, port: Int) {
                 stillWorking = false
             }
             "q" -> {
-                sendMessage(sender, "EXIT".toByteArray(), null)
+                sender.writeFully(ByteBuffer.wrap("EXIT".toByteArray()))
                 stillWorking = false
             }
             else -> {
@@ -48,15 +53,15 @@ class Client(host: String, port: Int) {
                 val data = Data(0, userInput, "", "", null)
                 val dataSize = data.getServerMessage().length
                 val header = Header(MessageType.LOGIN, false, dataSize)
-                val message = Message(header, data)
+                val message = ByteBuffer.wrap(Message(header, data).getMessage())
 
-                sender.write(message.getMessage())
+                sender.writeFully(message)
                 sender.flush()
 
                 var messageInfo = ""
 
                 while (isSingingInNow) {
-                    if (receiver.available() > 0) {
+                    if (receiver.availableForRead > 0) {
 
                         val fullServerMessage = getNewMessage(receiver)
                         val serverMessage = fullServerMessage.first
@@ -82,21 +87,21 @@ class Client(host: String, port: Int) {
             }
         }
         if (nameExist) {
-            stopConnection()
+            stopConnection(socket, sender, receiver)
         } else {
-            launch(Dispatchers.IO) { sendMessages() }
-            launch(Dispatchers.IO) { receiveMessages() }
+            launch(Dispatchers.IO) { sendMessages(socket, sender, receiver) }
+            launch(Dispatchers.IO) { receiveMessages(socket, sender, receiver) }
         }
     }
 
-    private fun sendMessages() {
+    private suspend fun sendMessages(socket: Socket, sender: ByteWriteChannel, receiver: ByteReadChannel) {
         try {
             while (stillWorking) {
                 print("m: ")
                 when (val userMessage = readLine()) {
                     "" -> continue
                     "q" -> {
-                        sendMessage(sender, "EXIT".toByteArray(), null)
+                        sender.writeFully(ByteBuffer.wrap("EXIT".toByteArray()))
                         stillWorking = false
                     }
                     else -> {
@@ -128,11 +133,9 @@ class Client(host: String, port: Int) {
                         val message = Message(header, data).getMessage()
 
                         if (header.isFileAttached) {
-                            sender.write(message.plus(fileByteArray))
-                            sender.flush()
+                            sender.writeFully(ByteBuffer.wrap(message.plus(fileByteArray)))
                         } else {
-                            sender.write(message)
-                            sender.flush()
+                            sender.writeFully(ByteBuffer.wrap(message))
                         }
                     }
                 }
@@ -140,14 +143,14 @@ class Client(host: String, port: Int) {
         } catch (e: Exception) {
             println("!E: There is an ERROR while sending ur message. Probably the server was destroyed by evil goblins.")
             e.printStackTrace()
-            stopConnection()
+            stopConnection(socket, sender, receiver)
         }
     }
 
-    private fun receiveMessages() {
+    private suspend fun receiveMessages(socket: Socket, sender: ByteWriteChannel, receiver: ByteReadChannel) {
         try {
             while (stillWorking) {
-                if (receiver.available() > 0) {
+                if (receiver.availableForRead > 0) {
 
                     val fullMessage = getNewMessage(receiver)
                     val serverMessage = fullMessage.first
@@ -205,14 +208,14 @@ class Client(host: String, port: Int) {
         } catch (e: Exception) {
             println("!E: There is an ERROR while receiving new messages. Probably the server was destroyed by evil goblins.")
             e.printStackTrace()
-            stopConnection()
+            stopConnection(socket, sender, receiver)
         }
     }
 
 
-    private fun stopConnection() {
+    private fun stopConnection(socket: Socket, sender: ByteWriteChannel, receiver: ByteReadChannel) {
         try {
-            receiver.close()
+            //receiver.close()
             sender.close()
             socket.close()
             println("Bye!")
