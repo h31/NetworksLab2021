@@ -1,3 +1,4 @@
+import java.io.ByteArrayOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 
@@ -157,20 +158,19 @@ public class NtpPacket implements Serializable {
 
 
     public byte[] toByteArray() {
-        byte[] byteArray = new byte[48];
-        byteArray[0] = (byte) (leapIndicator | versionNumber | mode);
-        byteArray[1] = stratum;
-        byteArray[2] = poll;
-        byteArray[3] = precision;
-        System.arraycopy(ByteBuffer.allocate(4).putInt(rootDelay).array(), 0, byteArray, 4, 4);
-        System.arraycopy(ByteBuffer.allocate(4).putInt(rootDispersion).array(), 0, byteArray, 8, 4);
-        System.arraycopy(ByteBuffer.allocate(4).putInt(referenceIdentifier).array(), 0, byteArray, 12, 4);
-        System.arraycopy(ByteBuffer.allocate(8).putLong(referenceTimestamp).array(), 0, byteArray, 16, 8);
-        System.arraycopy(ByteBuffer.allocate(8).putLong(originateTimestamp).array(), 0, byteArray, 24, 8);
-        System.arraycopy(ByteBuffer.allocate(8).putLong(receiveTimestamp).array(), 0, byteArray, 32, 8);
-        System.arraycopy(ByteBuffer.allocate(8).putLong(transmitTimestamp).array(), 0, byteArray, 40, 8);
-
-        return byteArray;
+        ByteBuffer byteBuffer = ByteBuffer.allocate(48)
+                .put((byte) (leapIndicator | versionNumber | mode))
+                .put(stratum)
+                .put(poll)
+                .put(precision)
+                .putInt(rootDelay)
+                .putInt(rootDispersion)
+                .putInt(referenceIdentifier)
+                .putLong(referenceTimestamp)
+                .putLong(originateTimestamp)
+                .putLong(receiveTimestamp)
+                .putLong(transmitTimestamp);
+        return byteBuffer.array();
 
     }
 

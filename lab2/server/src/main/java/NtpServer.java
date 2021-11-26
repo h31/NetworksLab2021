@@ -1,8 +1,5 @@
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
+import java.net.*;
 import java.util.Arrays;
 
 public class NtpServer implements Runnable {
@@ -19,6 +16,13 @@ public class NtpServer implements Runnable {
             e.printStackTrace();
         }
         DatagramPacket clientRequestPacket = new DatagramPacket(buf, buf.length);
+        byte[] hostAddress = new byte[4];
+
+        try {
+            hostAddress = InetAddress.getLocalHost().getAddress();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
 
         while (true) {
             try {
@@ -31,14 +35,19 @@ public class NtpServer implements Runnable {
             int clientPort = clientRequestPacket.getPort();
             System.out.println("айпишник клиента = " + clientAddress);
 
-            byte[] byteArray = Util.pack(clientRequest, timeOfReceiptFromClient).toByteArray();
+            byte[] byteArray = Util.pack(clientRequest, timeOfReceiptFromClient, hostAddress).toByteArray();
 
             DatagramPacket packet
                     = new DatagramPacket(byteArray, byteArray.length, clientAddress, clientPort);
             socket.send(packet);
 
+            //clear bytearray
+            Arrays.fill(buf, (byte)0);
+
             } catch (IOException e) {
                 e.printStackTrace();
+                socket.close();
+                return;
             }
 
         }
