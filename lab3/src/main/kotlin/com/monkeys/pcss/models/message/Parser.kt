@@ -3,11 +3,15 @@ package com.monkeys.pcss.models.message
 import java.io.File
 
 fun parseData(dataMessage: String): Data {
+    val fileSizeRegex = """[A-Za-z0-9]+""".toRegex().pattern
+    val senderNameRegex = """[A-Za-z0-9А-Яа-я]+""".toRegex().pattern
     val timeRegex =
-        """[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]+((\+[0-9]{2}:[0-9]{2})|Z)\{[A-Za-z/]+\}"""
-    val regex =
-        """_\[([A-Za-z0-9]+)?\],\[([A-Za-z0-9А-Яа-я]+)\],\[($timeRegex)?\],\[([^\[\]]*)\],\[(([^(\[\])]+)\.([a-z0-9A-Z]+))?\]_;_""".toRegex()
-    val matchResult = regex.matchEntire(dataMessage)
+        """[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]+((\+[0-9]{2}:[0-9]{2})|Z)\{[A-Za-z/]+\}""".toRegex().pattern
+    val messageTextRegex = """[^\[\]]*""".toRegex().pattern
+    val fileNameRegex = """([^(\[\])]+)\.([a-z0-9A-Z]+)""".toRegex().pattern
+    val fullRegex =
+        """_\[($fileSizeRegex)?\],\[($senderNameRegex)\],\[($timeRegex)?\],\[($messageTextRegex)\],\[($fileNameRegex)?\]_;_""".toRegex()
+    val matchResult = fullRegex.matchEntire(dataMessage)
     return if (matchResult != null) {
         val messageId = matchResult.groupValues[1]
         val senderName = matchResult.groupValues[2]
@@ -21,10 +25,10 @@ fun parseData(dataMessage: String): Data {
 }
 
 fun parseHeader(headerMessage: String): Header {
-    val regex =
+    val headerRegex =
         """\[([0-2])\],\[([01])\],\[([0-9]+)\]_;""".toRegex()
 
-    val matchResult = regex.matchEntire(headerMessage)
+    val matchResult = headerRegex.matchEntire(headerMessage)
     return if (matchResult != null) {
         val type = matchResult.groupValues[1]
         val isFileAttached = matchResult.groupValues[2]
