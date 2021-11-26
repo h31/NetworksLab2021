@@ -2,30 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f6588931-05ec-45d5-87be-70607a13ceaa" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/NetworksLab2021.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Client1/HCM.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Client1/client.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Client1/image.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Client1/test.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Client2/client.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/1.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/10.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/11.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/2.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/3.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/4.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/5.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/6.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/7.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/8.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/9.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Server/CV.prj" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,5 +32,16 @@
       <updated>1637165248275</updated>
     </task>
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>
