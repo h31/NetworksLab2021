@@ -13,7 +13,7 @@ const val ZERO = "0"
 
 fun rndShort(): Short = Random.nextInt(Short.MAX_VALUE + 1).toShort()
 
-fun getBoolFromBit(char: Char): Boolean = char == '1'
+fun getBoolFromCharBit(char: Char): Boolean = char == '1'
 
 fun getBitsFromShort(inShort: Short): String {
     val strBytes = shortToString(inShort)
@@ -36,10 +36,14 @@ fun byteToHex(inByte: Byte): String {
 }
 
 
-fun getBitFromBool(inBool: Boolean): Char = if (inBool) '1' else '0'
+fun getCharBitFromBool(inBool: Boolean): Char {
+        return if (inBool) '1' else '0'
+}
 
-fun byteSubsequence(array: ByteArray, start: Int, end : Int): ByteBuffer =
-    ByteBuffer.wrap(array.copyOfRange(start, end))
+fun byteSubsequence(array: ByteArray, start: Int, end : Int): ByteBuffer {
+    return ByteBuffer.wrap(array.copyOfRange(start, end))
+}
+
 
 fun nameToBytes(inName: String): ByteArray {
     //my.domain.at.com -> my domain at com -> 2 M Y 6 D O M A I N 2 A T 3 C O M 0

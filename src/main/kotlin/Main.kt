@@ -8,7 +8,8 @@ fun main(args: Array<String>) {
                 try {
                     port = args[1].toInt()
                 } catch (e: NumberFormatException) {
-                    println("Incorrect port format. Used default port: $port")
+                    println("Incorrect port format.")
+                    return
                 }
             val server = Server(port)
             server.run()

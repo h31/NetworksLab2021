@@ -27,7 +27,8 @@ class Server(private val serverPort: Int) {
 
             var resources = listOf<Resource>()
             val responseCode = checkHeader(dnsMsg)
-            if (responseCode == ResponseCode.of(0)) {
+            println(responseCode.code)
+            if (responseCode.code.toInt() == 0) {
                 val type = dnsMsg.question.qtype
                 val qName = dnsMsg.question.qname
                 val clazz = dnsMsg.question.qclass
@@ -53,6 +54,7 @@ class Server(private val serverPort: Int) {
     private fun countResources(res: List<Resource>, type: RecordType) = res.count { it.type == type }
 
     private fun getResource(name: String, rType: RecordType, rClass: RecordClass, ttl: Int): List<Resource>  {
+        println("in getresource")
         val result = mutableListOf<Resource>()
         val filePath =
             when (rType) {
@@ -65,6 +67,7 @@ class Server(private val serverPort: Int) {
         //types: 1 15 16 28
         //resource: name type rClass=1 ttl rdlength rdata
         val file = File(filePath)
+        for (i in file.readLines()) println(i)
         val res = mutableMapOf<String, RecordType>()
         file.readLines()
             .map { it.split(SPACE_CHARACTER.toRegex(), 2) }
