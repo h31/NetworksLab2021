@@ -6,6 +6,7 @@ import com.monkeys.pcss.models.message.Header
 import com.monkeys.pcss.models.message.Message
 import com.monkeys.pcss.models.message.MessageType
 import io.ktor.network.sockets.*
+import io.ktor.utils.io.*
 import java.io.File
 import java.nio.ByteBuffer
 import java.util.*
@@ -16,8 +17,7 @@ class ClientList() {
     )
     private val socketList = Collections.synchronizedMap(mutableMapOf<String, Socket>())
 
-    suspend fun addNewClient(socket: Socket, newId: String): Boolean {
-        val writeChannel = socket.openWriteChannel()
+    suspend fun addNewClient(socket: Socket, newId: String, readChannel: ByteReadChannel, writeChannel: ByteWriteChannel): Boolean {
         return if (clients.keys.contains(newId) || newId == "server") {
             val data = Data(
                 senderName = "server", messageText =
@@ -27,13 +27,12 @@ class ClientList() {
             val header = Header(MessageType.LOGIN, false, dataSize)
             val message = ByteBuffer.wrap(Message(header, data).getMessage())
             writeChannel.writeFully(message)
-            writeChannel.flush()
             false
         } else {
             val downloadDir = File(DOWNLOADS_DIR)
             if (!downloadDir.exists())
                 downloadDir.mkdir()
-            clients[newId] = ClientChannels(socket.openReadChannel(), socket.openWriteChannel())
+            clients[newId] = ClientChannels(readChannel, writeChannel)
             socketList[newId] = socket
             val data = Data(
                 senderName = "server", messageText =
@@ -47,7 +46,9 @@ class ClientList() {
         }
     }
 
-    private suspend fun finishConnection(id: String) {
+    suspend fun getReadChannel(clientId: String) = clients[clientId]?.readChannel
+
+    suspend fun finishConnection(id: String) {
         clients.remove(id)
         socketList[id]!!.close()
         socketList.remove(id)
@@ -66,7 +67,6 @@ class ClientList() {
                     val sender = client.value.writeChannel
                     val messageBuffer = ByteBuffer.wrap(message.getMessage().plus(fileByteArray))
                     sender.writeFully(messageBuffer)
-                    sender.flush()
                     names.add(client.key)
                 }
             } catch (e: Exception) {
