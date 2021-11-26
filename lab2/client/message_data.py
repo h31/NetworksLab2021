@@ -31,15 +31,14 @@ class Message:
         :param hn: смещение в шестнадцатеричном формате
         :param bn: смещение в двоичном формате
         """
-        qname = True
+        seclen = int(self.hex_message[hn:hn + 2], 16)
         domain_name = []
-        while qname:
+        while seclen:
             if self.bit_message[bn:bn + 2] == '11':
                 domain_name.extend(
                     self.resolve_compression(int(self.bit_message[bn + 2:bn + 16], 2) * 2,
                                              int(self.bit_message[bn + 2:bn + 16], 2) * 8))
                 break
-            seclen = int(self.hex_message[hn:hn + 2], 16)
             hn += 2
             bn += 8
             section = ''
@@ -47,29 +46,63 @@ class Message:
                 section += bytearray.fromhex(self.hex_message[hn:hn + 2]).decode()
                 hn += 2
                 bn += 8
-            qname = int(self.hex_message[hn:hn + 2], 16)
+            seclen = int(self.hex_message[hn:hn + 2], 16)
             domain_name.append(section)
         return domain_name
 
     def resolve(self):
-        qname = True
+        seclen = int(self.get_field(1, 0, 2), 16)
         domain_name = []
-        while qname:
+        while seclen:
             if self.get_field(0, 0, 2) == '11':
                 domain_name.extend(self.resolve_compression(int(self.get_field(0, 2, 16), 2) * 2,
                                                             int(self.get_field(0, 2, 16), 2) * 8))
                 self.shift_pointer(2)
                 break
-            seclen = int(self.get_field(1, 0, 2), 16)
             self.shift_pointer(2)
             section = ''
             for _ in range(seclen):
                 section += bytearray.fromhex(self.get_field(1, 0, 2)).decode()
                 self.shift_pointer(2)
-            qname = int(self.get_field(1, 0, 2), 16)
+            seclen = int(self.get_field(1, 0, 2), 16)
             domain_name.append(section)
         self.shift_pointer(2)
         return '.'.join(domain_name)
+
+    def get_ans(self, qtype):
+        ans = {'NAME': self.get_field(0, 0, 16)}
+        self.shift_pointer(4)
+        ans['TYPE'] = self.get_field(0, 0, 16)
+        self.shift_pointer(4)
+        ans['CLASS'] = self.get_field(0, 0, 16)
+        self.shift_pointer(4)
+        ans['TTL'] = self.get_field(0, 0, 32)
+        self.shift_pointer(8)
+        ans['RDLENGTH'] = int(self.get_field(0, 0, 16), 2)
+        self.shift_pointer(4)
+        if qtype == 'A':
+            ip4 = []
+            for _ in range(4):
+                ip4.append(str(int(self.get_field(1, 0, 2), 16)))
+                self.shift_pointer(2)
+            ans['RDATA'] = '.'.join(ip4)
+        elif qtype == 'MX':
+            ans['PREFERENCE'] = self.get_field(0, 0, 16)
+            self.shift_pointer(4)
+            ans['RDATA'] = self.resolve()
+        elif qtype == 'TXT':
+            txt = []
+            for _ in range(ans['RDLENGTH']):
+                txt.append(bytearray.fromhex(self.get_field(1, 0, 2)).decode())
+                self.shift_pointer(2)
+            ans['RDATA'] = ''.join(txt[1:])
+        elif qtype == 'AAAA':
+            ip6 = []
+            for _ in range(8):
+                ip6.append(self.get_field(1, 0, 2))
+                self.shift_pointer(2)
+            ans['RDATA'] = ':'.join(ip6)
+        return ans
 
 
 def parse_response(message):
@@ -80,14 +113,12 @@ def parse_response(message):
     """
     message = Message(message)
     res = {'ID': message.hex_message[0:4], 'QR': message.bit_message[16], 'Opcode': message.bit_message[17:21],
-           'AA': message.bit_message[21],
-           'TC': message.bit_message[22], 'RD': message.bit_message[23], 'RA': message.bit_message[24],
-           'Z': message.bit_message[25:28],
-           'RCODE': int(message.bit_message[28:32], 2), 'QDCOUNT': message.bit_message[32:48],
-           'ANCOUNT': int(message.bit_message[48:64], 2),
-           'NSCOUNT': message.bit_message[64:80], 'ARCOUNT': message.bit_message[80:96]}
-
-    res['RCODE'] = RCODE[res['RCODE']]
+           'AA': message.bit_message[21], 'TC': message.bit_message[22], 'RD': message.bit_message[23],
+           'RA': message.bit_message[24],
+           'Z': message.bit_message[25:28], 'RCODE': RCODE[int(message.bit_message[28:32], 2)],
+           'QDCOUNT': message.bit_message[32:48],
+           'ANCOUNT': int(message.bit_message[48:64], 2), 'NSCOUNT': message.bit_message[64:80],
+           'ARCOUNT': message.bit_message[80:96]}
 
     message.shift_pointer(24)
     res['QNAME'] = message.resolve()
@@ -98,42 +129,7 @@ def parse_response(message):
     message.shift_pointer(4)
     res['ANS'] = []
     for _ in range(res['ANCOUNT']):
-        ans = {'NAME': message.get_field(0, 0, 16)}
-        message.shift_pointer(4)
-        ans['TYPE'] = message.get_field(0, 0, 16)
-        message.shift_pointer(4)
-        ans['CLASS'] = message.get_field(0, 0, 16)
-        message.shift_pointer(4)
-        ans['TTL'] = message.get_field(0, 0, 32)
-        message.shift_pointer(8)
-        ans['RDLENGTH'] = int(message.get_field(0, 0, 16), 2)
-        message.shift_pointer(4)
-        if res['QTYPE'] == 'A':
-            ip4 = []
-            for _ in range(4):
-                ip4.append(str(int(message.get_field(1, 0, 2), 16)))
-                message.shift_pointer(2)
-            ans['RDATA'] = '.'.join(ip4)
-            res['ANS'].append(ans)
-        elif res['QTYPE'] == 'MX':
-            ans['PREFERENCE'] = message.get_field(0, 0, 16)
-            message.shift_pointer(4)
-            ans['RDATA'] = message.resolve()
-            res['ANS'].append(ans)
-        elif res['QTYPE'] == 'TXT':
-            txt = []
-            for _ in range(ans['RDLENGTH']):
-                txt.append(bytearray.fromhex(message.get_field(1, 0, 2)).decode())
-                message.shift_pointer(2)
-            ans['RDATA'] = ''.join(txt[1:])
-            res['ANS'].append(ans)
-        elif res['QTYPE'] == 'AAAA':
-            ip6 = []
-            for _ in range(8):
-                ip6.append(message.get_field(1, 0, 2))
-                message.shift_pointer(2)
-            ans['RDATA'] = ':'.join(ip6)
-            res['ANS'].append(ans)
+        res['ANS'].append(message.get_ans(res['QTYPE']))
     return res
 
 
