@@ -65,7 +65,7 @@ class ClientList() {
             try {
                 if (client.key != name) {
                     val sender = client.value.writeChannel
-                    val messageBuffer = ByteBuffer.wrap(message.getMessage().plus(fileByteArray))
+                    val messageBuffer = message.getMessage().plus(fileByteArray)
                     sender.writeFully(messageBuffer)
                     names.add(client.key)
                 }

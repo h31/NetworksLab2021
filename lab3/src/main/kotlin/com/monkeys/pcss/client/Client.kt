@@ -131,9 +131,10 @@ class Client(host_: String, port_: Int) {
                         val dataSize = data.getServerMessage().length
                         val header = Header(MessageType.MESSAGE, fileByteArray.isNotEmpty(), dataSize)
                         val message = Message(header, data).getMessage()
+                        val f = message.plus(fileByteArray)
 
                         if (header.isFileAttached) {
-                            sender.writeFully(ByteBuffer.wrap(message.plus(fileByteArray)))
+                            sender.writeFully(f)
                         } else {
                             sender.writeFully(ByteBuffer.wrap(message))
                         }

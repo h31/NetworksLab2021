@@ -81,6 +81,8 @@ class Server(private val host: String, private val port: Int) {
                 if (receiver.availableForRead > 0) {
 
                     val fullMessage = getNewMessage(receiver)
+                    if (fullMessage.first.header.dataSize == 0)
+                        break
                     val message = fullMessage.first
                     val fileByteArray = fullMessage.second
 
