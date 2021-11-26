@@ -1,5 +1,6 @@
 package org.example.client;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.example.server.Server;
 
 import java.io.*;
@@ -95,20 +96,23 @@ public class Client {
                                 attName = line;
                                 break;
                             case 4:
-                                attSize = Integer.parseInt(line);
+                                attSize = NumberUtils.isNumber(line) ? Integer.parseInt(line) : 0;
                                 break;
                         }
                     }
-                    byte[] content = in.readNBytes(attSize);
                     String message = "(" + time + ")" + " [" + nickname + "] " + text;
                     System.out.println(message);
-                    String[] f = attName.split("\\.");
-                    File file = File.createTempFile(f[0], "." + f[1]);
-                    BufferedOutputStream fileReader = new BufferedOutputStream(new FileOutputStream(file));
-                    fileReader.write(content);
-                    fileReader.flush();
-                    fileReader.close();
-                    System.out.println(file.getAbsolutePath());
+                    if (attSize != 0) {
+                        byte[] content = new byte[attSize];
+                        in.readNBytes(content, 0, attSize);
+                        String[] f = attName.split("\\.");
+                        File file = File.createTempFile(f[0], "." + f[1]);
+                        BufferedOutputStream fileReader = new BufferedOutputStream(new FileOutputStream(file));
+                        fileReader.write(content);
+                        fileReader.flush();
+                        fileReader.close();
+                        System.out.println(file.getAbsolutePath());
+                    }
                 }
             } catch (IOException e) {
                 Client.this.downService();
@@ -139,13 +143,20 @@ public class Client {
                                 text = matcher.replaceFirst("(" + file.getName() + " attached)");
                                 BufferedInputStream fileReader = new BufferedInputStream(new FileInputStream(file));
                                 byte[] content = fileReader.readAllBytes();
-                                out.write((nickname + "\n" + text + "\n" + file.getName() + "\n"
-                                        + content.length + "\n").getBytes(StandardCharsets.UTF_8));
-                                out.write(content);
+                                fileReader.close();
+                                writer.write((nickname + "\n" + text + "\n" + file.getName() + "\n"
+                                        + content.length + "\n"));
                                 writer.flush();
+                                out.write(content);
                                 out.flush();
                             }
                         }
+                        else {
+                            writer.write(nickname + "\n" + text + "\n" + "\n"
+                                     + "\n");
+                            writer.flush();
+                        }
+
                     } catch (IOException e) {
                         downService();
                     }

@@ -1,6 +1,7 @@
 package org.example.server;
 
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -31,7 +32,7 @@ public class Server {
         private BufferedInputStream in;
         private BufferedOutputStream out;
         private BufferedReader reader;
-        private PrintWriter writer;
+        private BufferedWriter writer;
 
 
         public MultiServer(Socket socket) {
@@ -39,12 +40,16 @@ public class Server {
             super.start();
         }
 
-        @SneakyThrows
-        private void send(String message, byte[] content) {
-            out.write((message).getBytes(StandardCharsets.UTF_8));
-            out.write(content);
+        private void send(String message, byte[] content) throws IOException {
+            writer.write((message));
             writer.flush();
+            out.write(content);
             out.flush();
+        }
+
+        private void sendMessage(String message) throws IOException {
+            writer.write(message);
+            writer.flush();
         }
 
         private void downService() {
@@ -70,7 +75,7 @@ public class Server {
             in = new BufferedInputStream(clientSocket.getInputStream());
             out = new BufferedOutputStream(clientSocket.getOutputStream());
             reader = new BufferedReader(new InputStreamReader(in));
-            writer = new PrintWriter(new OutputStreamWriter(out), true);
+            writer = new BufferedWriter(new OutputStreamWriter(out));
             String line;
             String nickname = "";
             String text = "";
@@ -99,16 +104,26 @@ public class Server {
                                     attName = line;
                                     break;
                                 case 3:
-                                    attSize = Integer.parseInt(line);
+                                    attSize = NumberUtils.isNumber(line) ? Integer.parseInt(line) : 0;
                                     break;
                             }
                         }
-                        byte[] content = in.readNBytes(attSize);
                         String time = new SimpleDateFormat("HH:mm:ss").format(new Date());
-                        String message = time + "\n" + nickname + "\n" + text + "\n" + attName + "\n"
-                                + content.length + "\n";
-                        for (MultiServer vr : serverList) {
-                            vr.send(message, content);
+                        if (attSize != 0) {
+                            byte[] content = new byte[attSize];
+                            in.readNBytes(content, 0, attSize);
+                            String message = time + "\n" + nickname + "\n" + text + "\n" + attName + "\n"
+                                    + content.length + "\n";
+                            for (MultiServer vr : serverList) {
+                                vr.send(message, content);
+                            }
+                        }
+                        else {
+                            String message = time + "\n" + nickname + "\n" + text + "\n" + attName + "\n"
+                                    + 0 + "\n";
+                            for (MultiServer vr : serverList) {
+                                vr.sendMessage(message);
+                            }
                         }
                     }
                 } catch (NullPointerException ignored) {
