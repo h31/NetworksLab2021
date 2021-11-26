@@ -19,14 +19,18 @@ public class ClientTFTP {
             continue;
           }
           else {
-            HandlerRRQ handler = new HandlerRRQ(address, spl[1]);
-            handler.handle();
+            HandlerRRQ handlerRRQ = new HandlerRRQ(address, spl[1]);
+            handlerRRQ.handle();
           }
           break;
         case "put":
           if (spl.length != 2) {
             System.out.println("Wrong command format");
             continue;
+          }
+          else {
+            HandlerWRQ handlerWRQ = new HandlerWRQ(address, spl[1]);
+            handlerWRQ.handle();
           }
           break;
         default:

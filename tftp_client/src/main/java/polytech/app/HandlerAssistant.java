@@ -18,6 +18,8 @@ class HandlerAssistant {
     return ack;
   }
 
+  
+
   public static byte[] getRequest(byte opcode, String filename, String mode) {
     byte[] msg = new byte[4 + filename.length() + mode.length()];
     msg[0] = 0;
@@ -27,6 +29,7 @@ class HandlerAssistant {
     addString(msg, mode, i);
     return msg;
   }
+
   private static int addString(byte[] msg, String str, int i) {
     try {
       byte[] bytes = str.getBytes("ASCII");
