@@ -3,10 +3,22 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.io.IOException;
+import java.util.Arrays;
+
 
 class HandlerAssistant {
 
-  public static void handleError(byte[] msg) {
+  public static void handleError(byte[] msg, int len) {
+    System.out.println("ERROR");
+    System.out.println("ERROR CODE: " + msg[3]);
+    String str = new String();
+      try {
+        str = new String(Arrays.copyOfRange(msg, 4, len-1), "ascii");
+      }
+      catch (UnsupportedEncodingException e) {
+        System.exit(1);
+      }
+     System.out.println("ERROR MESSAGE: " + str);
   }
 
   public static byte[] getAck(int block) {

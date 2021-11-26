@@ -110,7 +110,11 @@ class HandlerWRQ extends Thread {
               continue;
             }
           }
-//elseif
+          else if (rec[1] == 5) { // error opcode
+            HandlerAssistant.handleError(rec, getack.getLength());
+            removeHandler();
+            return;
+          }
           else {
             if (counter == 5) {
               System.out.println("Connection lost");

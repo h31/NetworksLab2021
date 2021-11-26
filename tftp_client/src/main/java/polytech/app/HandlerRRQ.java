@@ -95,6 +95,11 @@ class HandlerRRQ {
               continue;
             }
           }
+          else if (bytes[1] == 5) { //error opcode
+            HandlerAssistant.handleError(bytes, rec);
+            removeHandler();
+            return;
+          }
           else {
             if (counter == 5) {
               System.out.println("Connection lost");
