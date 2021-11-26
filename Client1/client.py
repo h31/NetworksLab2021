@@ -1,113 +1,176 @@
-#coding=utf-8
-import threading
 import socket
-from datetime import datetime
-import time
-import signal
+from socket import timeout
+import utils
 import os
-import re
 
-HEADER_LENGTH = 10  # header chiếu dài
-SEPARATOR = "<SEPARATOR>"
-SEND_FILE = "SEND_FILE"
-
-IP = "127.0.0.1" #"networkslab-ivt.ftp.sh"  # địa chỉ localhost
-PORT = 10000  # số port được dùng bởi máy chủ
-UID = "c97ec0d1-df22-41f4-858f-7beee9e1bbc4".encode("utf-8") # string riêng để hiểu rằng tập tin đã kết thúc
-CONNECT = "CONNECT"  # tạo ra const đối với sử dụng chúng sau để hiểu loại của hoạt động khách hàng
-DISCONNECT = "DISCONNECT"  # xem trên
-
-
-def main():  # chức năng chính
-    nickname = input("Write name for chat: ")  # đọc tên
-    clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # tạo ra NET, STREAMing socket
-    clientsocket.connect((IP, PORT))  # kết nối cho địa chỉ với port
-
-    def catch_interrupt(signal, frame):
-        clientsocket.shutdown(socket.SHUT_WR)
-        clientsocket.close()
-        os._exit(0)
-
-    signal.signal(signal.SIGINT, catch_interrupt)  # nắm dấu hiệu , rằng muốn kết thúc sự kết nối
-    nickname_code = nickname.encode('utf-8')  # đọc code của tên
-    nickname_header = f"{len(nickname_code):<{HEADER_LENGTH}}".encode('utf-8')  # tạo ra header cho tên
-    clientsocket.send(nickname_header + nickname_code)  # gửi thông tin cho máy chủ
-    receive_thread = threading.Thread(target=getMessage, args=(clientsocket,))  # tạo ra thread
-    receive_thread.start()  # bắt đầu thread
-    try:
-        while True:  # đọi trước khi khách hàng sẽ viết tin nhắn
-            message = input()  # đọc tin nhắn
-            if (re.match("^send .*\.\w*\s*$", message)): # hiểu rằng muốn gửi file
-                try:
-                    files = re.findall("\s+\w.*\.\w*\s*", message) # tên của tập tin
-                    fileName = files[0].strip() # xóa khoảng trống ở tên của tập tin
-                    filesize = os.path.getsize(fileName) # đọc size của tập tin
-                    clientsocket.send(f"{SEND_FILE:<{HEADER_LENGTH}}".encode("utf-8")) # thông báo cho máy chủ rằng muốn gửi tập tin
-                    fileHeader = f"{files[0]}{SEPARATOR}{filesize}".encode()  # tạo ra header cho tập tin
-                    clientsocket.send(f"{len(fileHeader):<{HEADER_LENGTH}}".encode('utf-8'))  # gửi header của tập tin
-                    clientsocket.send(fileHeader)  # gửi header của tập tin
-                    f = open(fileName, "rb") # mở tập tin để đọc
-                    bytes_read = f.read(filesize) # đọc thông tin từ tập tin
-                    clientsocket.sendall(bytes_read) # gửi cho máy chủ những gì trong tập tin
-                    f.close() # đóng tập tin
-                    clientsocket.send(UID) # gửi UID để máy chủ có thể hiểu rằng kết thúc nhận tập tin
-                except:
-                    print(f'Không có thể tìm kiếm {fileName}')
-
-            else:
-                if message:  # nếu khách hàng đã viết tin nhắn
-                    message_code = message.encode('utf-8')  # đọc code của tin nhắn
-                    message_header = f"{len(message_code):<{HEADER_LENGTH}}".encode(
-                        'utf-8')  # tạo ra header cho tin nhắn
-                    clientsocket.send(
-                        message_header + message_code )  # gửi thông báo cho máy chủ
-    except:
-        os._exit(0)  # nếu vấn đề đã xảy ra thì ngắt kết nối
+HOST = "127.0.0.1"
+PORT = 69
+SERVER_ADDRESS = (HOST, PORT)
+tmpPacket = b""
+recieveAddress = (HOST, PORT)
+isLastPacket = False
+trying = 0
+length = 0
+blockNumber = 1
 
 
-def getMessage(clientsocket):
+def main():
+    global trying, recieveAddress, tmpPacket
+    clientsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     while True:
-        nickname_header = clientsocket.recv(HEADER_LENGTH)  # đọc header
-        current_time = datetime.now().strftime("%H:%M")
-        if len(nickname_header) == 0:
-            print("Close connect")
-            clientsocket.shutdown(socket.SHUT_WR)
-            clientsocket.close()
-            os._exit(0)
-        if nickname_header.decode().strip() == SEND_FILE: # nếu sẽ nhận tập tin
-            name_header = clientsocket.recv(HEADER_LENGTH) # đọc header của tên khách hàng
-            name_length = int(name_header.decode()) # đọc header tên chiếu dài
-            name = clientsocket.recv(name_length).decode() # đọc tên của khách hàng
-            file_header_len = int(clientsocket.recv(HEADER_LENGTH).decode()) # đọc chiếu dài của header của tập tin
-            file_header = clientsocket.recv(file_header_len) # đọc header của tập tin
-            filename, filesize = file_header.decode('utf-8').split(SEPARATOR) # tách header của file để có tên của file và size
-            filename = os.path.basename(filename) # hàm này cắt bớt đường dẫn đến tệp, chỉ để lại tên tệp
-            filesize = int(filesize) # str -> int
-            f = open(filename, "wb") # tạo ra tập tin (cần đọc lại thông tin để hiểu kĩ hơn)
-            total_bytes = bytes()
-            while not UID in total_bytes: # làm việc trước khi gặp UID , khi gặp UID đây là nghĩa , rằng tập tin đã kết thúc
-                bytes_read = clientsocket.recv(filesize)  # nhận bytes của tập tin
-                total_bytes+=bytes_read # thêm bytes để lưu trữ tất cả những gì đã nhận
-            f.write(total_bytes[:(len(total_bytes)-len(UID))]) # viết thông tin, những gì đã đọc, và xóa bỏ UID 
-            f.close() # đóng tập tin
-            print(f'<{current_time}> {name} send file {filename}') #
-        else:
-            type = nickname_header.decode('utf-8').strip()  # đọc loại của tin nhắn
-            if type == CONNECT or type == DISCONNECT:  # nếu loại là sự kết nối hoặc sự ngắt kết nối thì hiển thị thông báo đặc biệt
-                warning_length = int(
-                    clientsocket.recv(HEADER_LENGTH).decode('utf-8').strip())  # tạo ra chiếu dài cảnh báo
-                warning = clientsocket.recv(warning_length).decode('utf-8')  # tạo ra cảnh báo
-                print(f'{warning}')  # viết cảnh báo
-                continue
-            nickname_length = int(nickname_header.decode('utf-8').strip())  # tạo ra chiếu dài cho tên
-            nickname = clientsocket.recv(nickname_length).decode('utf-8')  # đọc tên
-            message_header = clientsocket.recv(HEADER_LENGTH)  # đọc message header
-            message_length = int(message_header.decode('utf-8').strip())  # tạo ra chiếu dài của tin nhắn
-            message = clientsocket.recv(message_length).decode('utf-8')  # tạo ra tin nhắn
-            print(f'<{current_time}> [{nickname}]: {message}')  # viết thông báo
+        operation = input(
+            "Read from server or write to server? (r or w): ")
+        filename = input(
+            "Enter filename: ")
+        if operation == 'r':
+            opcode = utils.RRQ
+            request = makeRequest(opcode, filename)
+            file = open(filename, 'wb')
+            clientsocket.sendto(request, SERVER_ADDRESS)
+            while not isLastPacket:
+                clientsocket.settimeout(5)
+                try:
+                    pack, addr = clientsocket.recvfrom(
+                        utils.MAX_BLOCK_SIZE)
+                    recieveAddress = addr
+                    read = recieveFile(pack, addr, file, clientsocket)
+                    if read == False:
+                        os.remove(filename)
+                    trying = 0
+                except timeout as e:
+                    if trying < 10 and blockNumber == 1:
+                        clientsocket.sendto(request, SERVER_ADDRESS)
+                        trying += 1
+                        print("trying = " + str(trying))
+                        print("resend request: ", request)
+                        continue
+                    if trying < 10 and blockNumber != 1:
+                        clientsocket.sendto(tmpPacket, recieveAddress)
+                        trying += 1
+                        print("trying = " + str(trying))
+                        print("resend ack", tmpPacket)
+                        continue
+                    elif trying == 10:
+                        print(e)
+                        os.remove(filename)
+                        break
+            reset()
+        if operation == 'w':
+            opcode = utils.WRQ
+            request = makeRequest(opcode, filename)
+            send = True
+            try:
+                file = open(filename, 'rb')
+                if send:
+                    clientsocket.sendto(request, SERVER_ADDRESS)
+                    clientsocket.settimeout(5)
+                    while True:
+                        try:
+                            pack, addr = clientsocket.recvfrom(utils.MAX_BLOCK_SIZE)
+                            recieveAddress = addr
+                            trying = 0
+                            if not isLastPacket:
+                                send = sendFile(pack, clientsocket, file, addr)
+                            if isLastPacket:
+                                reset()
+                                blocks = utils.getBlockNumber(pack)
+                                file.close()
+                                print(f"Last Acknowldege packet: {pack} + {blocks}")
+                                print("finished file writing ")
+                                break
+                        except timeout as e:
+                            if trying < 10 and blockNumber == 1:
+                                clientsocket.sendto(request, SERVER_ADDRESS)
+                                trying += 1
+                                print("trying = " + str(trying))
+                                print("resend request: ", request)
+                                continue
+                            if trying < 10 and blockNumber != 1:
+                                dataPacket = tmpPacket
+                                clientsocket.sendto(dataPacket, recieveAddress)
+                                trying += 1
+                                continue
+                            if trying == 10:
+                                print(e)
+                                send = False
+                                reset()
+                                break
+            except FileNotFoundError as e:
+                print(e)
+                send = False
+            reset()
 
 
-if __name__ == '__main__':  # để bắt đầu lập trình
+def makeRequest(opcode, filename, mode='octet'):
+    request = opcode + filename.encode('utf-8') + b'\x00' + mode.encode('utf-8') + b'\x00'
+    return request
+
+
+def recieveFile(packet, addr, file, s):
+    global isLastPacket, blockNumber, tmpPacket
+    receiveHost, recievePort = addr
+    if receiveHost != HOST:
+        return False
+    packetLength = len(packet)
+    opcode = utils.getOpCode(packet)
+    if opcode == utils.ERROR:
+        errorCode = utils.getErrorCode(packet)
+        errorMessage = utils.getErrorMessage(packet)
+        isLastPacket = True
+        file.close()
+        print(f"Error {errorCode}: {errorMessage}")
+        return False
+    if opcode == utils.DATA:
+        blocks = utils.getBlockNumber(packet)
+        if blocks == blockNumber:
+            data = utils.getData(packet)
+            file.write(data)
+            acknowledgePacket = utils.getAcknowledgePacket(blocks)
+            tmpPacket = acknowledgePacket
+            s.sendto(acknowledgePacket, addr)
+            blockNumber += 1
+            print(f"Packet number {blocks} is received")
+            if packetLength < utils.PACKET_SIZE + 4:
+                isLastPacket = True
+                file.close()
+                print("recieved all")
+            return True
+
+
+def sendFile(packet, s, file, addr):
+    global isLastPacket
+    global blockNumber, length, tmpPacket
+    opcode = utils.getOpCode(packet)
+    if opcode == utils.ERROR:
+        errorCode = utils.getErrorCode(packet)
+        errorMessage = utils.getErrorMessage(packet)
+        isLastPacket = True
+        file.close()
+        print(f"Error {errorCode}: {errorMessage}")
+        return False
+
+    if opcode == utils.ACK:
+        blocks = utils.getBlockNumber(packet)
+        if blocks == blockNumber - 1:
+            data = file.read(utils.PACKET_SIZE)
+            dataPacket = utils.getDataPacket(blockNumber, data)
+            tmpPacket = dataPacket
+            s.sendto(dataPacket, addr)
+            length = len(data)
+            blockNumber += 1
+        if length < utils.PACKET_SIZE:
+            isLastPacket = True
+
+
+def reset():
+    global blockNumber, isLastPacket
+    global trying, length, tmpPacket
+    tmpPacket = b""
+    isLastPacket = False
+    blockNumber = 1
+    trying = 0
+    length = 0
+
+
+if __name__ == '__main__':
     main()
-
-
