@@ -5,9 +5,8 @@ import com.monkeys.pcss.models.WorkType.*
 import com.monkeys.pcss.models.message.Data
 import com.monkeys.pcss.models.message.Header
 import com.monkeys.pcss.models.message.Message
-import java.io.BufferedInputStream
+import io.ktor.utils.io.*
 import java.io.OutputStream
-import java.net.SocketException
 
 const val STANDARD_PORT = 8081
 const val STANDARD_HEADER_SIZE = 20
@@ -60,19 +59,19 @@ fun sendMessage(outputStream: OutputStream, message: ByteArray, file: ByteArray?
     outputStream.flush()
 }
 
-fun getNewMessage(inputStream: BufferedInputStream): Pair<Message, ByteArray> {
+suspend fun getNewMessage(readChannel: ByteReadChannel): Pair<Message, ByteArray> {
     val headerByteArray = ByteArray(STANDARD_HEADER_SIZE)
-    inputStream.readNBytes(headerByteArray, 0, STANDARD_HEADER_SIZE)
+    readChannel.readAvailable(headerByteArray, 0, STANDARD_HEADER_SIZE)
     val sHeader = String(headerByteArray)
     val header = Header(sHeader)
     val dataByteArray = ByteArray(header.dataSize)
-    inputStream.readNBytes(dataByteArray, 0, header.dataSize)
+    readChannel.readAvailable(dataByteArray, 0, header.dataSize)
     val sData = String(dataByteArray)
     val data = Data(sData)
     val message = Message(header, data)
     if (header.isFileAttached) {
         val fileByteArray = ByteArray(data.fileSize)
-        inputStream.readNBytes(fileByteArray, 0, data.fileSize)
+        readChannel.readAvailable(fileByteArray, 0, data.fileSize)
         return Pair(message, fileByteArray)
     }
     return Pair(message, ByteArray(0))

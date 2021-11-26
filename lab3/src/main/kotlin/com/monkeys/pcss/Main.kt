@@ -9,7 +9,7 @@ import kotlinx.coroutines.runBlocking
 fun main(args: Array<String>) {
     when (parseArguments(args.toList())) {
         SERVER -> {
-            val server = Server()
+            val server = Server("127.0.0.1", 8081)
             server.start()
         }
 
