@@ -10,6 +10,6 @@ while True:
 	except socket.error:
 		break
 	
-	handler = ClientHandler(socket.socket(socket.AF_INET, socket.SOCK_DGRAM), address)
+	handler = ClientHandler(sock, address)
 	handler.new_package(data)
-	handler.start()
+	handler.run()

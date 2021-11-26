@@ -19,8 +19,7 @@ def parse(data):
 	return result
 
 def send_request_package():
-	global direction
-	global filename
+	global direction, filename
 	
 	package = struct.pack(">h", direction.value) # h = 2 bytes
 	package += filename.encode()
@@ -55,9 +54,7 @@ def send_error_package(error_code, error_message):
 	return send(package, get_new_package = False)
 
 def send(data, get_new_package = True):
-	global sock
-	global package
-	global address
+	global sock, package, address
 	
 	package = None
 	success = False
@@ -73,14 +70,15 @@ def send(data, get_new_package = True):
 	return success
 
 def receive_new_package(timeout = 5):
-	global sock
-	global package
-	global address
+	global sock, package, address
 	
 	sock.settimeout(timeout)
 	try:
 		data, addr = sock.recvfrom(1024)
-		address = addr
+		
+		if address != addr: # new socket
+			address = addr
+		
 		if len(data) != 0:
 			package = parse(data)
 			return True
@@ -91,6 +89,7 @@ def receive_new_package(timeout = 5):
 
 def getNonExistentFilename():
 	global filename
+	
 	parts = filename.split(".")
 	name = parts[0]
 	if len(parts) == 1:
@@ -105,9 +104,7 @@ def getNonExistentFilename():
 	return name + extension
 
 def run():
-	global direction
-	global filename
-	global block_number
+	global sock, direction, filename, block_number
 	block_number = 0
 	
 	if not send_request_package(): return # connection error
@@ -141,8 +138,6 @@ def run():
 			if package["opcode"] == 5: # error
 				print("Error " + str(package["error_code"]) + ": " + package["error_message"])
 				break
-			# package["opcode"] not in (3, 5)
-			send_error_package(4, "Illegal TFTP operation.")
 			break                
 				
 		if direction == Direction.PUT_TO_SERVER:
@@ -164,9 +159,8 @@ def run():
 			if package["opcode"] == 5: # error
 				print("Error " + str(package["error_code"]) + ": " + package["error_message"])
 				break
-			# package["opcode"] not in (4, 5)
-			send_error_package(4, "Illegal TFTP operation.")
-			break  
+			break
+	sock.close()
 
 def printHelp():
 	print("Args:\thost [GET | PUT] source")
@@ -193,4 +187,3 @@ else: # "PUT"
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 run()
-sock.close()
