@@ -2,10 +2,12 @@ import socket
 import struct
 import threading
 from datetime import datetime
-from pathlib import Path
+import sys
+sys.path.append('..')
+from tools import getNonExistentName
 
 
-def saveRecv(size: int):
+def safeRecv(size: int):
     msg = bytes()
     while size != 0:
         try:
@@ -13,24 +15,24 @@ def saveRecv(size: int):
         except:
             disconnect_server()
             exit(1)
-        size -= msg_tmp.__len__()
+        size -= len(msg_tmp)
         msg += msg_tmp
     return msg
 
 
 def clientRecv():
-    (time_size,) = struct.unpack(">I", saveRecv(4))
-    (name_size,) = struct.unpack(">I", saveRecv(4))
-    (msg_size,) = struct.unpack(">I", saveRecv(4))
-    time = saveRecv(time_size).decode()
-    name = saveRecv(name_size).decode()
-    msg = saveRecv(msg_size - 1).decode()
-    flags = saveRecv(1)[0]
+    (time_size,) = struct.unpack(">I", safeRecv(4))
+    (name_size,) = struct.unpack(">I", safeRecv(4))
+    (msg_size,) = struct.unpack(">I", safeRecv(4))
+    time = safeRecv(time_size).decode()
+    name = safeRecv(name_size).decode()
+    msg = safeRecv(msg_size - 1).decode()
+    flags = safeRecv(1)[0]
     if flags:
-        (path_size,) = struct.unpack(">I", saveRecv(4))
-        (file_size,) = struct.unpack(">I", saveRecv(4))
-        file_path = saveRecv(path_size).decode()
-        file = saveRecv(file_size)
+        (path_size,) = struct.unpack(">I", safeRecv(4))
+        (file_size,) = struct.unpack(">I", safeRecv(4))
+        file_path = safeRecv(path_size).decode()
+        file = safeRecv(file_size)
 
         actual_path = getNonExistentName(file_path)
         f = open(actual_path, "w+b")
@@ -56,20 +58,6 @@ def backFunc():
         printMsg(msg_time, msg_name, msg_msg, msg_file_path)
 
 
-def getNonExistentName(file_name):
-    parts = file_name.split(".")
-    name = parts[0]
-    if len(parts) == 1:
-        extension = ""
-    else:
-        extension = "." + parts[1]
-    while True:
-        path = Path.cwd() / (name + extension)
-        if path.exists():
-            name += "_new"
-        else:
-            break
-    return name + extension
 
 
 def clientSend(msg: bytes, path=None):
@@ -77,7 +65,7 @@ def clientSend(msg: bytes, path=None):
     msg = bytearray(msg)
     msg.append(flags)
     msg = bytes(msg)
-    msg_size = msg.__len__()
+    msg_size = len(msg)
 
     size_packed = struct.pack(">I", msg_size)
 
@@ -89,9 +77,9 @@ def clientSend(msg: bytes, path=None):
         f.close()
 
         file_path = path.encode()
-        file_path_size_packed = struct.pack(">I", file_path.__len__())
+        file_path_size_packed = struct.pack(">I", len(file_path))
 
-        file_size_packed = struct.pack(">I", file.__len__())
+        file_size_packed = struct.pack(">I", len(file))
 
         sock.send(file_path_size_packed)
         sock.send(file_size_packed)
@@ -109,12 +97,12 @@ def getLocalTime(utcTime):
 
 
 sock = socket.socket()
-sock.connect(('networkslab-ivt.ftp.sh', 9090))
+sock.connect(('127.0.0.1', 9090))
 
 max_name_len = 32  # limit on client side
 while True:
     name = input(f'Enter your name({max_name_len} symbols max):').encode()
-    if name.__len__() > max_name_len:
+    if len(name) > max_name_len:
         print("Name so long, try again")
     else:
         clientSend(name)
@@ -128,7 +116,7 @@ while True:
     msg = input(f'Enter massage: ')
     file_path = input(f'path to the attached file:')
 
-    if file_path.__len__() == 0:
+    if len(file_path) == 0:
         file_path = None
     if diseconnect_event.is_set():
         break

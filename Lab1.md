@@ -3,8 +3,8 @@
  
 Всё общение клиента и сервера пороисходит в следующих форматах:
 
-1. От клиента к серверу ![ClientToServer](.\images\ClientToServer.png)
-2. От сервера к клиенту ![ServerToClient](.\images\ServerToClient.png)
+1. От клиента к серверу ![ClientToServer](https://raw.githubusercontent.com/TsaplinIA/NetworksLab2021/Lab1/images/ClientToServer.png)
+2. От сервера к клиенту ![ServerToClient](https://raw.githubusercontent.com/TsaplinIA/NetworksLab2021/Lab1/images/ServerToClient.png)
 
 >Серым выделена опциональная часть, если flags != 0, то 
 > принимающая сторона ожидает её, иначе не ожидает.
@@ -24,6 +24,6 @@
 2. Способен принимать и отправлять сообщения параллельно
 3. При потере связи с сервером, сообщает об этом
 ### Тестирование на удалённом сервере ###
-![screenshot#1](.\images\screen2.png)
-![screenshot#2](.\images\screen1.png)
+![screenshot#1](https://raw.githubusercontent.com/TsaplinIA/NetworksLab2021/Lab1/images/screen2.png)
+![screenshot#2](https://raw.githubusercontent.com/TsaplinIA/NetworksLab2021/Lab1/images/screen1.png)
 
