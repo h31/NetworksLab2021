@@ -251,6 +251,17 @@ function startCase(str) {
   ));
 }
 
+/**
+ *
+ * @param {string} dirname
+ * @param {number=} [lvl = 1]
+ * @return {string}
+ */
+function getParentDir(dirname, lvl = 1) {
+  const dirsList = dirname.split(path.sep);
+  return dirsList.slice(0, dirsList.length - lvl).join(path.sep);
+}
+
 module.exports = {
   toLen,
   arrIntersectionSize,
@@ -264,5 +275,6 @@ module.exports = {
   getCleanIpV6,
   fileExists,
   startCase,
-  validateIpV4
+  validateIpV4,
+  getParentDir
 };

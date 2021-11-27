@@ -8,7 +8,7 @@ const yargs = require('yargs/yargs');
 const ResourceRecord = require('../common-classes/resource-record');
 const UI = require('./ui');
 const TypedError = require('../common-classes/typed-error');
-const { startCase, validateIpV4 } = require('../util/misc');
+const { startCase, validateIpV4, getParentDir } = require('../util/misc');
 const Message = require('../common-classes/message');
 const { getAField } = require('../util/dns');
 
@@ -37,7 +37,7 @@ class DnsReplicaClient extends GenericDnsAccessor {
     } catch {}
     const uniqueFileSuffix = (new Date()).getTime();
     const logDir = path.join(
-      __dirname.replace(`${path.sep}client`, ''),
+      getParentDir(__dirname),
       'client-logs',
       `${uniqueFileSuffix}.txt`
     );

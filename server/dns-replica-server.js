@@ -5,13 +5,13 @@ const { wAmount } = require('../util/misc');
 const { EVENTS } = require('../util/constants');
 
 class DnsReplicaServer extends GenericDnsAccessor {
-  static #C_BEHAVIOUR = {
+  static #CLI_BEHAVIOUR = {
     D: 'dump',
     C: 'cli',
     S: 'server'
   };
 
-  static #P_BEHAVIOUR = {
+  static #POPULATION_BEHAVIOUR = {
     A: 'append',
     R: 'rewrite',
     C: 'cancel'
@@ -50,7 +50,7 @@ class DnsReplicaServer extends GenericDnsAccessor {
 
     const behaviour = withWarning ?
       await rl.insistOnAnswer(
-        DnsReplicaServer.#C_BEHAVIOUR,
+        DnsReplicaServer.#CLI_BEHAVIOUR,
         'Warning: the database is empty, and no dump was provided.\n'[InfoLogger.STATUS.warn] +
         'Please enter one of the following:\n' +
         ' > D - enter the path to dump right away\n' +
@@ -58,17 +58,17 @@ class DnsReplicaServer extends GenericDnsAccessor {
         ' > S - run the server anyway without any further setup\n',
         'Please enter either D (provide a dump), C (enter cli mode) or S (run the server)  '
       )
-      : DnsReplicaServer.#C_BEHAVIOUR.C;
+      : DnsReplicaServer.#CLI_BEHAVIOUR.C;
 
     switch (behaviour) {
-      case DnsReplicaServer.#C_BEHAVIOUR.S:
+      case DnsReplicaServer.#CLI_BEHAVIOUR.S:
         rl.close();
         return;
-      case DnsReplicaServer.#C_BEHAVIOUR.D:
+      case DnsReplicaServer.#CLI_BEHAVIOUR.D:
         const dump = path.normalize(await rl.question('Enter the path to the dump:  '));
         await this.runDbPopulation(dump, rl);
         return;
-      case DnsReplicaServer.#C_BEHAVIOUR.C:
+      case DnsReplicaServer.#CLI_BEHAVIOUR.C:
         console.log('Type "--exit" to exit cli');
         rl.prompt();
         await new Promise(resolve => {
@@ -94,21 +94,21 @@ class DnsReplicaServer extends GenericDnsAccessor {
     if (dbSize) {
       const _rl = rl || this.runRl();
       behaviour = await _rl.insistOnAnswer(
-        DnsReplicaServer.#P_BEHAVIOUR,
+        DnsReplicaServer.#POPULATION_BEHAVIOUR,
         `There is some data in the database already (${wAmount(dbSize, 'entry')}). ` +
         'Do you want to rewrite it [R], append the new data to it [A], or cancel [C]?  ',
         'Please enter R for rewrite, A for append or C for cancel  '
       );
       _rl.close();
     } else {
-      behaviour = DnsReplicaServer.#P_BEHAVIOUR.A
+      behaviour = DnsReplicaServer.#POPULATION_BEHAVIOUR.A
     }
 
-    if (behaviour === DnsReplicaServer.#P_BEHAVIOUR.C) {
+    if (behaviour === DnsReplicaServer.#POPULATION_BEHAVIOUR.C) {
       return;
     }
 
-    if (behaviour === DnsReplicaServer.#P_BEHAVIOUR.R) {
+    if (behaviour === DnsReplicaServer.#POPULATION_BEHAVIOUR.R) {
       await this.convenientRedis.flushDb();
     }
 

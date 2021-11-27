@@ -330,13 +330,14 @@ class Message {
 
   /**
    *
-   * @param {Buffer} payload
+   * Parse a section with records (questions / answers / authority / additional)
+   * @param {Buffer} payload the whole message
    * @param {number} startOffset
-   * @param {number} count
-   * @param {function(Buffer, number): Object} parser
+   * @param {number} count amount of records in the section
+   * @param {function(Buffer, number): Object} parser function to parse a single record in the section
    * @return {{currOffset: number, results: Array<Object>}}
    */
-  static #parseBunch(payload, startOffset, count, parser) {
+  static #parseSection(payload, startOffset, count, parser) {
     const results = [];
     let resultsLeft = count;
     let currOffset = startOffset;
@@ -484,19 +485,19 @@ class Message {
       });
 
       const { results: questions, currOffset: qOffset } =
-        this.#parseBunch(payload, this.#headerByteSize, qdCount, (...args) => this.#parseQuestion(...args));
+        this.#parseSection(payload, this.#headerByteSize, qdCount, (...args) => this.#parseQuestion(...args));
       parsed.questions = questions;
 
       const { results: answers, currOffset: ansOffset } =
-        this.#parseBunch(payload, qOffset, anCount, (...args) => this.#parseRR(...args));
+        this.#parseSection(payload, qOffset, anCount, (...args) => this.#parseRR(...args));
       parsed.answers = answers;
 
       const { results: authority, currOffset: authOffset } =
-        this.#parseBunch(payload, ansOffset, nsCount, (...args) => this.#parseRR(...args));
+        this.#parseSection(payload, ansOffset, nsCount, (...args) => this.#parseRR(...args));
       parsed.authority = authority;
 
       const { results: additional } =
-        this.#parseBunch(payload, authOffset, arCount, (...args) => this.#parseRR(...args))
+        this.#parseSection(payload, authOffset, arCount, (...args) => this.#parseRR(...args))
       parsed.additional = additional;
     } catch (e) {
       parsed.error = e;
