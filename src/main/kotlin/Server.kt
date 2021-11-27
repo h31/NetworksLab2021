@@ -75,9 +75,9 @@ class Server(private val serverPort: Int) {
 
         for (entry in res) {
             val rdLength: Int = when(rType) {
-                is RecordType.A -> RecordType.A().size()
+                is RecordType.A -> rType.size()
                 is RecordType.MX -> (entry.key.split(COLON_CHARACTER).last()).length + 4
-                is RecordType.AAAA -> RecordType.AAAA().size()
+                is RecordType.AAAA -> rType.size()
                 is RecordType.TXT -> entry.key.length
                 is RecordType.NotImpl -> throw exceptions.NotImplTypeException(NOT_IMPL_MSG)
             }
