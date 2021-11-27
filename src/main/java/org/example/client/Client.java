@@ -17,7 +17,7 @@ public class Client {
     private BufferedInputStream in;
     private BufferedOutputStream out;
     private BufferedReader reader;
-    private PrintWriter writer;
+    private BufferedWriter writer;
     private BufferedReader inputUser;
     private String nickname;
     private final Pattern pattern = Pattern.compile(" ?-a (.*)$");
@@ -33,7 +33,7 @@ public class Client {
             in = new BufferedInputStream(socket.getInputStream());
             out = new BufferedOutputStream(socket.getOutputStream());
             reader = new BufferedReader(new InputStreamReader(in));
-            writer = new PrintWriter(new OutputStreamWriter(out), true);
+            writer = new BufferedWriter(new OutputStreamWriter(out));
             this.pressNickname();
             new ReadMsg().start();
             new WriteMsg().start();

@@ -9,6 +9,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -41,9 +42,9 @@ public class Server {
         }
 
         private void send(String message, byte[] content) throws IOException {
-            writer.write((message));
-            writer.flush();
-            out.write(content);
+            out.write(message.getBytes(StandardCharsets.UTF_8));
+            out.flush();
+            out.write(Arrays.copyOf(content, content.length));
             out.flush();
         }
 
@@ -75,7 +76,7 @@ public class Server {
             in = new BufferedInputStream(clientSocket.getInputStream());
             out = new BufferedOutputStream(clientSocket.getOutputStream());
             reader = new BufferedReader(new InputStreamReader(in));
-            writer = new BufferedWriter(new OutputStreamWriter(out));
+            writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
             String line;
             String nickname = "";
             String text = "";
