@@ -30,7 +30,7 @@ def handleClient(s69, s):
     global blockNumberRRQ, blockNumberWRQ
     global isLastPacket, trying
     while True:
-        pack, addr = s69.recvfrom(1024)
+        pack, addr = s69.recvfrom(utils.MAX_BLOCK_SIZE)
         opcode = utils.getOpCode(pack)
         sendPacket = b""
         if opcode == utils.RRQ:
@@ -40,13 +40,13 @@ def handleClient(s69, s):
             try:
                 fileData = open(fileName, 'rb')
                 file["fileData"] = fileData
-                readData = fileData.read(512)
+                readData = fileData.read(utils.PACKET_SIZE)
                 blockNumberRRQ += 1
                 dataPacket = utils.getDataPacket(blockNumberRRQ, readData)
                 sendPacket = dataPacket
                 s.sendto(dataPacket, addr)
                 if(len(dataPacket) < utils.PACKET_SIZE):
-                    isLastPacket == True
+                    isLastPacket = True
             except FileNotFoundError:
                 errorPacket = utils.getErrorPacket(utils.FILE_NOT_FOUND)
                 s.sendto(errorPacket, addr)
@@ -74,7 +74,7 @@ def handleClient(s69, s):
         s.settimeout(5)
         while True:
             try:
-                pack, addr = s.recvfrom(1024)
+                pack, addr = s.recvfrom(utils.MAX_BLOCK_SIZE)
                 opcode = utils.getOpCode(pack)
                 if opcode == utils.ACK:
                     if len(tmpPacket) < utils.PACKET_SIZE + 4:
@@ -83,7 +83,7 @@ def handleClient(s69, s):
                     if num == blockNumberRRQ:
                         print(f'Пакет номер {num} отправлен')
                         blockNumberRRQ += 1
-                        data = file["fileData"].read(512)
+                        data = file["fileData"].read(utils.PACKET_SIZE)
                         dataPacket = utils.getDataPacket(
                             blockNumberRRQ, data)
                         tmpPacket = dataPacket
@@ -104,7 +104,6 @@ def handleClient(s69, s):
                         s.sendto(acknowledgePacket, addr)
                         blockNumberWRQ += 1
                         print(f'Дата пакет номер {num} получен')
-
                         if len(data) < utils.PACKET_SIZE:
                             isLastPacket = True
                             print("Файл полностью получен")

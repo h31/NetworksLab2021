@@ -6,11 +6,11 @@ import os
 HOST = "127.0.0.1"
 PORT = 69
 SERVER_ADDRESS = (HOST, PORT)
-tmpPacket = b""
+tmpPacket = b"" #  переменная для хранения последнего отправленного пакета
 recieveAddress = (HOST, PORT)
 isLastPacket = False
-trying = 0
-length = 0
+trying = 0 # номер попытки отправления
+length = 0 # длина последнего отправленного пакета
 blockNumber = 1
 
 
@@ -19,9 +19,9 @@ def main():
     clientsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     while True:
         operation = input(
-            "Read from server or write to server? (r or w): ")
+            "Читать с сервера или записать на сервер? (r-читать w-записать): ")
         filename = input(
-            "Enter filename: ")
+            "Введите имя файла: ")
         if operation == 'r':
             opcode = utils.RRQ
             request = makeRequest(opcode, filename)
@@ -41,14 +41,14 @@ def main():
                     if trying < 10 and blockNumber == 1:
                         clientsocket.sendto(request, SERVER_ADDRESS)
                         trying += 1
-                        print("trying = " + str(trying))
-                        print("resend request: ", request)
+                        print(f"Попытка = {trying}")
+                        print("Переотправляю запрос: ", request)
                         continue
                     if trying < 10 and blockNumber != 1:
                         clientsocket.sendto(tmpPacket, recieveAddress)
                         trying += 1
-                        print("trying = " + str(trying))
-                        print("resend ack", tmpPacket)
+                        print(f"Попытка = {trying}")
+                        print("Переотправляю подтверждающий пакет", tmpPacket)
                         continue
                     elif trying == 10:
                         print(e)
@@ -73,22 +73,21 @@ def main():
                                 send = sendFile(pack, clientsocket, file, addr)
                             if isLastPacket:
                                 reset()
-                                blocks = utils.getBlockNumber(pack)
                                 file.close()
-                                print(f"Last Acknowldege packet: {pack} + {blocks}")
-                                print("finished file writing ")
+                                print("Запись файла завершена")
                                 break
                         except timeout as e:
                             if trying < 10 and blockNumber == 1:
                                 clientsocket.sendto(request, SERVER_ADDRESS)
                                 trying += 1
-                                print("trying = " + str(trying))
-                                print("resend request: ", request)
+                                print(f"Попытка = {trying}")
+                                print("Переотправляю запрос: ", request)
                                 continue
                             if trying < 10 and blockNumber != 1:
-                                dataPacket = tmpPacket
-                                clientsocket.sendto(dataPacket, recieveAddress)
+                                clientsocket.sendto(tmpPacket, recieveAddress)
                                 trying += 1
+                                print(f"Попытка = {trying}")
+                                print("Переотправляю дата пакет: ", tmpPacket)
                                 continue
                             if trying == 10:
                                 print(e)
@@ -100,12 +99,12 @@ def main():
                 send = False
             reset()
 
-
+# Функция для создания запроса
 def makeRequest(opcode, filename, mode='octet'):
     request = opcode + filename.encode('utf-8') + b'\x00' + mode.encode('utf-8') + b'\x00'
     return request
 
-
+# Функция для получения файла
 def recieveFile(packet, addr, file, s):
     global isLastPacket, blockNumber, tmpPacket
     receiveHost, recievePort = addr
@@ -129,14 +128,14 @@ def recieveFile(packet, addr, file, s):
             tmpPacket = acknowledgePacket
             s.sendto(acknowledgePacket, addr)
             blockNumber += 1
-            print(f"Packet number {blocks} is received")
+            print(f"Пакет {blocks} получен")
             if packetLength < utils.PACKET_SIZE + 4:
                 isLastPacket = True
                 file.close()
-                print("recieved all")
+                print("Получено всё")
             return True
 
-
+# Функция для отправки файла
 def sendFile(packet, s, file, addr):
     global isLastPacket
     global blockNumber, length, tmpPacket
