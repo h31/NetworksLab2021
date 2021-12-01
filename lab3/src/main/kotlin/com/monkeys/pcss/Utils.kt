@@ -6,7 +6,6 @@ import com.monkeys.pcss.models.message.Data
 import com.monkeys.pcss.models.message.Header
 import com.monkeys.pcss.models.message.Message
 import io.ktor.utils.io.*
-import java.io.OutputStream
 
 const val STANDARD_PORT = 8081
 const val STANDARD_HEADER_SIZE = 20
@@ -47,31 +46,19 @@ fun kit(): String =
             "    |U_____U|" +
             "\n"
 
-fun send(outputStream: OutputStream, byteArray: ByteArray) {
-    outputStream.write(byteArray)
-}
-
-fun sendMessage(outputStream: OutputStream, message: ByteArray, file: ByteArray?) {
-    send(outputStream, message)
-    if (file != null && file.isNotEmpty()) {
-        send(outputStream, file)
-    }
-    outputStream.flush()
-}
-
 suspend fun getNewMessage(readChannel: ByteReadChannel): Pair<Message, ByteArray> {
     val headerByteArray = ByteArray(STANDARD_HEADER_SIZE)
-    readChannel.readAvailable(headerByteArray, 0, STANDARD_HEADER_SIZE)
+    readChannel.readFully(headerByteArray, 0, STANDARD_HEADER_SIZE)
     val sHeader = String(headerByteArray)
     val header = Header(sHeader)
     val dataByteArray = ByteArray(header.dataSize)
-    readChannel.readAvailable(dataByteArray, 0, header.dataSize)
+    readChannel.readFully(dataByteArray, 0, header.dataSize)
     val sData = String(dataByteArray)
     val data = Data(sData)
     val message = Message(header, data)
     if (header.isFileAttached) {
         val fileByteArray = ByteArray(data.fileSize)
-        readChannel.readAvailable(fileByteArray, 0, data.fileSize)
+        readChannel.readFully(fileByteArray, 0, data.fileSize)
         return Pair(message, fileByteArray)
     }
     return Pair(message, ByteArray(0))
