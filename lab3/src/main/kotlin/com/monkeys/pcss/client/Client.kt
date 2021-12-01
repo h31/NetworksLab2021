@@ -51,7 +51,7 @@ class Client(host_: String, port_: Int) {
             else -> {
 
                 val data = Data(0, userInput, "", "", null)
-                val dataSize = data.getServerMessage().length
+                val dataSize = data.getServerMessage().toByteArray().size
                 val header = Header(MessageType.LOGIN, false, dataSize)
                 val message = ByteBuffer.wrap(Message(header, data).getMessage())
 
@@ -128,7 +128,7 @@ class Client(host_: String, port_: Int) {
                         }
 
                         val data = Data(fileByteArray.size, name, "", msg, fileName)
-                        val dataSize = data.getServerMessage().length
+                        val dataSize = data.getServerMessage().toByteArray().size
                         val header = Header(MessageType.MESSAGE, fileByteArray.isNotEmpty(), dataSize)
                         val message = Message(header, data).getMessage()
                         val f = message.plus(fileByteArray)

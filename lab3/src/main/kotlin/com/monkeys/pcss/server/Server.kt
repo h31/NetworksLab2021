@@ -57,7 +57,7 @@ class Server(private val host: String, private val port: Int) {
                     isSuccessfullyLogin = clientList.addNewClient(client, name, readChannel, writeChannel)
                     if (isSuccessfullyLogin) {
                         val data = Data(0, name, "", "Client $name connected to chat", null)
-                        val dataSize = data.getServerMessage().length
+                        val dataSize = data.getServerMessage().toByteArray().size
                         val header = Header(MessageType.SPECIAL, false, dataSize)
                         clientList.writeToEveryBody(Message(header, data), ByteArray(0))
                     }
@@ -96,7 +96,7 @@ class Server(private val host: String, private val port: Int) {
                             message.data.messageText,
                             message.data.fileName
                         )
-                        val dataSize = data.getServerMessage().length
+                        val dataSize = data.getServerMessage().toByteArray().size
                         val resMessage = Message(
                             Header(
                                 MessageType.MESSAGE,

@@ -23,7 +23,7 @@ class ClientList() {
                 senderName = "server", messageText =
                 "Name is taken, please try to connect again"
             )
-            val dataSize = data.getServerMessage().length
+            val dataSize = data.getServerMessage().toByteArray().size
             val header = Header(MessageType.LOGIN, false, dataSize)
             val message = ByteBuffer.wrap(Message(header, data).getMessage())
             writeChannel.writeFully(message)
@@ -38,7 +38,7 @@ class ClientList() {
                 senderName = "server", messageText =
                 "Great, your name now is $newId, you can communicate. There are ${clients.size - 1} people in the chat excepts you."
             )
-            val dataSize = data.getServerMessage().length
+            val dataSize = data.getServerMessage().toByteArray().size
             val header = Header(MessageType.LOGIN, false, dataSize)
             val message = ByteBuffer.wrap(Message(header, data).getMessage())
             writeChannel.writeFully(message)
@@ -53,7 +53,7 @@ class ClientList() {
         socketList[id]!!.close()
         socketList.remove(id)
         val data = Data(0, id, "", "Client $id disconnected from chat", null)
-        val dataSize = data.getServerMessage().length
+        val dataSize = data.getServerMessage().toByteArray().size
         val header = Header(MessageType.SPECIAL, false, dataSize)
         writeToEveryBody(Message(header, data), ByteArray(0))
     }
