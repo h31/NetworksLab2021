@@ -23,7 +23,7 @@ class Server(private val host: String, private val port: Int) {
         val server = aSocket(ActorSelectorManager(Dispatchers.IO))
             .tcp()
             .bind(InetSocketAddress(host, port))
-        println("Server started")
+        println("Server started at ${server.localAddress}")
 
         while (true) {
             val client = server.accept()
