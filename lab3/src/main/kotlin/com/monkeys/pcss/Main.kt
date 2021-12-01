@@ -9,6 +9,12 @@ import kotlinx.coroutines.runBlocking
 fun main(args: Array<String>) {
     when (parseArguments(args.toList())) {
         SERVER -> {
+            val server = Server("localhost", 8081)
+            server.start()
+
+        }
+
+        SERVER_WITH_ARGUMENTS -> {
             val serverArgumentIndex = args.indexOf("-s") + 1
             val arg = parseHostAndPort(args[serverArgumentIndex])
             try {
