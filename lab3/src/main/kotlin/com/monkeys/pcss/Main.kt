@@ -9,8 +9,17 @@ import kotlinx.coroutines.runBlocking
 fun main(args: Array<String>) {
     when (parseArguments(args.toList())) {
         SERVER -> {
-            val server = Server("127.0.0.1", 8081)
-            server.start()
+            val serverArgumentIndex = args.indexOf("-s") + 1
+            val arg = parseHostAndPort(args[serverArgumentIndex])
+            try {
+                val server = Server(arg.first, arg.second)
+                server.start()
+            } catch (e: Exception) {
+                println(
+                    "Incorrect arguments or it is impossible to establish a connection with the specified server.\n" +
+                            "Connection not establishment"
+                )
+            }
         }
 
         CLIENT -> {

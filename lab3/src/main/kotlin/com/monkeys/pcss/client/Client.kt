@@ -56,7 +56,6 @@ class Client(host_: String, port_: Int) {
                 val message = ByteBuffer.wrap(Message(header, data).getMessage())
 
                 sender.writeFully(message)
-                sender.flush()
 
                 var messageInfo = ""
 

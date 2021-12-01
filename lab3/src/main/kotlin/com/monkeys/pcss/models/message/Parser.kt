@@ -10,7 +10,7 @@ fun parseData(dataMessage: String): Data {
     val messageTextRegex = """[^\[\]]*""".toRegex().pattern
     val fileNameRegex = """([^(\[\])]+)\.([a-z0-9A-Z]+)""".toRegex().pattern
     val fullRegex =
-        """_\[($fileSizeRegex)?\],\[($senderNameRegex)\],\[($timeRegex)?\],\[($messageTextRegex)\],\[($fileNameRegex)?\]_;_""".toRegex()
+        """_\[($fileSizeRegex)?\],\[($senderNameRegex)\],\[($timeRegex)?\],\[($messageTextRegex)?\],\[($fileNameRegex)?\]_;_""".toRegex()
     val matchResult = fullRegex.matchEntire(dataMessage)
     return if (matchResult != null) {
         val messageId = matchResult.groupValues[1]
