@@ -38,9 +38,7 @@ class Client constructor(hostAddress_: String, hostPort_: Int, private var nickn
             val customMsg = CustomMessage()
             var msg: String
             for (i in 0 until 5) { //one time for every type
-                try {
-                    msg = aInput.readUTF8Line()!!
-                }
+                try { msg = aInput.readUTF8Line()!! }
                 catch (ex: Exception) {
                     when(ex) {
                         is SocketException, is NullPointerException -> {
@@ -55,7 +53,7 @@ class Client constructor(hostAddress_: String, hostPort_: Int, private var nickn
                 val type = split.first().toString()
                 val value = split.last().toString()
                 when (type) {
-                    "time" -> {customMsg.time = getLocalTime(value)}
+                    "time" -> customMsg.time = getLocalTime(value)
                     "name" -> customMsg.name = value
                     "msg" -> customMsg.msg = value.replace("\\n","\n").replace("\\t","\t")
                     "attname" -> customMsg.attname = value
@@ -63,9 +61,8 @@ class Client constructor(hostAddress_: String, hostPort_: Int, private var nickn
                 }
             }
             //now customMsg have all the attributes. So we are...
-            handleIncomingAtt(customMsg) //dealing with attachment if any exists...
-            handleIncomingText(customMsg)
-             //and showing the text message to the user
+            //dealing with attachment if any exists...
+            handleIncomingAtt(customMsg)
         }
     }
 
@@ -78,11 +75,10 @@ class Client constructor(hostAddress_: String, hostPort_: Int, private var nickn
             msg = msg.replace("\n","\\n").replace("\t","\\t")
 
             //quit scenario with "quit" command
-            if (text.toLowerCase(Locale.getDefault()) == "quit") {
+            if (text.lowercase(Locale.getDefault()) == "quit") {
                 println("See you later. Bye!")
                 exitProcess(0)
             }
-
             //check if message has any attachments - try to attach them if they exist, if not - send the msg itself
             handleSentAtt(msg)
         }
@@ -98,19 +94,23 @@ class Client constructor(hostAddress_: String, hostPort_: Int, private var nickn
             attname.isNotBlank() and att.isNotBlank() -> {
                 val directory = File(Paths.get("").toAbsolutePath().toString() + "/images")
                 if (!directory.exists()) directory.mkdir()
-                val file = File.createTempFile("media_", ".${File(attname).extension}", directory)
-                customMsg.msg = customMsg.msg.replaceFirst(ATTACHMENT_STRING.toRegex(), "(file ${file.name} attached)")
+                val file = withContext(Dispatchers.IO) {
+                    File.createTempFile("media_", ".${File(attname).extension}", directory)
+                }
                 val len = att.toInt()
                 val f = ByteArray(len)
-                println("before")
                 aInput.readFully(f, 0, len)
-                println("after")
+                customMsg.msg = customMsg.msg.replaceFirst(ATTACHMENT_STRING.toRegex(),
+                    "(file ${file.name} attached)")
                 file.writeBytes(f)
+
             }
             else -> {
                 println("Incorrect message attachments - attachment can not be displayed.")
             }
         }
+        //and showing the text message to the user
+        handleIncomingText(customMsg)
     }
 
     private fun handleIncomingText(customMsg: CustomMessage) {
@@ -133,7 +133,7 @@ class Client constructor(hostAddress_: String, hostPort_: Int, private var nickn
             //if path is correct...
             if (file.isFile) {
                 //check its mimeType to be image or video. Everything else is non-positive!
-                val mimeType: String = withContext(CoroutineScope(Dispatchers.IO).coroutineContext) {
+                val mimeType = withContext(Dispatchers.IO) {
                     BufferedInputStream(FileInputStream(file)).use {
                         URLConnection.guessContentTypeFromStream(it)
                     }
