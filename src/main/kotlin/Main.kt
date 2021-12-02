@@ -1,14 +1,12 @@
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 fun main(args: Array<String>) {
     when {
         (args.size == 1 || args.size == 2) and (args[0] == "-s") -> {
             try {
                 val port = if (args.size == 1) 9876 else checkPort(args[1])
-                val server = Server(port)
+                val server = Server("localhost", port)
                 runBlocking { server.run() }
             }
             catch (ex: IOException) {

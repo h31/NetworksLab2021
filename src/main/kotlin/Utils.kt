@@ -1,3 +1,5 @@
+import io.ktor.network.sockets.*
+import io.ktor.utils.io.*
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.net.Socket
@@ -29,8 +31,7 @@ fun checkPort(portIn: String): Int {
     return port
 }
 
-fun closeAll(reader: BufferedReader, writer: BufferedWriter, socket: Socket) {
-    reader.close()
+fun closeAll(writer : ByteWriteChannel, socket: ASocket) {
     writer.close()
     socket.close()
 }
