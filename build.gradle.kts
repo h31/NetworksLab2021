@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.5.20"
+    kotlin("jvm") version "1.5.31"
     application
 }
 
@@ -20,7 +20,7 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.2.5")
     implementation("io.ktor:ktor-network:1.6.6")
     implementation("com.github.ajalt.clikt:clikt:3.3.0")
-    implementation("commons-validator:commons-validator:1.7")
+    implementation("commons-validator:commons-validator:1.7")\
 }
 
 
