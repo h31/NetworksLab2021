@@ -133,13 +133,13 @@ class Client constructor(hostAddress_: String, hostPort_: Int, private var nickn
             //if path is correct...
             if (file.isFile) {
                 //check its mimeType to be image or video. Everything else is non-positive!
-                val mimeType = withContext(Dispatchers.IO) {
+                val mimeType : String? = withContext(Dispatchers.IO) {
                     BufferedInputStream(FileInputStream(file)).use {
                         URLConnection.guessContentTypeFromStream(it)
                     }
                 }
 
-                if ((mimeType != "") && (mimeType.startsWith("image") || mimeType.startsWith("video"))) {
+                if ((!mimeType.isNullOrBlank()) && (mimeType.startsWith("image") || mimeType.startsWith("video"))) {
                     f = file.readBytes()
                     att = f.size.toString()
                     attname = file.name

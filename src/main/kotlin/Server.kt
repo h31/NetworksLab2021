@@ -6,7 +6,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.SocketException
 import java.nio.ByteBuffer
@@ -30,12 +29,8 @@ class Server constructor(host_: String, port_: Int) {
 
     private suspend fun publicSocketListener(publicSocket: ServerSocket) {
         while (true) {
-            try {
-                val customSocket = CustomSocket(publicSocket.accept())
-                CoroutineScope(Dispatchers.IO).launch{ clientNicknameListener(customSocket) }
-            } catch (e: IOException) {
-                println("hi")
-            }
+            val customSocket = CustomSocket(publicSocket.accept())
+            CoroutineScope(Dispatchers.IO).launch{ clientNicknameListener(customSocket) }
         }
     }
 
@@ -46,7 +41,7 @@ class Server constructor(host_: String, port_: Int) {
         val timeStr = Instant.now().truncatedTo(ChronoUnit.SECONDS).toString()
         val customMessage = CustomMessage(timeStr, "Server")
         if (clientSockets.containsKey(nickname)) {
-            customMessage.msg = "Sorry, this nickname is already taken. Choose another one."
+            customMessage.msg = "Sorry, this nickname ($nickname) is already taken. Choose another one."
             writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
             closeAll(writer, customSocket.aSocket)
         }
@@ -62,12 +57,13 @@ class Server constructor(host_: String, port_: Int) {
     private suspend fun clientSocketListener(nickname: String, socket: CustomSocket) {
         val reader = socket.reader
         while (!socket.aSocket.isClosed) {
+            //reading incoming message
+            //can not use the same code from client because message format is different: here are 3 attrs, there are 5
             val customMsg = CustomMessage(nickname)
             var msg: String
             for (i in 0 until 3) { //one time for every type
-                try {
-                    msg = reader.readUTF8Line()!!
-                } catch (ex: Exception) {
+                try { msg = reader.readUTF8Line()!! }
+                catch (ex: Exception) {
                     when (ex) {
                         is SocketException, is NullPointerException -> {
                             clientSockets.remove(nickname)
@@ -111,8 +107,6 @@ class Server constructor(host_: String, port_: Int) {
                 if (f.isNotEmpty()) writer.writeFully(f)
             }
         }
-        //reading incoming message
-        //can not use the same code from client because message format is different: here are 3 attrs, there are 5
 
         //out of loop - close all...
         val customSocket = clientSockets[nickname]!!
