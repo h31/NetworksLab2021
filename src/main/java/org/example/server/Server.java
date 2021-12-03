@@ -13,6 +13,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import static org.example.util.StreamUtil.readLine;
+
 public class Server {
     protected static List<MultiServer> serverList = new ArrayList<>();
     private ServerSocket serverSocket;
@@ -32,7 +34,6 @@ public class Server {
         private final Socket clientSocket;
         private BufferedInputStream in;
         private BufferedOutputStream out;
-        private BufferedReader reader;
         private BufferedWriter writer;
 
 
@@ -57,7 +58,6 @@ public class Server {
             try {
                 if (!clientSocket.isClosed()) {
                     clientSocket.close();
-                    reader.close();
                     writer.close();
                     in.close();
                     out.close();
@@ -75,7 +75,6 @@ public class Server {
         public void run() {
             in = new BufferedInputStream(clientSocket.getInputStream());
             out = new BufferedOutputStream(clientSocket.getOutputStream());
-            reader = new BufferedReader(new InputStreamReader(in));
             writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
             String line;
             String nickname = "";
@@ -83,13 +82,13 @@ public class Server {
             String attName = "";
             int attSize = 0;
             try {
-                line = reader.readLine();
+                line = readLine(in);
                 writer.write("Hello " + line + "\n");
                 writer.flush();
                 try {
                     while (clientSocket.isConnected()) {
                         for (int i = 0; i < 4; i++) {
-                            line = reader.readLine();
+                            line = readLine(in);
                             if (line.equals("stop")) {
                                 this.downService();
                                 break;
@@ -118,8 +117,7 @@ public class Server {
                             for (MultiServer vr : serverList) {
                                 vr.send(message, content);
                             }
-                        }
-                        else {
+                        } else {
                             String message = time + "\n" + nickname + "\n" + text + "\n" + attName + "\n"
                                     + 0 + "\n";
                             for (MultiServer vr : serverList) {

@@ -1,22 +1,19 @@
 package org.example.client;
 
 import org.apache.commons.lang3.math.NumberUtils;
-import org.example.server.Server;
 
 import java.io.*;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.example.util.StreamUtil.readLine;
 
 public class Client {
 
     private Socket socket;
     private BufferedInputStream in;
     private BufferedOutputStream out;
-    private BufferedReader reader;
     private BufferedWriter writer;
     private BufferedReader inputUser;
     private String nickname;
@@ -32,7 +29,6 @@ public class Client {
             inputUser = new BufferedReader(new InputStreamReader(System.in));
             in = new BufferedInputStream(socket.getInputStream());
             out = new BufferedOutputStream(socket.getOutputStream());
-            reader = new BufferedReader(new InputStreamReader(in));
             writer = new BufferedWriter(new OutputStreamWriter(out));
             this.pressNickname();
             new ReadMsg().start();
@@ -54,7 +50,6 @@ public class Client {
         try {
             if (!socket.isClosed()) {
                 socket.close();
-                reader.close();
                 writer.close();
                 in.close();
                 out.close();
@@ -74,10 +69,10 @@ public class Client {
             String time = "";
             int attSize = 0;
             try {
-                System.out.println(reader.readLine());
+                System.out.println(readLine(in));
                 while (socket.isConnected()) {
                     for (int i = 0; i < 5; i++) {
-                        line = reader.readLine();
+                        line = readLine(in);
                         if (line.equals("stop")) {
                             Client.this.downService();
                             break;
@@ -120,47 +115,46 @@ public class Client {
         }
     }
 
-        public class WriteMsg extends Thread {
+    public class WriteMsg extends Thread {
 
-            @Override
-            public void run() {
-                while (!socket.isClosed()) {
-                    String text;
-                    Matcher matcher;
-                    try {
-                        text = inputUser.readLine();
-                        if (text.isBlank()) continue;
-                        if (text.equals("stop")) {
-                            writer.write("stop" + "\n");
-                            downService();
-                            break;
-                        }
-                        matcher = pattern.matcher(text);
-                        if (matcher.find()) {
-                            String path = matcher.group(1);
-                            File file = new File(path);
-                            if (file.isFile()) {
-                                text = matcher.replaceFirst("(" + file.getName() + " attached)");
-                                BufferedInputStream fileReader = new BufferedInputStream(new FileInputStream(file));
-                                byte[] content = fileReader.readAllBytes();
-                                fileReader.close();
-                                writer.write((nickname + "\n" + text + "\n" + file.getName() + "\n"
-                                        + content.length + "\n"));
-                                writer.flush();
-                                out.write(content);
-                                out.flush();
-                            }
-                        }
-                        else {
-                            writer.write(nickname + "\n" + text + "\n" + "\n"
-                                     + "\n");
-                            writer.flush();
-                        }
-
-                    } catch (IOException e) {
+        @Override
+        public void run() {
+            while (!socket.isClosed()) {
+                String text;
+                Matcher matcher;
+                try {
+                    text = inputUser.readLine();
+                    if (text.isBlank()) continue;
+                    if (text.equals("stop")) {
+                        writer.write("stop" + "\n");
                         downService();
+                        break;
                     }
+                    matcher = pattern.matcher(text);
+                    if (matcher.find()) {
+                        String path = matcher.group(1);
+                        File file = new File(path);
+                        if (file.isFile()) {
+                            text = matcher.replaceFirst("(" + file.getName() + " attached)");
+                            BufferedInputStream fileReader = new BufferedInputStream(new FileInputStream(file));
+                            byte[] content = fileReader.readAllBytes();
+                            fileReader.close();
+                            writer.write((nickname + "\n" + text + "\n" + file.getName() + "\n"
+                                    + content.length + "\n"));
+                            writer.flush();
+                            out.write(content);
+                            out.flush();
+                        }
+                    } else {
+                        writer.write(nickname + "\n" + text + "\n" + "\n"
+                                + "\n");
+                        writer.flush();
+                    }
+
+                } catch (IOException e) {
+                    downService();
                 }
             }
         }
     }
+}
