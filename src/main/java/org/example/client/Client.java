@@ -1,6 +1,7 @@
 package org.example.client;
 
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.net.Socket;
@@ -11,6 +12,8 @@ import static org.example.util.StreamUtil.readLine;
 
 public class Client {
 
+    Logger logger = Logger.getLogger(Client.class);
+
     private Socket socket;
     private BufferedInputStream in;
     private BufferedOutputStream out;
@@ -18,12 +21,14 @@ public class Client {
     private BufferedReader inputUser;
     private String nickname;
     private final Pattern pattern = Pattern.compile(" ?-a (.*)$");
+    private final String STOP_WORD = "stop";
 
     public void startConnection(String ip, int port) {
         try {
             this.socket = new Socket(ip, port);
+            logger.info("Socket connection");
         } catch (IOException e) {
-            System.err.println("Socket failed");
+            logger.error("Socket failed");
         }
         try {
             inputUser = new BufferedReader(new InputStreamReader(System.in));
@@ -34,7 +39,6 @@ public class Client {
             new ReadMsg().start();
             new WriteMsg().start();
         } catch (IOException e) {
-
             Client.this.downService();
         }
     }
@@ -61,9 +65,7 @@ public class Client {
     private class ReadMsg extends Thread {
         @Override
         public void run() {
-
             String line;
-            String nickname = "";
             String text = "";
             String attName = "";
             String time = "";
@@ -73,7 +75,7 @@ public class Client {
                 while (socket.isConnected()) {
                     for (int i = 0; i < 5; i++) {
                         line = readLine(in);
-                        if (line.equals("stop")) {
+                        if (line.equals(STOP_WORD)) {
                             Client.this.downService();
                             break;
                         }
@@ -125,8 +127,8 @@ public class Client {
                 try {
                     text = inputUser.readLine();
                     if (text.isBlank()) continue;
-                    if (text.equals("stop")) {
-                        writer.write("stop" + "\n");
+                    if (text.equals(STOP_WORD)) {
+                        writer.write(STOP_WORD + "\n");
                         downService();
                         break;
                     }
@@ -146,8 +148,7 @@ public class Client {
                             out.flush();
                         }
                     } else {
-                        writer.write(nickname + "\n" + text + "\n" + "\n"
-                                + "\n");
+                        writer.write(nickname + "\n" + text + "\n" + "\n" + "\n");
                         writer.flush();
                     }
 
