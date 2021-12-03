@@ -1,42 +1,44 @@
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import java.io.*
-import java.net.Socket
+import io.ktor.network.selector.*
+import io.ktor.network.sockets.*
+import io.ktor.utils.io.*
+import kotlinx.coroutines.*
+import java.io.BufferedInputStream
+import java.io.File
+import java.io.FileInputStream
+import java.net.InetSocketAddress
 import java.net.SocketException
 import java.net.URLConnection
+import java.nio.ByteBuffer
 import java.nio.file.Paths
 import java.util.*
 import java.util.regex.Pattern
 import kotlin.system.exitProcess
 
 
-class Client constructor(hostAddress: String, hostPort: Int, private var nickname: String) {
-    private var socket = Socket(hostAddress, hostPort)
-    private var inStream = BufferedInputStream(socket.getInputStream())
-    private var outStream = BufferedOutputStream(socket.getOutputStream())
-    private var reader = BufferedReader(InputStreamReader(inStream, Charsets.UTF_8))
-    private var writer = BufferedWriter(OutputStreamWriter(outStream, Charsets.UTF_8))
-
+class Client constructor(hostAddress_: String, hostPort_: Int, private var nickname: String) {
+    private val hostAddress = hostAddress_
+    private val hostPort = hostPort_
+    private val selector = ActorSelectorManager(Dispatchers.IO)
     private val scanner = Scanner(System.`in`, Charsets.UTF_8)
+    private lateinit var aInput : ByteReadChannel
+    private lateinit var aOutput : ByteWriteChannel
 
-    suspend fun run() = coroutineScope {
-        launch(Dispatchers.IO) { joinChat() }
-        launch(Dispatchers.IO) { handleSent() }
-        launch(Dispatchers.IO) { handleIncoming() }
+    fun run() = runBlocking {
+        val aSocket = aSocket(selector).tcp().connect(InetSocketAddress(hostAddress, hostPort))
+        aInput = aSocket.openReadChannel()
+        aOutput = aSocket.openWriteChannel(autoFlush = true)
+        aOutput.writeFully(ByteBuffer.wrap("$nickname\n".toByteArray()))
+        launch(Dispatchers.IO) { handleIncoming(aSocket) }
+        launch(Dispatchers.IO) { handleSent(aSocket) }
     }
 
-    private fun joinChat() {
-        writeAndFlush(writer, nickname)
-    }
-
-    private fun handleIncoming() {
-        while (!socket.isClosed) {
+    private suspend fun handleIncoming(aSocket: Socket) {
+        while (!aSocket.isClosed) {
             //reading incoming message
             val customMsg = CustomMessage()
             var msg: String
             for (i in 0 until 5) { //one time for every type
-                try { msg = reader.readLine() }
+                try { msg = aInput.readUTF8Line()!! }
                 catch (ex: Exception) {
                     when(ex) {
                         is SocketException, is NullPointerException -> {
@@ -59,13 +61,13 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
                 }
             }
             //now customMsg have all the attributes. So we are...
-            handleIncomingAtt(customMsg) //dealing with attachment if any exists...
-            handleIncomingText(customMsg) //and showing the text message to the user
+            //dealing with attachment if any exists...
+            handleIncomingAtt(customMsg)
         }
     }
 
-    private fun handleSent() {
-        while (!socket.isClosed) {
+    private suspend fun handleSent(aSocket: Socket) {
+        while (!aSocket.isClosed) {
             //reading user input
             val text = scanner.nextLine()
             if (text.isBlank()) continue //no blank lines in msg!
@@ -73,19 +75,18 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
             msg = msg.replace("\n","\\n").replace("\t","\\t")
 
             //quit scenario with "quit" command
-            if (text.toLowerCase(Locale.getDefault()) == "quit") {
+            if (text.lowercase(Locale.getDefault()) == "quit") {
                 println("See you later. Bye!")
                 exitProcess(0)
             }
-
             //check if message has any attachments - try to attach them if they exist, if not - send the msg itself
             handleSentAtt(msg)
         }
         //socket is closed - close everything that depends on it from client side
-        closeAll(reader, writer, socket)
+        closeAll(aOutput, aSocket)
     }
 
-    private fun handleIncomingAtt(customMsg: CustomMessage) {
+    private suspend fun handleIncomingAtt(customMsg: CustomMessage) {
         val att = customMsg.att
         val attname = customMsg.attname
         when {
@@ -93,18 +94,23 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
             attname.isNotBlank() and att.isNotBlank() -> {
                 val directory = File(Paths.get("").toAbsolutePath().toString() + "/images")
                 if (!directory.exists()) directory.mkdir()
-                val file = File.createTempFile("media_", ".${File(attname).extension}", directory)
-                customMsg.msg = customMsg.msg.replaceFirst(ATTACHMENT_STRING.toRegex(), "(file ${file.name} attached)")
-
+                val file = withContext(Dispatchers.IO) {
+                    File.createTempFile("media_", ".${File(attname).extension}", directory)
+                }
                 val len = att.toInt()
                 val f = ByteArray(len)
-                inStream.readNBytes(f, 0, len)
+                aInput.readFully(f, 0, len)
+                customMsg.msg = customMsg.msg.replaceFirst(ATTACHMENT_STRING.toRegex(),
+                    "(file ${file.name} attached)")
                 file.writeBytes(f)
+
             }
             else -> {
                 println("Incorrect message attachments - attachment can not be displayed.")
             }
         }
+        //and showing the text message to the user
+        handleIncomingText(customMsg)
     }
 
     private fun handleIncomingText(customMsg: CustomMessage) {
@@ -112,7 +118,7 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
         println("<${customMsg.time}> [${customMsg.name}]: ${customMsg.msg}")
     }
 
-    private fun handleSentAtt(msg: String) {
+    private suspend fun handleSentAtt(msg: String) {
         //check if there are any attachments (in "att|path/to/file.xxx|" format)
         var attname = ""
         var att = ""
@@ -127,10 +133,13 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
             //if path is correct...
             if (file.isFile) {
                 //check its mimeType to be image or video. Everything else is non-positive!
-                val inputStream = BufferedInputStream(FileInputStream(file))
-                val mimeType = URLConnection.guessContentTypeFromStream(inputStream)
-                inputStream.close()
-                if ((mimeType != null) && (mimeType.startsWith("image") || mimeType.startsWith("video"))) {
+                val mimeType : String? = withContext(Dispatchers.IO) {
+                    BufferedInputStream(FileInputStream(file)).use {
+                        URLConnection.guessContentTypeFromStream(it)
+                    }
+                }
+
+                if ((!mimeType.isNullOrBlank()) && (mimeType.startsWith("image") || mimeType.startsWith("video"))) {
                     f = file.readBytes()
                     att = f.size.toString()
                     attname = file.name
@@ -143,10 +152,8 @@ class Client constructor(hostAddress: String, hostPort: Int, private var nicknam
                 println("WARNING: could not find file using given path.")
             }
         }
-        outStream.write(msg.plus("\nattname: $attname\natt: $att\n").toByteArray(Charsets.UTF_8))
-        outStream.flush()
-        if (f.isNotEmpty()) { outStream.write(f) }
-        outStream.flush()
-
+        val byteMsgOut = ByteBuffer.wrap(msg.plus("\nattname: $attname\natt: $att\n").toByteArray(Charsets.UTF_8))
+        aOutput.writeFully(byteMsgOut)
+        if (f.isNotEmpty()) { aOutput.writeFully(f) }
     }
 }

@@ -1,80 +1,69 @@
+import Models.CustomSocket
+import io.ktor.network.selector.*
+import io.ktor.network.sockets.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import java.io.*
-import java.net.ServerSocket
-import java.net.Socket
+import kotlinx.coroutines.runBlocking
+import java.net.InetSocketAddress
 import java.net.SocketException
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
 
-class Server constructor(port: Int) {
-    private val publicSocket = ServerSocket(port)
-    private val clientSockets = mutableMapOf<String, CustomSocket>()
-    private val clientScope = CoroutineScope(Dispatchers.IO)
+class Server constructor(host_: String, port_: Int) {
+    private val host = host_
+    private val port = port_
 
-    suspend fun run() = coroutineScope {
-        println("This is your port, let the clients connect to it: ${publicSocket.localPort}")
-        launch(Dispatchers.IO) { publicSocketListener() }
+    private val selector = ActorSelectorManager(Dispatchers.IO)
+    private val clientSockets = mutableMapOf<String, CustomSocket>()
+    private lateinit var publicSocket : ServerSocket
+
+    fun run() = runBlocking {
+        publicSocket = aSocket(selector).tcp().bind(InetSocketAddress(host, port))
+        println("This is your port, let the clients connect to it: $port")
+        publicSocketListener(publicSocket)
     }
 
-    private fun publicSocketListener() {
+    private suspend fun publicSocketListener(publicSocket: ServerSocket) {
         while (true) {
-            try {
-                val customSocket = CustomSocket(publicSocket.accept())
-                clientScope.launch { clientNicknameListener(customSocket) }
-            } catch (e: IOException) {
-                println("Someone tried to connect, but unsuccessfully.")
-            }
+            val customSocket = CustomSocket(publicSocket.accept())
+            CoroutineScope(Dispatchers.IO).launch{ clientNicknameListener(customSocket) }
         }
     }
 
-    private fun clientNicknameListener(customSocket: CustomSocket) {
+    private suspend fun clientNicknameListener(customSocket: CustomSocket) {
         val reader = customSocket.reader
         val writer = customSocket.writer
-        val nickname = reader.readLine()
+        val nickname = reader.readUTF8Line()!!
         val timeStr = Instant.now().truncatedTo(ChronoUnit.SECONDS).toString()
         val customMessage = CustomMessage(timeStr, "Server")
-        when {
-            !nickname.matches(nicknameRegex) -> {
-                customMessage.msg = "Sorry, this nickname is incorrect. " +
-                        "It can consist only of any combination of letters and digits."
-                writeAndFlush(writer, customMessage.toString())
-                closeAll(reader, writer, customSocket.socket)
-            }
-            clientSockets.containsKey(nickname) -> {
-                customMessage.msg = "Sorry, this nickname is already taken. Choose another one."
-                writeAndFlush(writer, customMessage.toString())
-                closeAll(reader, writer, customSocket.socket)
-            }
-            nickname.toLowerCase(Locale.getDefault()) == "server" -> {
-                customMessage.msg = "Sorry, any 'Server' nickname can not be taken. Choose another one."
-                writeAndFlush(writer, customMessage.toString())
-                closeAll(reader, writer, customSocket.socket)
-            }
-            else -> {
-                customMessage.msg = "Hello, $nickname, you are connected!"
-                writeAndFlush(writer, customMessage.toString())
-                clientSockets[nickname] = customSocket
-                println("$nickname connected")
-                clientScope.launch { clientSocketListener(nickname, customSocket) }
-            }
+        if (clientSockets.containsKey(nickname)) {
+            customMessage.msg = "Sorry, this nickname ($nickname) is already taken. Choose another one."
+            writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
+            closeAll(writer, customSocket.aSocket)
+        }
+        else {
+            customMessage.msg = "Hello, $nickname, you are connected!"
+            writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
+            clientSockets[nickname] = customSocket
+            println("$nickname connected")
+            clientSocketListener(nickname, customSocket)
         }
     }
 
-    private fun clientSocketListener(nickname: String, socket: CustomSocket) {
-        val inStream = BufferedInputStream(socket.socket.getInputStream())
-        while (socket.socket.isConnected) {
+    private suspend fun clientSocketListener(nickname: String, socket: CustomSocket) {
+        val reader = socket.reader
+        while (!socket.aSocket.isClosed) {
             //reading incoming message
             //can not use the same code from client because message format is different: here are 3 attrs, there are 5
             val customMsg = CustomMessage(nickname)
             var msg: String
             for (i in 0 until 3) { //one time for every type
-                try {
-                    msg = socket.reader.readLine()
-                } catch (ex: Exception) {
+                try { msg = reader.readUTF8Line()!! }
+                catch (ex: Exception) {
                     when (ex) {
                         is SocketException, is NullPointerException -> {
                             clientSockets.remove(nickname)
@@ -96,44 +85,33 @@ class Server constructor(port: Int) {
             }
 
             //quit case - break out of loop, then close the stuff...
-            if (customMsg.msg.toLowerCase(Locale.getDefault()) == "quit") { break }
+            if (customMsg.msg.lowercase(Locale.getDefault()) == "quit")
+                break
 
             //dealing with attachment if any exists
             val len = if (customMsg.att.isBlank()) 0 else customMsg.att.toInt()
-            var f = ByteArray(len)
-            if (len > 0) {
-                f = inStream.readNBytes(len)
-            }
+            val f = ByteArray(len)
+            if (len > 0)
+                reader.readFully(f, 0, len)
 
             //add the time and other attrs to customMsg
             val timeStr = Instant.now().truncatedTo(ChronoUnit.SECONDS).toString()
             customMsg.time = timeStr
             customMsg.name = nickname
-            customMsg.att = customMsg.att + "\n"
+            customMsg.att = customMsg.att
 
             clientSockets.forEach {
-                clientScope.launch (Dispatchers.IO) {
-                    val outStream = BufferedOutputStream(it.value.socket.getOutputStream())
-                    outStream.write(customMsg.toString().toByteArray(Charsets.UTF_8))
-                    outStream.flush()
-                    if (f.isEmpty()) {
-                        outStream.write(f)
-                        outStream.flush()
-                    }
-                }
+                val writer = it.value.writer
+                val msgByteArray = customMsg.toString().toByteArray(Charsets.UTF_8)
+                writer.writeFully(ByteBuffer.wrap(msgByteArray))
+                if (f.isNotEmpty()) writer.writeFully(f)
             }
         }
 
         //out of loop - close all...
         val customSocket = clientSockets[nickname]!!
-        closeAll(customSocket.reader, customSocket.writer, customSocket.socket)
+        closeAll(customSocket.writer, customSocket.aSocket)
         clientSockets.remove(nickname) //...and remove socket from list of active clients
         println("User $nickname disconnected; ${clientSockets.keys.size} remains connected.")
-    }
-
-
-    data class CustomSocket constructor (var socket: Socket) {
-        var reader = BufferedReader(InputStreamReader(socket.getInputStream(), Charsets.UTF_8))
-        var writer = BufferedWriter(OutputStreamWriter(socket.getOutputStream(), Charsets.UTF_8))
     }
 }
