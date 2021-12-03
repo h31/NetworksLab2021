@@ -6,6 +6,9 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
 
 public class AsynchServer {
 
@@ -25,7 +28,7 @@ public class AsynchServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
-                            ch.pipeline().addLast(new ServerHandler());
+                            ch.pipeline().addLast(new ServerInputHandler());
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)
