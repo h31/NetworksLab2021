@@ -1,47 +1,50 @@
+import asyncio
 import struct
-import threading
 from datetime import datetime, timezone
 import sys
+
 sys.path.append('..')
 from tools import getNonExistentName
 
 
-class ThreadForClient(threading.Thread):
-    def __init__(self, sock, addr, threads):
-        threading.Thread.__init__(self)
+class ForClient():
+    def __init__(self, sock, addr, handlers):
         self.sock = sock
         self.addr = addr
-        self.threads = threads
+        self.handlers = handlers
         self.name = ""
 
-    def reg(self):
-        (time, name, msg, flags, path, file) = self.serverRecv()
+    async def reg(self):
+        (time, name, msg, flags, path, file) = await self.serverRecv()
         self.name = msg.decode()
 
-    def saveRecv(self, size: int):
+    async def safeRecv(self, size: int):
         msg = bytes()
+        loop = asyncio.get_event_loop()
         while size != 0:
-            msg_tmp = self.sock.recv(size)
+            msg_tmp = await loop.sock_recv(self.sock, size)
             size -= len(msg_tmp)
             msg += msg_tmp
         return msg
 
-    def serverRecv(self):
-        (size,) = struct.unpack(">I", self.saveRecv(4))
-        msg = self.saveRecv(size - 1)
-        flags = self.saveRecv(1)[0]
+    async def serverRecv(self):
+        (size,) = struct.unpack(">I", await self.safeRecv(4))
+        msg = await self.safeRecv(size - 1)
+        flags = await self.safeRecv(1)
+        flags = flags[0]
         path = None
         actual_path = None
         file = None
         if flags:
-            path_size_p = self.saveRecv(4)
+            path_size_p = await self.safeRecv(4)
             (path_size_up,) = struct.unpack(">I", path_size_p)
 
-            file_size_p = self.saveRecv(4)
+            file_size_p = await self.safeRecv(4)
             (file_size_up,) = struct.unpack(">I", file_size_p)
 
-            path = self.saveRecv(path_size_up).decode()
-            file = self.saveRecv(file_size_up)
+            path = await self.safeRecv(path_size_up)
+            path = path.decode()
+            file = await self.safeRecv(file_size_up)
             actual_path = getNonExistentName(path)
 
             f = open(actual_path, "w+b")
@@ -77,7 +80,6 @@ class ThreadForClient(threading.Thread):
         else:
             file = bytes()
 
-
         c = [
             *time_size_p,
             *name_size_p,
@@ -94,12 +96,11 @@ class ThreadForClient(threading.Thread):
         msg_all = bytes(c)
         return msg_all
 
-
-
-    def sendToEveryone(self, msg_all: bytes):
-        for thread in self.threads:
-            if thread.addr != self.addr:
-                thread.sock.send(msg_all)
+    async def sendToEveryone(self, msg_all: bytes):
+        loop = asyncio.get_event_loop()
+        for handler in self.handlers:
+            if handler.addr != self.addr:
+                await loop.sock_sendall(handler.sock, msg_all)
 
     def server_msg(self, text):
         return self.createMsg(
@@ -109,11 +110,11 @@ class ThreadForClient(threading.Thread):
             0
         )
 
-    def run(self):
-        self.reg()
+    async def run(self):
+        await self.reg()
         connect_msg = self.server_msg(f'{self.name} connected')
-        self.sendToEveryone(connect_msg)
+        await self.sendToEveryone(connect_msg)
         while True:
-            recv_msg = self.serverRecv()
+            recv_msg = await self.serverRecv()
             crt_msg = self.createMsg(*recv_msg)
-            self.sendToEveryone(crt_msg)
+            await self.sendToEveryone(crt_msg)
