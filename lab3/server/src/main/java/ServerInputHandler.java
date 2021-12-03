@@ -1,62 +1,79 @@
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.*;
+import io.netty.util.CharsetUtil;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ServerInputHandler extends ChannelInboundHandlerAdapter {
 
-    static final List<Channel> channels = new ArrayList<Channel>();
+    static final List<ClientChannel> channels = new ArrayList<ClientChannel>();
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         System.out.println("Client joined - " + ctx);
-        channels.add(ctx.channel());
+        channels.add(new ClientChannel(ctx.channel()));
     }
+
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        ByteBuf byteBuf = (ByteBuf) msg;
+
+        ByteBuf in = (ByteBuf) msg;
         StringBuilder sb = new StringBuilder();
-        while (byteBuf.isReadable()) {
-            sb.append((char)byteBuf.readByte());
+        while (in.isReadable()) {
+            sb.append((char) in.readByte());
+            System.out.println(sb.length());
         }
-        acceptNickname();
-       /* System.out.println(msg);
-        if(msg.toString().contains("greeting")) {
-            ExchangeFormat response = new ExchangeFormat();
-            response.setParcelType(Tool.RequestType.GREETING);
-            response.setUsername("jorik");
-            response.setTime(Tool.getCurrentTime());
-            for (Channel c : channels) {
-                c.writeAndFlush(msg);
-                //c.writeAndFlush(response.toParcel());
-            }
-        }*/
-        ctx.write("lol!!!!!!!");
-        System.out.println(sb);
-        byteBuf.release();
+        ExchangeFormat clientRequest = Tool.parseRequest(sb.toString());
+
+        System.out.println(clientRequest.toParcel());
+
+        acceptNickname(clientRequest.getUsername(), ctx);
+
     }
 
 
-    private void acceptNickname() {
+    private void acceptNickname(String desiredNickname, ChannelHandlerContext ctx) {
+        ExchangeFormat responseException = new ExchangeFormat();
+
+        for (ClientChannel c : channels) {
+            if (c.getNickname().equals(desiredNickname)) {
+                responseException.setParcelType(Tool.RequestType.EXCEPTION);
+                responseException.setMessage("1");
+                responseException.setTime(Tool.getCurrentTime());
+                getCurrentClientChannel().getChannel()
+                        .writeAndFlush(getByteBufParcel(responseException));
+                return;
+            }
+        }
+        channels.get(channels.size() - 1).setNickname(desiredNickname); // last client == current client
+
         ExchangeFormat response = new ExchangeFormat();
         response.setParcelType(Tool.RequestType.GREETING);
-        response.setUsername("jorik");
+        response.setUsername(desiredNickname);
         response.setTime(Tool.getCurrentTime());
-        for (Channel c : channels) {
-            System.out.println(c.remoteAddress());
-            c.writeAndFlush(Unpooled.copiedBuffer(response.toParcel(), StandardCharsets.UTF_8));
-        }
+
+        broadcastMessage(response);
+
     }
 
+    private ClientChannel getCurrentClientChannel() {
+        return channels.get(channels.size() - 1);
+    }
 
+    private ByteBuf getByteBufParcel(ExchangeFormat response) {
+        return Unpooled.copiedBuffer(response.toParcel(), CharsetUtil.UTF_8);
+    }
+
+    private void broadcastMessage(ExchangeFormat response) {
+        for (ClientChannel c : channels) {
+            c.getChannel().write(getByteBufParcel(response));
+            c.getChannel().flush();
+        }
+    }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {

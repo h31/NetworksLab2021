@@ -88,6 +88,6 @@ public class ExchangeFormat {
                 ", 'time':'" + time + '\'' +
                 ", 'attachmentName':'" + attachmentName + '\'' +
                 ", 'attachmentSize':'" + attachmentSize + '\'' +
-                '}';
+                '}' + "\r\n";
     }
 }

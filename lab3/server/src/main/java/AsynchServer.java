@@ -28,6 +28,7 @@ public class AsynchServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
+                            //ch.pipeline().addLast(new RequestDecoder());
                             ch.pipeline().addLast(new ServerInputHandler());
                         }
                     })
