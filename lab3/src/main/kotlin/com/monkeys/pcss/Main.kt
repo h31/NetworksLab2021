@@ -16,14 +16,22 @@ fun main(args: Array<String>) {
         SERVER_WITH_ARGUMENTS -> {
             val serverArgumentIndex = args.indexOf("-s") + 1
             val arg = parseHostAndPort(args[serverArgumentIndex])
-            try {
-                val server = Server(arg.first, arg.second)
-                server.start()
-            } catch (e: Exception) {
+            if (arg.first == "Error") {
                 println(
-                    "Incorrect arguments or it is impossible to establish a connection with the specified server.\n" +
+                    "Incorrect arguments.\n" +
                             "Connection not establishment"
                 )
+                printHelp()
+            } else {
+                try {
+                    val server = Server(arg.first, arg.second)
+                    server.start()
+                } catch (e: Exception) {
+                    println(
+                        "Incorrect arguments or it is impossible to establish a connection with the specified server.\n" +
+                                "Connection not establishment"
+                    )
+                }
             }
         }
 
@@ -37,14 +45,22 @@ fun main(args: Array<String>) {
                 throw Exception()
             val clientArgumentIndex = args.indexOf("-c") + 1
             val arg = parseHostAndPort(args[clientArgumentIndex])
-            try {
-                val client = Client(arg.first, arg.second)
-                runBlocking { client.start() }
-            } catch (e: Exception) {
+            if (arg.first == "Error") {
                 println(
-                    "Incorrect arguments or it is impossible to establish a connection with the specified server.\n" +
+                    "Incorrect arguments.\n" +
                             "Connection not establishment"
                 )
+                printHelp()
+            } else {
+                try {
+                    val client = Client(arg.first, arg.second)
+                    runBlocking { client.start() }
+                } catch (e: Exception) {
+                    println(
+                        "Incorrect arguments or it is impossible to establish a connection with the specified server.\n" +
+                                "Connection not establishment"
+                    )
+                }
             }
         }
 

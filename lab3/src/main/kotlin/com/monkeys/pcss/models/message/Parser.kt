@@ -56,7 +56,7 @@ fun parseHostAndPort(arg: String): Pair<String, Int> {
         val arg2 = arg.split(":")
         Pair(arg1, arg2[arg2.size - 1].toInt())
     } catch (e: Exception) {
-        Pair("127.0.0.1", 8081)
+        Pair("Error", 0)
     }
 }
 
