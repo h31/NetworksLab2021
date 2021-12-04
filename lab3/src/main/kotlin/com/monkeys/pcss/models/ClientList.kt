@@ -7,6 +7,7 @@ import com.monkeys.pcss.models.message.Message
 import com.monkeys.pcss.models.message.MessageType
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.ByteBuffer
 import java.util.*
@@ -16,6 +17,7 @@ class ClientList() {
         mutableMapOf<String, ClientChannels>()
     )
     private val socketList = Collections.synchronizedMap(mutableMapOf<String, Socket>())
+    private val logger = LoggerFactory.getLogger("com.monkeys.pcss.models.ClientListKt")
 
     suspend fun addNewClient(socket: Socket, newId: String, readChannel: ByteReadChannel, writeChannel: ByteWriteChannel): Boolean {
         return if (clients.keys.contains(newId) || newId == "server") {
@@ -74,11 +76,11 @@ class ClientList() {
                     names.add(client.key)
                 }
             } catch (e: Exception) {
-                println("!E: Connection with client ${client.key} was closed!")
+                logger.error("!E: Connection with client ${client.key} was closed!")
                 names.remove(client.key)
                 finishConnection(client.key)
             }
         }
-        println("Message '${String(message.getMessage())}' was send to this clients: $names")
+        logger.info("Message '${String(message.getMessage())}' was send to this clients: $names")
     }
 }

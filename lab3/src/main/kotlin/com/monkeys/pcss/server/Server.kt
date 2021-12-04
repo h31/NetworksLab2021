@@ -12,10 +12,13 @@ import io.ktor.utils.io.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
+import java.net.SocketTimeoutException
 import java.time.ZonedDateTime
 
 class Server(private val host: String, private val port: Int) {
+    private val logger = LoggerFactory.getLogger("com.monkeys.pcss.server.ServerKt")
 
     private val clientList = ClientList()
 
@@ -23,7 +26,7 @@ class Server(private val host: String, private val port: Int) {
         val server = aSocket(ActorSelectorManager(Dispatchers.IO))
             .tcp()
             .bind(InetSocketAddress(host, port))
-        println("Server started at ${server.localAddress}")
+        logger.info("Server started at ${server.localAddress}")
 
         while (true) {
             val client = server.accept()
@@ -67,7 +70,7 @@ class Server(private val host: String, private val port: Int) {
 
             return Pair(isSuccessfullyLogin, name)
         } catch (e: Exception) {
-            println("!E: Client connection was closed! He will come later probably?")
+            logger.error("!E: Client connection was closed! He will come later probably?")
             e.printStackTrace()
             return Pair(false, "server")
         }
@@ -75,9 +78,9 @@ class Server(private val host: String, private val port: Int) {
 
     private suspend fun startCommunication(clientId: String) {
         try {
-            println("Client $clientId connected to chat")
+            logger.info("Client $clientId connected to chat")
             var isWorking = true
-            val receiver = clientList.getReadChannel(clientId) ?: throw NullPointerException()
+            val receiver = clientList.getReadChannel(clientId) ?: throw SocketTimeoutException()
             while (isWorking) {
                 val fullMessage = getNewMessage(receiver)
                 if (fullMessage.first.header.dataSize == 0)
@@ -109,14 +112,14 @@ class Server(private val host: String, private val port: Int) {
                     clientList.finishConnection(message.data.senderName)
                     isWorking = false
                 } else {
-                    println(
+                    logger.info(
                         "Got message with type '${message.header.type}' and text " +
                                 "'${message.data.messageText}' from '${message.data.senderName}'"
                     )
                 }
             }
         } catch (e: Exception) {
-            println("!E: Connection with client was closed! Deleting him from clients list...")
+            logger.error("!E: Connection with client was closed! Deleting him from clients list...")
             clientList.finishConnection(clientId)
         }
     }

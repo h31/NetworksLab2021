@@ -5,6 +5,10 @@ import com.monkeys.pcss.models.WorkType.*
 import com.monkeys.pcss.models.message.parseHostAndPort
 import com.monkeys.pcss.server.Server
 import kotlinx.coroutines.runBlocking
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+private val logger: Logger = LoggerFactory.getLogger("com.monkeys.pcss.MainKt")
 
 fun main(args: Array<String>) {
     when (parseArguments(args.toList())) {
@@ -17,17 +21,15 @@ fun main(args: Array<String>) {
             val serverArgumentIndex = args.indexOf("-s") + 1
             val arg = parseHostAndPort(args[serverArgumentIndex])
             if (arg.first == "Error") {
-                println(
-                    "Incorrect arguments.\n" +
-                            "Connection not establishment"
-                )
+                logger.error("Incorrect arguments.\n" +
+                        "Connection not establishment")
                 printHelp()
             } else {
                 try {
                     val server = Server(arg.first, arg.second)
                     server.start()
                 } catch (e: Exception) {
-                    println(
+                    logger.error(
                         "Incorrect arguments or it is impossible to establish a connection with the specified server.\n" +
                                 "Connection not establishment"
                     )
@@ -46,7 +48,7 @@ fun main(args: Array<String>) {
             val clientArgumentIndex = args.indexOf("-c") + 1
             val arg = parseHostAndPort(args[clientArgumentIndex])
             if (arg.first == "Error") {
-                println(
+                logger.error(
                     "Incorrect arguments.\n" +
                             "Connection not establishment"
                 )
@@ -56,7 +58,7 @@ fun main(args: Array<String>) {
                     val client = Client()
                     runBlocking { client.start(arg.first, arg.second) }
                 } catch (e: Exception) {
-                    println(
+                    logger.error(
                         "Incorrect arguments or it is impossible to establish a connection with the specified server.\n" +
                                 "Connection not establishment"
                     )

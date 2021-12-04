@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.OutputStream
 import java.net.FileNameMap
@@ -26,6 +27,7 @@ class Client() {
 
     private lateinit var name: String
     private var stillWorking = true
+    private val logger = LoggerFactory.getLogger("com.monkeys.pcss.client.ClientKt")
 
     private suspend fun readLineSuspending(): String =
         withContext(Dispatchers.IO) { return@withContext readLine()!! }
@@ -114,12 +116,12 @@ class Client() {
 
                             if (!setOf("image", "video", "audio").contains(fileType)) {
                                 fileName = ""
-                                println("You can only attach media files, any others may be unsafe. Your file was not attached")
+                                logger.error("You can only attach media files, any others may be unsafe. Your file was not attached")
                             } else {
                                 if (file.canRead()) {
                                     fileByteArray = file.readBytes()
                                 } else {
-                                    println("Can't read file, sending message without it")
+                                    logger.error("Can't read file, sending message without it")
                                 }
                             }
                         }
@@ -139,7 +141,7 @@ class Client() {
                 }
             }
         } catch (e: Exception) {
-            println("!E: There is an ERROR while sending ur message. Probably the server was destroyed by evil goblins.")
+            logger.error("!E: There is an ERROR while sending ur message. Probably the server was destroyed by evil goblins.")
             e.printStackTrace()
             stopConnection(socket, sender, receiver)
         }
@@ -202,7 +204,7 @@ class Client() {
                 }
             }
         } catch (e: Exception) {
-            println("!E: There is an ERROR while receiving new messages. Probably the server was destroyed by evil goblins.")
+            logger.error("!E: There is an ERROR while receiving new messages. Probably the server was destroyed by evil goblins.")
             e.printStackTrace()
             stopConnection(socket, sender, receiver)
         }
@@ -215,7 +217,7 @@ class Client() {
             socket.close()
             println("Bye!")
         } catch (e: SocketException) {
-            println("ERROR! Socket wasn't closed by client(probably it was closed by server)!")
+            logger.error("ERROR! Socket wasn't closed by client(probably it was closed by server)!")
         }
     }
 }
