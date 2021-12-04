@@ -52,7 +52,9 @@ fun parseMessage(message: String): Message? {
 
 fun parseHostAndPort(arg: String): Pair<String, Int> {
     return try {
-        Pair(arg.split(":")[0], arg.split(":")[1].toInt())
+        val arg1 = arg.split("[", "]")[0]
+        val arg2 = arg.split(":")
+        Pair(arg1, arg2[arg2.size - 1].toInt())
     } catch (e: Exception) {
         Pair("127.0.0.1", 8081)
     }

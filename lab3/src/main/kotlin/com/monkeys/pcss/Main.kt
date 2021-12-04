@@ -11,7 +11,6 @@ fun main(args: Array<String>) {
         SERVER -> {
             val server = Server("0.0.0.0", 8081)
             server.start()
-
         }
 
         SERVER_WITH_ARGUMENTS -> {
@@ -34,6 +33,8 @@ fun main(args: Array<String>) {
         }
 
         CLIENT_WITH_ARGUMENTS -> {
+            if (args.indexOf("-c") == 1)
+                throw Exception()
             val clientArgumentIndex = args.indexOf("-c") + 1
             val arg = parseHostAndPort(args[clientArgumentIndex])
             try {
