@@ -6,7 +6,7 @@ from tftp_info import TFTP_OPCODES, TFTP_SERVER_ERRORS
 
 SERVER_ADDRESS = 'localhost'
 BLOCKSIZE = 512
-TIMEOUT = 3
+TIMEOUT = 10
 
 
 def server():
@@ -16,6 +16,7 @@ def server():
     listen_socket.bind((SERVER_ADDRESS, 69))
     while True:
         data, client = listen_socket.recvfrom(BLOCKSIZE + 4)
+        print('data size', len(data))
         print('Client address -', client)
         opcode = data[1]
         if opcode == TFTP_OPCODES['read']:
@@ -32,7 +33,7 @@ def read_request(data, client):
     block_num_to_send = 0
     block_to_send = []
     filename, exist_file = check_file(data)
-
+    limit_to_recv = 5
     if not exist_file:
         print(f'Error (code : 1)\n'
               f'Message: {TFTP_SERVER_ERRORS[1]}')
@@ -52,8 +53,14 @@ def read_request(data, client):
         current_socket.settimeout(TIMEOUT)
         try:
             data, client = current_socket.recvfrom(BLOCKSIZE + 4)
-        except socket.error:
-            continue
+        except socket.timeout:
+            if limit_to_recv != 0:
+                limit_to_recv = limit_to_recv - 1
+                continue
+            else:
+                print('Connection terminated')
+                current_socket.close()
+                return
         if data is not None:
             opcode = data[1]
             if opcode == TFTP_OPCODES['ack']:
@@ -80,9 +87,9 @@ def write_request(data, client):
     current_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     current_socket.bind((SERVER_ADDRESS, random.randint(1024, 65535)))
 
-    filename, flag = check_file(data)
+    filename, exist_file = check_file(data)
 
-    if flag:
+    if exist_file:
         print(f'Error (code : 6)\n'
               f'Message: {TFTP_SERVER_ERRORS[6]}')
         error_to_send = error_msg(6)
@@ -91,6 +98,7 @@ def write_request(data, client):
 
     recv_block = b''
     exp_block_num = 0
+    limit_to_recv = 5
 
     while True:
         msg = ack_msg(exp_block_num)
@@ -100,8 +108,15 @@ def write_request(data, client):
         current_socket.settimeout(TIMEOUT)
         try:
             data, client = current_socket.recvfrom(BLOCKSIZE + 4)
-        except socket.error:
-            continue
+        except socket.timeout:
+            if limit_to_recv != 0:
+                limit_to_recv = limit_to_recv - 1
+                continue
+            else:
+                print('Connection terminated')
+                current_socket.close()
+                return
+
         if data is not None:
             opcode = data[1]
 
@@ -132,10 +147,8 @@ def write_request(data, client):
 
 
 def check_file(data):
-    parts = str(data).split('\\x')
-    filename = parts[2][2:]
-    file_path = f'{filename}'
-    return filename, os.path.isfile(file_path)
+    filename = (data[2:(len(data)-7)]).decode()
+    return filename, os.path.isfile(filename)
 
 
 def error_msg(err_code):

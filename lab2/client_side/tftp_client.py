@@ -4,7 +4,7 @@ from tftp_info import TFTP_OPCODES, TFTP_SERVER_ERRORS, CLIENT_COMMANDS
 
 SERVER_ADDRESS = 'localhost'
 BLOCK_SIZE = 512
-TIMEOUT = 3
+TIMEOUT = 10
 TFTP_MODE = 'octet'
 
 
@@ -34,7 +34,6 @@ def client():
                 break
 
         init_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        init_socket.settimeout(TIMEOUT)
         server_address = (SERVER_ADDRESS, 69)
         request = init_request(CLIENT_COMMANDS[command], filename, TFTP_MODE)
         init_socket.sendto(request, server_address)
