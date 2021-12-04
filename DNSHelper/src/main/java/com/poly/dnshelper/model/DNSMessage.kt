@@ -41,7 +41,7 @@ data class DNSMessage(
         additionalRRs = getShortFromTwoBytes(byteArray[10] to byteArray[11])
         val sizeQuestions = prevMessage?.getMessageBytes()?.size ?: byteArray.size
         val dnsQuery = DNSQuery()
-        dnsQuery.mapperQuery(byteArray.toList().subList(12, sizeQuestions).toByteArray())
+        dnsQuery.mapperQuery(byteArray.slice(12..sizeQuestions).toByteArray())
         questions = listOf(dnsQuery)
         answers = getAnswers(answerRRs, byteArray, prevMessage)
     }
@@ -63,23 +63,16 @@ data class DNSMessage(
                     }
                 }
                 answerSize =
-                    dnsAnswer.getSize(byteArray.toList().subList(currentPosition, byteArray.size).toByteArray())
+                    dnsAnswer.getSize(byteArray.slice(currentPosition..byteArray.size).toByteArray())
                 dnsAnswer.mapperAnswer(
                     byteArray
                         .toList()
                         .subList(currentPosition, currentPosition + answerSize)
                         .toByteArray()
                 )
-                // answerSize -= 1
                 answers.add(dnsAnswer)
             }
         }
-//        for (ans in answers) {
-//            for (b in ans.getAnswerBytes()) {
-//                print("$b ")
-//            }
-//            println()
-//        }
         return answers
     }
 }

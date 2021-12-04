@@ -15,7 +15,6 @@ import static com.dns.server.model.QueryType.*;
 public class CommunicatorService implements Runnable {
 
     private DatagramSocket socket;
-    private byte[] buf = new byte[2048];
 
     private static byte[] name = new byte[2];
 
@@ -27,6 +26,7 @@ public class CommunicatorService implements Runnable {
         boolean running = true;
         DNSMessage dnsMessage = new DNSMessage();
         while (running) {
+            byte[] buf = new byte[2048];
             DatagramPacket packet
                     = new DatagramPacket(buf, buf.length);
             try {
@@ -44,13 +44,8 @@ public class CommunicatorService implements Runnable {
             InetAddress address = packet.getAddress();
             int port = packet.getPort();
             packet = new DatagramPacket(messageBytes, messageBytes.length, address, port);
-            System.out.println(dnsMessage);
-            for (byte b: dnsMessage.getMessageBytes()) {
-                System.out.print(b + " ");
-            }
             try {
                 socket.send(packet);
-                buf = new byte[2048];
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -109,6 +104,8 @@ public class CommunicatorService implements Runnable {
         random.nextBytes(arr);
         return arr;
     }
+
+    //SOURCE: https://stackoverflow.com/questions/140131/convert-a-string-representation-of-a-hex-dump-to-a-byte-array-using-java/140861#140861
 
     private static byte[] hexStringToByteArray(String s) {
         int len = s.length();
