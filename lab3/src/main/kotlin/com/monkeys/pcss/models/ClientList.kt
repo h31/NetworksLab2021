@@ -23,10 +23,7 @@ class ClientList() {
                 senderName = "server", messageText =
                 "Name is taken, please try to connect again"
             )
-            val dataSize = data.getServerMessage().toByteArray().size
-            val header = Header(MessageType.LOGIN, false, dataSize)
-            val message = ByteBuffer.wrap(Message(header, data).getMessage())
-            writeChannel.writeFully(message)
+            createMessageAndSend(newId, data)
             false
         } else {
             val downloadDir = File(DOWNLOADS_DIR)
@@ -38,17 +35,24 @@ class ClientList() {
                 senderName = "server", messageText =
                 "Great, your name now is $newId, you can communicate. There are ${clients.size - 1} people in the chat excepts you."
             )
-            val dataSize = data.getServerMessage().toByteArray().size
-            val header = Header(MessageType.LOGIN, false, dataSize)
-            val message = ByteBuffer.wrap(Message(header, data).getMessage())
-            writeChannel.writeFully(message)
+            createMessageAndSend(newId, data)
             true
         }
     }
 
+    private suspend fun createMessageAndSend(clientId: String, data: Data) {
+        val dataSize = data.getServerMessage().toByteArray().size
+        val header = Header(MessageType.LOGIN, false, dataSize)
+        val message = ByteBuffer.wrap(Message(header, data).getMessage())
+        val writeChannel = getWriteChannel(clientId)
+        writeChannel!!.writeFully(message)
+    }
+
     suspend fun getReadChannel(clientId: String) = clients[clientId]?.readChannel
+    suspend fun getWriteChannel(clientId: String) = clients[clientId]?.writeChannel
 
     suspend fun finishConnection(id: String) {
+        clients[id]!!.writeChannel.close()
         clients.remove(id)
         socketList[id]!!.close()
         socketList.remove(id)
