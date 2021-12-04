@@ -45,25 +45,26 @@ class Server(private val host: String, private val port: Int) {
         }
     }
 
-    private suspend fun login(client: Socket, readChannel: ByteReadChannel, writeChannel: ByteWriteChannel): Pair<Boolean, String> {
+    private suspend fun login(
+        client: Socket,
+        readChannel: ByteReadChannel,
+        writeChannel: ByteWriteChannel
+    ): Pair<Boolean, String> {
         try {
             var name = ""
             var isSuccessfullyLogin = false
-            while (true) {
-                if (readChannel.availableForRead > 0) {
-                    val fullMessage = getNewMessage(readChannel)
-                    val message = fullMessage.first
-                    name = message.data.senderName
-                    isSuccessfullyLogin = clientList.addNewClient(client, name, readChannel, writeChannel)
-                    if (isSuccessfullyLogin) {
-                        val data = Data(0, name, "", "Client $name connected to chat", null)
-                        val dataSize = data.getServerMessage().toByteArray().size
-                        val header = Header(MessageType.SPECIAL, false, dataSize)
-                        clientList.writeToEveryBody(Message(header, data), ByteArray(0))
-                    }
-                    break
-                }
+            val fullMessage = getNewMessage(readChannel)
+            val message = fullMessage.first
+            name = message.data.senderName
+            isSuccessfullyLogin = clientList.addNewClient(client, name, readChannel, writeChannel)
+            if (isSuccessfullyLogin) {
+                val data = Data(0, name, "", "Client $name connected to chat", null)
+                val dataSize = data.getServerMessage().toByteArray().size
+                val header = Header(MessageType.SPECIAL, false, dataSize)
+                clientList.writeToEveryBody(Message(header, data), ByteArray(0))
             }
+
+
             return Pair(isSuccessfullyLogin, name)
         } catch (e: Exception) {
             println("!E: Client connection was closed! He will come later probably?")
@@ -78,43 +79,40 @@ class Server(private val host: String, private val port: Int) {
             var isWorking = true
             val receiver = clientList.getReadChannel(clientId) ?: throw NullPointerException()
             while (isWorking) {
-                if (receiver.availableForRead > 0) {
+                val fullMessage = getNewMessage(receiver)
+                if (fullMessage.first.header.dataSize == 0)
+                    break
+                val message = fullMessage.first
+                val fileByteArray = fullMessage.second
 
-                    val fullMessage = getNewMessage(receiver)
-                    if (fullMessage.first.header.dataSize == 0)
-                        break
-                    val message = fullMessage.first
-                    val fileByteArray = fullMessage.second
-
-                    if (message.header.type == MessageType.MESSAGE) {
-                        val fileSize = message.data.fileSize
-                        val time = ZonedDateTime.now().toString().replace("[", "{").replace("]", "}")
-                        val data = Data(
-                            fileSize,
-                            message.data.senderName,
-                            time,
-                            message.data.messageText,
-                            message.data.fileName
-                        )
-                        val dataSize = data.getServerMessage().toByteArray().size
-                        val resMessage = Message(
-                            Header(
-                                MessageType.MESSAGE,
-                                message.header.isFileAttached,
-                                dataSize
-                            ),
-                            data
-                        )
-                        clientList.writeToEveryBody(resMessage, fileByteArray)
-                    } else if (message.data.messageText == "EXIT") {
-                        clientList.finishConnection(message.data.senderName)
-                        isWorking = false
-                    } else {
-                        println(
-                            "Got message with type '${message.header.type}' and text " +
-                                    "'${message.data.messageText}' from '${message.data.senderName}'"
-                        )
-                    }
+                if (message.header.type == MessageType.MESSAGE) {
+                    val fileSize = message.data.fileSize
+                    val time = ZonedDateTime.now().toString().replace("[", "{").replace("]", "}")
+                    val data = Data(
+                        fileSize,
+                        message.data.senderName,
+                        time,
+                        message.data.messageText,
+                        message.data.fileName
+                    )
+                    val dataSize = data.getServerMessage().toByteArray().size
+                    val resMessage = Message(
+                        Header(
+                            MessageType.MESSAGE,
+                            message.header.isFileAttached,
+                            dataSize
+                        ),
+                        data
+                    )
+                    clientList.writeToEveryBody(resMessage, fileByteArray)
+                } else if (message.data.messageText == "EXIT") {
+                    clientList.finishConnection(message.data.senderName)
+                    isWorking = false
+                } else {
+                    println(
+                        "Got message with type '${message.header.type}' and text " +
+                                "'${message.data.messageText}' from '${message.data.senderName}'"
+                    )
                 }
             }
         } catch (e: Exception) {
