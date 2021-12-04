@@ -15,14 +15,14 @@ data class DNSFlags(
     private var bytes: Int = 0
 
     fun getBytes(): Short {
-        bitOperation(isResponse, 4)
-        bitOperation(opCode.toInt(), 1)
-        bitOperation(aa, 1)
-        bitOperation(truncated, 1)
-        bitOperation(recursionDesired, 1)
-        bitOperation(recursionAccepted, 4)
-        bitOperation(0, 3)
-        bitOperation(rCode.toInt())
+        addValueToBytes(isResponse, 4)
+        addValueIntToBytes(opCode.toInt(), 1)
+        addValueToBytes(aa, 1)
+        addValueToBytes(truncated, 1)
+        addValueToBytes(recursionDesired, 1)
+        addValueToBytes(recursionAccepted, 4)
+        addValueIntToBytes(0, 3)
+        addIntValueToBytesDirectly(rCode.toInt())
         return bytes.toShort()
     }
 
@@ -32,17 +32,17 @@ data class DNSFlags(
     }
 
 
-    private fun bitOperation(value: Boolean, shift: Int) {
+    private fun addValueToBytes(value: Boolean, shift: Int) {
         if (value) bytes = bytes.or(1)
         bytes = bytes.shl(shift)
     }
 
-    private fun bitOperation(value: Int, shift: Int) {
+    private fun addValueIntToBytes(value: Int, shift: Int) {
         bytes = bytes.or(value)
         bytes = bytes.shl(shift)
     }
 
-    private fun bitOperation(value: Int) {
+    private fun addIntValueToBytesDirectly(value: Int) {
         bytes = bytes.or(value)
     }
 
