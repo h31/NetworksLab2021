@@ -1,8 +1,10 @@
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
-import kotlinx.coroutines.*
-import java.io.BufferedInputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.net.InetSocketAddress
@@ -14,10 +16,9 @@ import java.util.*
 import java.util.regex.Pattern
 import kotlin.system.exitProcess
 
-
-class Client constructor(hostAddress_: String, hostPort_: Int, private var nickname: String) {
-    private val hostAddress = hostAddress_
-    private val hostPort = hostPort_
+class Client constructor(private val hostAddress: String,
+                         private val hostPort: Int,
+                         private val nickname: String) {
     private val selector = ActorSelectorManager(Dispatchers.IO)
     private val scanner = Scanner(System.`in`, Charsets.UTF_8)
     private lateinit var aInput : ByteReadChannel
@@ -103,7 +104,6 @@ class Client constructor(hostAddress_: String, hostPort_: Int, private var nickn
                 customMsg.msg = customMsg.msg.replaceFirst(ATTACHMENT_STRING.toRegex(),
                     "(file ${file.name} attached)")
                 file.writeBytes(f)
-
             }
             else -> {
                 println("Incorrect message attachments - attachment can not be displayed.")
@@ -133,10 +133,9 @@ class Client constructor(hostAddress_: String, hostPort_: Int, private var nickn
             //if path is correct...
             if (file.isFile) {
                 //check its mimeType to be image or video. Everything else is non-positive!
-                val mimeType : String? = withContext(Dispatchers.IO) {
-                    BufferedInputStream(FileInputStream(file)).use {
-                        URLConnection.guessContentTypeFromStream(it)
-                    }
+                val mimeType: String? = withContext(Dispatchers.IO) {
+                    FileInputStream(file).buffered()
+                        .use(URLConnection::guessContentTypeFromStream)
                 }
 
                 if ((!mimeType.isNullOrBlank()) && (mimeType.startsWith("image") || mimeType.startsWith("video"))) {
@@ -154,6 +153,6 @@ class Client constructor(hostAddress_: String, hostPort_: Int, private var nickn
         }
         val byteMsgOut = ByteBuffer.wrap(msg.plus("\nattname: $attname\natt: $att\n").toByteArray(Charsets.UTF_8))
         aOutput.writeFully(byteMsgOut)
-        if (f.isNotEmpty()) { aOutput.writeFully(f) }
+        if (f.isNotEmpty()) aOutput.writeFully(f)
     }
 }

@@ -13,10 +13,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
 
-class Server constructor(host_: String, port_: Int) {
-    private val host = host_
-    private val port = port_
-
+class Server constructor(private val host: String, private val port: Int) {
     private val selector = ActorSelectorManager(Dispatchers.IO)
     private val clientSockets = mutableMapOf<String, CustomSocket>()
     private lateinit var publicSocket : ServerSocket
@@ -40,17 +37,30 @@ class Server constructor(host_: String, port_: Int) {
         val nickname = reader.readUTF8Line()!!
         val timeStr = Instant.now().truncatedTo(ChronoUnit.SECONDS).toString()
         val customMessage = CustomMessage(timeStr, "Server")
-        if (clientSockets.containsKey(nickname)) {
-            customMessage.msg = "Sorry, this nickname ($nickname) is already taken. Choose another one."
-            writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
-            closeAll(writer, customSocket.aSocket)
-        }
-        else {
-            customMessage.msg = "Hello, $nickname, you are connected!"
-            writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
-            clientSockets[nickname] = customSocket
-            println("$nickname connected")
-            clientSocketListener(nickname, customSocket)
+        when {
+            clientSockets.containsKey(nickname) -> {
+                customMessage.msg = "Sorry, this nickname ($nickname) is already taken. Choose another one."
+                writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
+                closeAll(writer, customSocket.aSocket)
+            }
+            !nickname.matches(nicknameRegex) -> {
+                customMessage.msg = "Sorry, this nickname is incorrect. " +
+                        "It can consist only of any combination of letters and digits."
+                writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
+                closeAll(writer, customSocket.aSocket)
+            }
+            nickname.lowercase(Locale.getDefault()) == "server" -> {
+                customMessage.msg = "Sorry, any 'Server' nickname can not be taken. Choose another one."
+                writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
+                closeAll(writer, customSocket.aSocket)
+            }
+            else -> {
+                customMessage.msg = "Hello, $nickname, you are connected!"
+                writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
+                clientSockets[nickname] = customSocket
+                println("$nickname connected")
+                clientSocketListener(nickname, customSocket)
+            }
         }
     }
 
