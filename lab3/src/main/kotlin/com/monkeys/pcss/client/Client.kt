@@ -8,7 +8,9 @@ import io.ktor.utils.io.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.OutputStream
 import java.net.FileNameMap
 import java.net.InetSocketAddress
 import java.net.SocketException
@@ -25,6 +27,9 @@ class Client() {
     private lateinit var name: String
     private var stillWorking = true
 
+    private suspend fun readLineSuspending(): String =
+        withContext(Dispatchers.IO) { return@withContext readLine()!! }
+
     suspend fun start(host: String, port: Int) = coroutineScope {
         val socket = aSocket(ActorSelectorManager(Dispatchers.IO))
             .tcp().connect(InetSocketAddress(host, port))
@@ -35,7 +40,7 @@ class Client() {
         var isSingingInNow = true
         println("Enter your nickname or \'q\' to exit.")
 
-        when (val userInput = readLine()) {
+        when (val userInput = readLineSuspending()) {
             "" -> {
                 stillWorking = false
             }

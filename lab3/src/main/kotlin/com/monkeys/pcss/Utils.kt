@@ -12,7 +12,7 @@ const val STANDARD_HEADER_SIZE = 20
 const val DOWNLOADS_DIR = "PCSS downloads/"
 
 fun parseArguments(args: List<String>): WorkType = when {
-    args.contains("-s") && args.size == 1 -> {
+    args.contains("-s") && args.size == 1 || args.isEmpty() -> {
         SERVER
     }
     args.contains("-s") && args.size == 2 -> {
