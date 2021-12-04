@@ -56,7 +56,7 @@ while True:
     string = input("Enter the expression: ")
     if string == "\q": break
     operation, operand1, operand2 = parse(string)
-    if operation == None:
+    if operation is None:
         print("Wrong operation")
         continue
 
