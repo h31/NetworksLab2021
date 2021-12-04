@@ -16,9 +16,7 @@ public class CommunicatorService implements Runnable {
 
     private DatagramSocket socket;
 
-    private static byte[] name = new byte[2];
-
-    public CommunicatorService() throws SocketException, UnknownHostException {
+    public CommunicatorService() throws SocketException {
         socket = new DatagramSocket(53);
     }
 
@@ -94,7 +92,8 @@ public class CommunicatorService implements Runnable {
                 dnsAnswer.setResourceData("txttxttxttxttxt".getBytes());
                 return dnsAnswer;
             }
-            default: throw new IllegalArgumentException();
+            default:
+                throw new IllegalArgumentException();
         }
     }
 
@@ -112,7 +111,7 @@ public class CommunicatorService implements Runnable {
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
             data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i+1), 16));
+                    + Character.digit(s.charAt(i + 1), 16));
         }
         return data;
     }
