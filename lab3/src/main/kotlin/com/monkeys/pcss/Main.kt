@@ -36,8 +36,8 @@ fun main(args: Array<String>) {
         }
 
         CLIENT -> {
-            val client = Client("localhost", 8081)
-            runBlocking { client.start() }
+            val client = Client()
+            runBlocking { client.start("localhost", 8081) }
         }
 
         CLIENT_WITH_ARGUMENTS -> {
@@ -53,8 +53,8 @@ fun main(args: Array<String>) {
                 printHelp()
             } else {
                 try {
-                    val client = Client(arg.first, arg.second)
-                    runBlocking { client.start() }
+                    val client = Client()
+                    runBlocking { client.start(arg.first, arg.second) }
                 } catch (e: Exception) {
                     println(
                         "Incorrect arguments or it is impossible to establish a connection with the specified server.\n" +

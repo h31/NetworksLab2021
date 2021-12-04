@@ -20,14 +20,12 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.*
 
-class Client(host_: String, port_: Int) {
+class Client() {
 
-    private val host = host_
-    private val port = port_
     private lateinit var name: String
     private var stillWorking = true
 
-    suspend fun start() = coroutineScope {
+    suspend fun start(host: String, port: Int) = coroutineScope {
         val socket = aSocket(ActorSelectorManager(Dispatchers.IO))
             .tcp().connect(InetSocketAddress(host, port))
         val receiver = socket.openReadChannel()
@@ -215,7 +213,6 @@ class Client(host_: String, port_: Int) {
 
     private fun stopConnection(socket: Socket, sender: ByteWriteChannel, receiver: ByteReadChannel) {
         try {
-            //receiver.close()
             sender.close()
             socket.close()
             println("Bye!")
