@@ -4,6 +4,9 @@ import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.net.InetSocketAddress
@@ -70,30 +73,27 @@ class Server constructor(private val host: String, private val port: Int) {
             //reading incoming message
             //can not use the same code from client because message format is different: here are 3 attrs, there are 5
             val customMsg = CustomMessage(nickname)
-            var msg: String
-            for (i in 0 until 3) { //one time for every type
-                try { msg = reader.readUTF8Line()!! }
-                catch (ex: Exception) {
-                    when (ex) {
-                        is SocketException, is NullPointerException -> {
-                            clientSockets.remove(nickname)
-                            println("$nickname disconnected; ${clientSockets.keys.size} remains connected.")
-                            return
-                        }
-                        else -> throw ex
+            val flow = getMessage(reader, 3)
+            try {
+                flow.collect { pair ->
+                    when (pair.first) {
+                        "msg" -> customMsg.msg = pair.second
+                        "attname" -> customMsg.attname = pair.second
+                        "att" -> customMsg.att = pair.second
                     }
                 }
-                //parse the message!
-                val split = msg.split(colonAndSpaceRegex, 2)
-                val type = split.first().toString()
-                val value = split.last().toString()
-                when (type) {
-                    "msg" -> customMsg.msg = value
-                    "attname" -> customMsg.attname = value
-                    "att" -> customMsg.att = value
+            } catch (ex: Exception) {
+                when (ex) {
+                    is SocketException, is NullPointerException -> {
+                        clientSockets.remove(nickname)
+                        println("$nickname disconnected; ${clientSockets.keys.size} remains connected.")
+                        return
+                    }
+                    else -> {
+                        ex.printStackTrace()
+                    }
                 }
             }
-
             //quit case - break out of loop, then close the stuff...
             if (customMsg.msg.lowercase(Locale.getDefault()) == "quit")
                 break
