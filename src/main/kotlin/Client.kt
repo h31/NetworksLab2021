@@ -2,6 +2,9 @@ import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -37,28 +40,24 @@ class Client constructor(private val hostAddress: String,
         while (!aSocket.isClosed) {
             //reading incoming message
             val customMsg = CustomMessage()
-            var msg: String
-            for (i in 0 until 5) { //one time for every type
-                try { msg = aInput.readUTF8Line()!! }
-                catch (ex: Exception) {
-                    when(ex) {
-                        is SocketException, is NullPointerException -> {
-                            println("Server closed connection. Disconnected.")
-                            exitProcess(0)
-                        }
-                        else -> throw ex
+            val flow = getMessage(aInput, 5)
+            try {
+                flow.collect { pair ->
+                    when (pair.first) {
+                        "time" -> customMsg.time = getLocalTime(pair.second)
+                        "name" -> customMsg.name = pair.second
+                        "msg" -> customMsg.msg = pair.second.replace("\\n","\n").replace("\\t","\t")
+                        "attname" -> customMsg.attname = pair.second
+                        "att" -> customMsg.att = pair.second
                     }
                 }
-                //parse the message!
-                val split = msg.split(colonAndSpaceRegex, 2)
-                val type = split.first().toString()
-                val value = split.last().toString()
-                when (type) {
-                    "time" -> customMsg.time = getLocalTime(value)
-                    "name" -> customMsg.name = value
-                    "msg" -> customMsg.msg = value.replace("\\n","\n").replace("\\t","\t")
-                    "attname" -> customMsg.attname = value
-                    "att" -> customMsg.att = value
+            } catch (ex: Exception) {
+                when(ex) {
+                    is SocketException, is NullPointerException -> {
+                        println("Server closed connection. Disconnected.")
+                        exitProcess(0)
+                    }
+                    else -> throw ex
                 }
             }
             //now customMsg have all the attributes. So we are...
