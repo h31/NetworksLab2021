@@ -3,6 +3,7 @@ package com.poly.dnshelper.model
 import com.poly.dnshelper.Util.getBytesFromShort
 import com.poly.dnshelper.Util.getShortFromTwoBytes
 import com.poly.dnshelper.model.answer.*
+import java.lang.UnsupportedOperationException
 
 data class DNSMessage(
     var transactionId: Short = 0, // 16 bits
@@ -45,21 +46,6 @@ data class DNSMessage(
         }
         return resultArrayBytes.toByteArray()
     }
-
-//    fun mapperMessage(byteArray: ByteArray, prevMessage: DNSMessage? = null): DNSMessage {
-//        transactionId = getShortFromTwoBytes(byteArray.slice(0..1).toByteArray())
-//        dnsFlags.mapperFlags(byteArray.slice(2..3).toByteArray())
-//        numOfQuestions = getShortFromTwoBytes(byteArray.slice(4..5).toByteArray())
-//        answerRRs = getShortFromTwoBytes(byteArray.slice(6..7).toByteArray())
-//        authorityRRs = getShortFromTwoBytes(byteArray.slice(8..9).toByteArray())
-//        additionalRRs = getShortFromTwoBytes(byteArray.slice(10..11).toByteArray())
-//        val sizeQuestions = prevMessage?.getMessageBytes()?.size ?: byteArray.size
-//        val dnsQuery = DNSQuery()
-//        dnsQuery.mapperQuery(byteArray.slice(12..sizeQuestions).toByteArray())
-//        questions = listOf(dnsQuery)
-//        answers = getAnswers(answerRRs, byteArray, prevMessage)
-//        throw UnsupportedOperationException()
-//    }
 
     private fun getAnswers(answerRRs: Short, byteArray: ByteArray, prevMessage: DNSMessage?): List<DNSAnswer> {
         val answers = mutableListOf<DNSAnswer>()
