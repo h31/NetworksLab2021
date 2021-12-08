@@ -12,6 +12,7 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
 
     static final List<ClientChannel> channels = new ArrayList<ClientChannel>();
     private String clientNickname = "";
+    private int arraySize = 0;
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
@@ -23,25 +24,25 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
-        ByteBuf in = (ByteBuf) msg;
+        String sb = (String) msg;
+        /*ByteBuf in = (ByteBuf) msg;
+        System.out.println("byte buff = " + in);
+
         StringBuilder sb = new StringBuilder();
         byte c;
         while (in.isReadable()) {
             c = in.readByte();
             if (c == '\n') {
-                System.out.println("а вот и новая стркоа");
                 break;
             }
             sb.append((char) c);
-            System.out.println(sb);
-        }
-        System.out.println("переходим к преобразованию посылки");
+            //System.out.println(sb);
+        }*/
         ExchangeFormat clientRequest = Tool.parseRequest(sb.toString());
 
 
         //if null
 
-        System.out.println("То, что я отправил клиенту = " + clientRequest.toParcel());
 
         //
         if (clientRequest.getParcelType() == Tool.RequestType.GREETING) {
@@ -56,7 +57,7 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        processDefaultMessage(clientRequest, in);
+        processDefaultMessage(clientRequest);
     }
 
 
@@ -85,7 +86,7 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
 
     }
 
-    private void processDefaultMessage(ExchangeFormat clientRequest, ByteBuf in) {
+    private void processDefaultMessage(ExchangeFormat clientRequest) {
         ExchangeFormat serverResponse = new ExchangeFormat();
 
         serverResponse.setParcelType(Tool.RequestType.MESSAGE);
@@ -96,13 +97,12 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
         if (clientRequest.getAttachmentSize() != 0) {
             byte[] byteArray = new byte[clientRequest.getAttachmentSize()];
             int i = 0;
+/*
             while (in.isReadable()) {
                 byteArray[i] = in.readByte();
                 i++;
             }
-
-            System.out.println("а вот и итоговый байтеррей = " + Arrays.toString(byteArray));
-
+*/
             System.out.println("клиент вложил файл");
             serverResponse.setAttachmentName(clientRequest.getAttachmentName());
             serverResponse.setAttachmentSize(clientRequest.getAttachmentSize());
@@ -112,6 +112,7 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
         }
 
         broadcastMessage(serverResponse);
+
     }
 
     private ClientChannel getCurrentClientChannel() {
@@ -153,7 +154,6 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
                 channel.flush();
             } else {
                 channel.write(getByteBufParcel(response));
-                System.out.println(response.getAttachmentByteArray().length + "длина Bytearray");
                 channel.writeAndFlush(Unpooled.copiedBuffer(response.getAttachmentByteArray()));
             }
         }
