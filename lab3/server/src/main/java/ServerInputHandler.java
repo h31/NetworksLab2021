@@ -20,6 +20,10 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
         channels.add(new ClientChannel(ctx.channel()));
     }
 
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+        super.channelReadComplete(ctx);
+    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
