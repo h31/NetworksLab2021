@@ -3,6 +3,8 @@ package com.dns.server.service;
 import com.dns.server.model.QueryType;
 import com.poly.dnshelper.model.DNSMessage;
 import com.poly.dnshelper.model.answer.*;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.net.*;
@@ -15,6 +17,8 @@ import static com.dns.server.model.QueryType.*;
 public class CommunicatorService implements Runnable {
 
     private DatagramSocket socket;
+
+    private static Logger LOG = LoggerFactory.getLogger(CommunicatorService.class);
 
     public CommunicatorService() throws SocketException {
         socket = new DatagramSocket(53);
@@ -31,7 +35,10 @@ public class CommunicatorService implements Runnable {
                 socket.receive(packet);
                 dnsMessage.mapperMessage(Arrays.copyOf(buf, packet.getLength()), null);
             } catch (IOException e) {
-                e.printStackTrace();
+                LOG.error("Error during receiving");
+                LOG.info("Clearing buffer");
+                buf = new byte[2048];
+                continue;
             }
 
             dnsMessage.getDnsFlags().setResponse(true);
@@ -45,7 +52,7 @@ public class CommunicatorService implements Runnable {
             try {
                 socket.send(packet);
             } catch (IOException e) {
-                e.printStackTrace();
+                LOG.warn("Error during sending");
             }
         }
         socket.close();
