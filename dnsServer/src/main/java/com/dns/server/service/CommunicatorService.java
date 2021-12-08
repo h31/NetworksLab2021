@@ -33,7 +33,7 @@ public class CommunicatorService implements Runnable {
                     = new DatagramPacket(buf, buf.length);
             try {
                 socket.receive(packet);
-                dnsMessage = DNSMessage(Arrays.copyOf(buf, packet.getLength()), null);
+                dnsMessage = new DNSMessage(Arrays.copyOf(buf, packet.getLength()), null);
             } catch (IOException e) {
                 LOG.error("Error during receiving");
                 LOG.info("Clearing buffer");

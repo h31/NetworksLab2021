@@ -41,7 +41,7 @@
         <dependency>
             <groupId>com.poly.dnshelper</groupId>
             <artifactId>DNSHelper</artifactId>
-            <version>1.0.10</version>
+            <version>1.1.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
         <dependency>
