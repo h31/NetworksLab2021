@@ -35,8 +35,7 @@ public class CommunicatorService {
         packet = new DatagramPacket(buf, buf.length);
         socket.receive(packet);
 
-        DNSMessage message = new DNSMessage();
-        message.mapperMessage(packet.getData(), preparedMessage);
+        DNSMessage message = new DNSMessage(packet.getData(), preparedMessage);
         return message;
     }
 
