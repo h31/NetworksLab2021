@@ -1,6 +1,5 @@
 package com.poly.client
 
-import com.poly.client.Buffer.receiverBuffer
 import com.poly.client.Buffer.senderBuffer
 import com.poly.client.MessageData.userName
 import com.poly.client.util.*
@@ -10,12 +9,12 @@ import com.poly.sockets.MessageWriter
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.Thread.currentThread
+import java.lang.Thread.sleep
 import java.net.Socket
 import java.net.SocketException
 import java.util.*
 
 object Buffer {
-    val receiverBuffer = LinkedList<MessageWithContent>()
     val senderBuffer = LinkedList<MessageWithContent>()
 }
 
@@ -26,20 +25,16 @@ object Client {
         val sender = MessageWriter(socket.getOutputStream())
         val receiver = MessageReader(socket.getInputStream())
 
-        var exitCondition = false
-
-        while (!exitCondition) {
-            if (socket.isConnected) {
-                if (senderBuffer.size > 0) {
-                    val messageWithContent = senderBuffer.poll()
-                    sender.write(messageWithContent)
-                } else if (receiver.readyForMessageReading()) {
-                    val message = receiver.read()
-                    receiverBuffer.add(message)
-                }
-            } else {
-                exitCondition = true
-                println("$ERROR $CONNECTION_LOST")
+        while (!currentThread().isInterrupted) {
+            if (isNotReadyForAnyInteraction(receiver)) {
+                sleep(100)
+            }
+            if (senderBuffer.size > 0) {
+                val messageWithContent = senderBuffer.poll()
+                sender.write(messageWithContent)
+            } else if (receiver.readyForMessageReading()) {
+                val message = receiver.read()
+                readMessage(message)
             }
         }
         try {
@@ -49,19 +44,19 @@ object Client {
         }
     }
 
-    fun readMessage() {
-        while (!currentThread().isInterrupted) {
-            if (receiverBuffer.size < 1) continue
-            val messageWithContent = receiverBuffer.poll()
-            var fileBlock = VOID
-            val message = messageWithContent.message
-            val content: ByteArray? = messageWithContent.content
-            if (content != null) {
-                fileBlock = "$ATTACHMENT ${writeNewFile(message.fileName, content)}"
-            }
-            val (date, time) = parseDateTime(message.date)
-            println("[${date}][${time}][${message.name}]$DOUBLE_DOT ${message.text} $fileBlock")
+    private fun isNotReadyForAnyInteraction(receiver: MessageReader): Boolean {
+        return senderBuffer.size == 0 && !receiver.readyForMessageReading();
+    }
+
+    private fun readMessage(messageWithContent: MessageWithContent) {
+        var fileBlock = VOID
+        val message = messageWithContent.message
+        val content: ByteArray? = messageWithContent.content
+        if (content != null) {
+            fileBlock = "$ATTACHMENT ${writeNewFile(message.fileName, content)}"
         }
+        val (date, time) = parseDateTime(message.date)
+        println("[${date}][${time}][${message.name}]$DOUBLE_DOT ${message.text} $fileBlock")
     }
 
     private fun createDir(): String {

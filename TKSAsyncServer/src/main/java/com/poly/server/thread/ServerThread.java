@@ -3,6 +3,8 @@ package com.poly.server.thread;
 import com.poly.models.Message;
 import com.poly.models.MessageWithContent;
 import org.apache.commons.codec.binary.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -25,6 +27,8 @@ public class ServerThread extends Thread {
     private final List<SocketChannel> userSocketChannels;
     private final Selector selector;
 
+    private static final Logger LOG = LoggerFactory.getLogger(ServerThread.class);
+
     public ServerThread(Integer port) throws IOException {
         this.port = port;
         this.userSocketChannels = new LinkedList<>();
@@ -41,36 +45,42 @@ public class ServerThread extends Thread {
             serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
             SelectionKey key;
             while (!Thread.currentThread().isInterrupted()) {
-                MessageWithContent message;
-                if (selector.select() <= 0) {
-                    continue;
-                }
-                Set<SelectionKey> selectedKeys = selector.selectedKeys();
-                Iterator<SelectionKey> iterator = selectedKeys.iterator();
-                ByteBuffer bb = ByteBuffer.allocate(4);
-                while (iterator.hasNext()) {
-                    key = iterator.next();
-                    iterator.remove();
-                    if (key.isAcceptable()) {
-                        SocketChannel sc = serverSocketChannel.accept();
-                        sc.configureBlocking(false);
-                        sc.register(selector, SelectionKey.OP_READ);
-                        System.out.println("Connection Accepted: " + sc.getLocalAddress() + "n");
-                        userSocketChannels.add(sc);
+                try {
+                    MessageWithContent message;
+                    if (selector.select() <= 0) {
+                        continue;
                     }
-                    if (key.isReadable()) {
-                        SocketChannel sc = (SocketChannel) key.channel();
-                        int size = getSize(sc, bb);
-                        if (size > 0) {
-                            message = readMessage(sc, size);
-                            message.getMessage().setDate(LocalDate.now() + " " + LocalTime.now().toString().replace(":", "."));
-                            writeToAll(message);
+                    Set<SelectionKey> selectedKeys = selector.selectedKeys();
+                    Iterator<SelectionKey> iterator = selectedKeys.iterator();
+                    ByteBuffer bb = ByteBuffer.allocate(4);
+                    while (iterator.hasNext()) {
+
+                        key = iterator.next();
+                        iterator.remove();
+                        if(key.isValid()) {
+                            if (key.isAcceptable()) {
+                                SocketChannel sc = serverSocketChannel.accept();
+                                sc.configureBlocking(false);
+                                sc.register(selector, SelectionKey.OP_READ);
+                                userSocketChannels.add(sc);
+                            }
+                            if (key.isReadable()) {
+                                SocketChannel sc = (SocketChannel) key.channel();
+                                int size = getSize(sc, bb);
+                                if (size > 0) {
+                                    message = readMessage(sc, size);
+                                    message.getMessage().setDate(LocalDate.now() + " " + LocalTime.now().toString().replace(":", "."));
+                                    writeToAll(message);
+                                }
+                            }
                         }
                     }
+                } catch (IOException e) {
+                    LOG.warn("Connection was reset by peer. \n Localized cause: " + e.getLocalizedMessage());
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("Something went wrong during socketChannel initialization: " + e.getLocalizedMessage());
         }
     }
 
@@ -87,6 +97,9 @@ public class ServerThread extends Thread {
             return 0;
         }
         int size = 0;
+        if(bb.position() == 0) {
+            return 0;
+        }
         for (int i = 0; i < 4; i++) {
             size = size << 8;
             size += bb.get(i) & 0xff;
@@ -96,8 +109,8 @@ public class ServerThread extends Thread {
 
     private MessageWithContent readMessage(SocketChannel socketChannel, int size) throws IOException {
         ByteBuffer bb = ByteBuffer.allocate(size);
-        while(bb.hasRemaining()) socketChannel.read(bb);
-        if(bb.remaining() > 0) {
+        while (bb.hasRemaining()) socketChannel.read(bb);
+        if (bb.remaining() > 0) {
             throw new IllegalAccessError();
         }
         Message result = new Message();
@@ -105,10 +118,10 @@ public class ServerThread extends Thread {
         ByteBuffer filBuf = ByteBuffer.allocate(0);
         if (result.getFileSize() != null && result.getFileSize() > 0) {
             filBuf = ByteBuffer.allocate(result.getFileSize());
-            while(filBuf.hasRemaining()) socketChannel.read(filBuf);
+            while (filBuf.hasRemaining()) socketChannel.read(filBuf);
         }
         MessageWithContent messageWithContent = new MessageWithContent(result, filBuf.array());
-        while(bb.hasRemaining()) socketChannel.read(bb);
+        while (bb.hasRemaining()) socketChannel.read(bb);
         return messageWithContent;
 
     }
@@ -121,7 +134,7 @@ public class ServerThread extends Thread {
             byteBuffer.put(messageWithContent.serialize());
             byteBuffer.flip();
             try {
-                while(byteBuffer.hasRemaining()) socketChannel.write(byteBuffer);
+                while (byteBuffer.hasRemaining()) socketChannel.write(byteBuffer);
             } catch (Exception e) {
                 userSocketChannels.remove(socketChannel);
                 socketChannel.close();

@@ -2,7 +2,12 @@ package com.poly.client
 
 import com.poly.client.util.SERVER_HOST
 import com.poly.client.util.SERVER_PORT
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import java.lang.Thread.currentThread
 import java.util.*
+
 
 class Application {
     fun startApplication() {
@@ -13,11 +18,8 @@ class Application {
         Thread {
             Client.startClient(SERVER_HOST, SERVER_PORT)
         }.start()
-        Thread {
-            Client.readMessage()
-        }.start()
 
-        while (true) {
+        while (!currentThread().isInterrupted) {
             Buffer.senderBuffer.add(MessageData.createMessage(scanner.nextLine()))
         }
     }
