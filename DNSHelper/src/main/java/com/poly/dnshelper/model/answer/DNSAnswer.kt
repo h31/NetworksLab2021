@@ -6,7 +6,7 @@ import com.poly.dnshelper.Util.getIntFromBytes
 import com.poly.dnshelper.Util.getShortFromTwoBytes
 
 abstract class DNSAnswer(
-    var name: ByteArray = byteArrayOf(0xC0.toByte(), 0x0Cu.toByte()),
+    var name: ByteArray = byteArrayOf(0xC0.toByte(), 0x0C.toByte()),
     var type: Short = 0,
     var dnsClass: Short = 0,
     var timeToLive: Int = 0,
@@ -26,15 +26,15 @@ abstract class DNSAnswer(
 
     open fun mapperAnswer(byteArray: ByteArray) {
         val sizeName = 2
-        type = getShortFromTwoBytes(byteArray[sizeName] to byteArray[sizeName + 1])
-        dnsClass = getShortFromTwoBytes(byteArray[sizeName + 2] to byteArray[sizeName + 3])
+        type = getShortFromTwoBytes(byteArray.slice(sizeName..sizeName + 1).toByteArray())
+        dnsClass = getShortFromTwoBytes(byteArray.slice(sizeName + 2..sizeName + 3).toByteArray())
         timeToLive = getIntFromBytes(
             byteArray
                 .toList()
                 .subList(sizeName + 4, sizeName + 8)
                 .toByteArray()
         )
-        dataLength = getShortFromTwoBytes(byteArray[sizeName + 8] to byteArray[sizeName + 9])
+        dataLength = getShortFromTwoBytes(byteArray.slice(sizeName + 8..sizeName + 9).toByteArray())
     }
 
     abstract fun getSize(byteArray: ByteArray): Int

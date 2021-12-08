@@ -26,9 +26,9 @@ data class DNSFlags(
         return bytes.toShort()
     }
 
-    fun mapperFlags(leftAndRightByte: Pair<Byte, Byte>) {
-        setLeftByte(leftAndRightByte.first)
-        setRightByte(leftAndRightByte.second)
+    fun mapperFlags(byteArray: ByteArray) {
+        setLeftByte(byteArray[0])
+        setRightByte(byteArray[1])
     }
 
 

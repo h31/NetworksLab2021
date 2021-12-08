@@ -3,7 +3,7 @@ package com.poly.dnshelper.model.answer
 import com.poly.dnshelper.Util
 
 class DNSAnswerAAAA(
-    name: ByteArray = byteArrayOf(0xC0.toByte(), 0x0Cu.toByte()),
+    name: ByteArray = byteArrayOf(0xC0.toByte(), 0x0C.toByte()),
     type: Short = 0,
     dnsClass: Short = 0,
     timeToLive: Int = 0,
@@ -29,6 +29,6 @@ class DNSAnswerAAAA(
 
     override fun getSize(byteArray: ByteArray): Int {
         val shift = 2 + 2 + 2 + 4
-        return shift + 2 + Util.getShortFromTwoBytes(byteArray[shift] to byteArray[shift + 1])
+        return shift + 2 + Util.getShortFromTwoBytes(byteArray.slice(shift..shift + 1).toByteArray())
     }
 }

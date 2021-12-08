@@ -18,8 +18,8 @@ data class DNSQuery(
     }
 
     fun mapperQuery(byteArray: ByteArray) {
-        type = getShortFromTwoBytes(byteArray[byteArray.size - 4] to byteArray[byteArray.size - 3])
-        queryClass = getShortFromTwoBytes(byteArray[byteArray.size - 2] to byteArray[byteArray.size - 1])
+        type = getShortFromTwoBytes(byteArray.slice(byteArray.size - 4..byteArray.size - 3).toByteArray())
+        queryClass = getShortFromTwoBytes(byteArray.slice(byteArray.size - 2..byteArray.size - 1).toByteArray())
         name = nameFromBytes(byteArray.toList().subList(0, byteArray.size - 4).toByteArray())
     }
 

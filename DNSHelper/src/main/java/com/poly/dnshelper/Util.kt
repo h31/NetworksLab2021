@@ -32,10 +32,10 @@ internal object Util {
         }
     }
 
-    fun getShortFromTwoBytes(leftAndRightBytes: Pair<Byte, Byte>): Short {
-        var result = leftAndRightBytes.first.toShort()
+    fun getShortFromTwoBytes(byteArray: ByteArray): Short {
+        var result = byteArray[0].toShort()
         result = result.toInt().shl(8).toShort()
-        return (result + leftAndRightBytes.second).toShort()
+        return (result + byteArray[1]).toShort()
     }
 
     fun getIntFromBytes(byteArray: ByteArray): Int {

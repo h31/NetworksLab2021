@@ -33,12 +33,12 @@ data class DNSMessage(
     }
 
     fun mapperMessage(byteArray: ByteArray, prevMessage: DNSMessage? = null) {
-        transactionId = getShortFromTwoBytes(byteArray[0] to byteArray[1])
-        dnsFlags.mapperFlags(byteArray[2] to byteArray[3])
-        numOfQuestions = getShortFromTwoBytes(byteArray[4] to byteArray[5])
-        answerRRs = getShortFromTwoBytes(byteArray[6] to byteArray[7])
-        authorityRRs = getShortFromTwoBytes(byteArray[8] to byteArray[9])
-        additionalRRs = getShortFromTwoBytes(byteArray[10] to byteArray[11])
+        transactionId = getShortFromTwoBytes(byteArray.slice(0..1).toByteArray())
+        dnsFlags.mapperFlags(byteArray.slice(2..3).toByteArray())
+        numOfQuestions = getShortFromTwoBytes(byteArray.slice(4..5).toByteArray())
+        answerRRs = getShortFromTwoBytes(byteArray.slice(6..7).toByteArray())
+        authorityRRs = getShortFromTwoBytes(byteArray.slice(8..9).toByteArray())
+        additionalRRs = getShortFromTwoBytes(byteArray.slice(10..11).toByteArray())
         val sizeQuestions = prevMessage?.getMessageBytes()?.size ?: byteArray.size
         val dnsQuery = DNSQuery()
         dnsQuery.mapperQuery(byteArray.slice(12..sizeQuestions).toByteArray())
