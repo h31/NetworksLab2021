@@ -98,7 +98,7 @@ class TossClientHolder:
                 return
 
             try:
-                deserialized_body = self.slip_handler.feed(chunk)
+                payload = self.slip_handler.feed(chunk)
             except BaseException as err:
                 if not isinstance(err, SlipError):
                     raise err
@@ -116,16 +116,16 @@ class TossClientHolder:
                 await self.write_safely(to_send)
                 continue
 
-            if not deserialized_body:
+            if not payload:
                 continue  # go on reading chunks until the whole message body / header is collected
 
             try:
-                payload = pillow.validate_request(deserialized_body)
+                pillow.validate_request(payload)
             except BaseException as err:
                 if not isinstance(err, pillow.PillowError):
                     raise err
 
-                action_to_respond = deserialized_body.get('action', None)
+                action_to_respond = payload.get('action', None)
                 logger.log(
                     occasion_type=logger.OccasionType.error.value,
                     occasion_name=pillow.PillowError.__name__,
