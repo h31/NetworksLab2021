@@ -38,8 +38,7 @@ def num(text: str) -> int or float:
 
 
 def now() -> datetime:
-    raw = datetime.utcnow()
-    return raw.replace(microsecond=round(raw.microsecond / 1000) * 1000)
+    return datetime.fromisoformat(datetime.utcnow().isoformat(timespec='milliseconds'))
 
 
 def format_time(dt: datetime = None) -> str:
