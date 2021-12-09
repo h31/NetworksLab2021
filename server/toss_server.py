@@ -30,24 +30,21 @@ class TossServer:
 
     async def broadcast(
             self, action: str,
-            filter_clients: Callable[[List[TossClientHolder]], List[TossClientHolder]] = lambda lst: lst,
             get_data: Callable[[TossClientHolder], dict] = lambda *_: None,
             files: dict = None,
             get_status: Callable[[TossClientHolder], int] = lambda *_: ResponseStatus.OK.value,
-            cb: Callable = lambda: None
     ):
         if files is None:
             files = {}
 
         writeable_clients = list(filter(lambda c: not c.writer.is_closing() and c.username, self.clients))
-        filtered_clients = filter_clients(writeable_clients)
-        amount = len(filtered_clients)
+        amount = len(writeable_clients)
         error_count = 0
 
         logger.log(comment=f'Broadcasting to {w_amount(amount, "client")}...', status=logger.Status.prefix)
 
         time = now()  # So that the time is the same for each client
-        for client in filtered_clients:
+        for client in writeable_clients:
             to_send = {'action': action, 'status': get_status(client)}
             data = get_data(client)
             if data is not None:
@@ -66,7 +63,6 @@ class TossServer:
             comment=f'Finished broadcasting with {w_amount(error_count, "error")}',
             status=logger.Status.warn if error_count else logger.Status.success
         )
-        cb()
 
     async def close_completely(self, err: Exception = None):
         if err:
