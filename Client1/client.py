@@ -11,7 +11,7 @@ HEADER_LENGTH = 10
 SEPARATOR = "<SEPARATOR>"
 SEND_FILE = "SEND_FILE"
 
-IP = "127.0.0.1" #"networkslab-ivt.ftp.sh"
+IP = "networkslab-ivt.ftp.sh"
 PORT = 10000
 UID = "c97ec0d1-df22-41f4-858f-7beee9e1bbc4".encode("utf-8")
 CONNECT = "CONNECT"
@@ -37,13 +37,13 @@ def main():
     try:
         while True:
             message = input()
-            if (re.match("^send .*\.\w*\s*$", message)):
+            if (re.match("^send .*\s*$", message)):
                 try:
-                    files = re.findall("\s+\w.*\.\w*\s*", message)
-                    fileName = files[0].strip()
+                    files = re.findall(r'[^send].*', message)
+                    fileName = files[0].strip(' ')
                     filesize = os.path.getsize(fileName)
                     clientsocket.send(f"{SEND_FILE:<{HEADER_LENGTH}}".encode("utf-8"))
-                    fileHeader = f"{files[0]}{SEPARATOR}{filesize}".encode()
+                    fileHeader = f"{fileName}{SEPARATOR}{filesize}".encode()
                     clientsocket.send(f"{len(fileHeader):<{HEADER_LENGTH}}".encode('utf-8'))
                     clientsocket.send(fileHeader)
                     f = open(fileName, "rb")

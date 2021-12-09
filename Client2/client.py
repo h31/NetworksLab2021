@@ -1,17 +1,16 @@
-#coding=utf-8
-import threading
-import socket
-from datetime import datetime
-import time
-import signal
+# coding=utf-8
 import os
 import re
+import signal
+import socket
+import threading
+from datetime import datetime
 
 HEADER_LENGTH = 10
 SEPARATOR = "<SEPARATOR>"
 SEND_FILE = "SEND_FILE"
 
-IP = "127.0.0.1" #"networkslab-ivt.ftp.sh"
+IP = "networkslab-ivt.ftp.sh"
 PORT = 10000
 UID = "c97ec0d1-df22-41f4-858f-7beee9e1bbc4".encode("utf-8")
 CONNECT = "CONNECT"
@@ -37,13 +36,13 @@ def main():
     try:
         while True:
             message = input()
-            if (re.match("^send .*\.\w*\s*$", message)):
+            if (re.match("^send .*\s*$", message)):
                 try:
-                    files = re.findall("\s+\w.*\.\w*\s*", message)
-                    fileName = files[0].strip()
+                    files = re.findall(r'[^send].*', message)
+                    fileName = files[0].strip(' ')
                     filesize = os.path.getsize(fileName)
                     clientsocket.send(f"{SEND_FILE:<{HEADER_LENGTH}}".encode("utf-8"))
-                    fileHeader = f"{files[0]}{SEPARATOR}{filesize}".encode()
+                    fileHeader = f"{fileName}{SEPARATOR}{filesize}".encode()
                     clientsocket.send(f"{len(fileHeader):<{HEADER_LENGTH}}".encode('utf-8'))
                     clientsocket.send(fileHeader)
                     f = open(fileName, "rb")
@@ -60,7 +59,7 @@ def main():
                     message_header = f"{len(message_code):<{HEADER_LENGTH}}".encode(
                         'utf-8')
                     clientsocket.send(
-                        message_header + message_code )
+                        message_header + message_code)
     except:
         os._exit(0)
 
@@ -87,8 +86,8 @@ def getMessage(clientsocket):
             total_bytes = bytes()
             while not UID in total_bytes:
                 bytes_read = clientsocket.recv(filesize)
-                total_bytes+=bytes_read
-            f.write(total_bytes[:(len(total_bytes)-len(UID))])
+                total_bytes += bytes_read
+            f.write(total_bytes[:(len(total_bytes) - len(UID))])
             f.close()
             print(f'<{current_time}> {name} send file {filename}')
         else:
@@ -109,5 +108,3 @@ def getMessage(clientsocket):
 
 if __name__ == '__main__':
     main()
-
-

@@ -1,4 +1,4 @@
-#coding=utf-8
+# coding=utf-8
 import socket
 from datetime import datetime
 import os
@@ -67,8 +67,7 @@ def main():
                                     file_header_len_header = conn.recv(HEADER_LENGTH).decode("utf-8")
                                     file_header_len = int(file_header_len_header)
                                     file_header = conn.recv(file_header_len)
-                                    filename, filesize = file_header.decode('utf-8').split(
-                                        SEPARATOR)
+                                    filename, filesize = file_header.decode('utf-8').split(SEPARATOR)
                                     filesize = int(filesize)
                                     total_bytes = bytes()
                                     time.sleep(1)
@@ -78,7 +77,7 @@ def main():
                                             total_bytes += bytes_read
                                     finally:
                                         file_header_len = f'{len(file_header):<{HEADER_LENGTH}}'.encode('utf-8')
-                                        name_header =  f'{len(name):<{HEADER_LENGTH}}'.encode('utf-8')
+                                        name_header = f'{len(name):<{HEADER_LENGTH}}'.encode('utf-8')
                                         sendFileFlag = f'{SEND_FILE:<{HEADER_LENGTH}}'.encode('utf-8')
                                         fileMessage = sendFileFlag + name_header + name + file_header_len + file_header + total_bytes
                                         print(
@@ -127,6 +126,7 @@ def notificationForClient(type, clientsocket):
     notice_header = f"{len(notice):<{HEADER_LENGTH}}".encode('utf-8')
     message = code_n + notice_header + notice
     sendToAll(message, clientsocket)
+
 
 if __name__ == '__main__':
     main()
