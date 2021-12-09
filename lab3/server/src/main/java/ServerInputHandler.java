@@ -12,7 +12,8 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
 
     static final List<ClientChannel> channels = new ArrayList<ClientChannel>();
     private String clientNickname = "";
-    private int arraySize = 0;
+    boolean isReadComplete = false;
+    byte[] byteArray;
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
@@ -20,33 +21,29 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
         channels.add(new ClientChannel(ctx.channel()));
     }
 
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        super.channelReadComplete(ctx);
-    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
-        String sb = (String) msg;
-        /*ByteBuf in = (ByteBuf) msg;
-        System.out.println("byte buff = " + in);
+        ExchangeFormat clientRequest = (ExchangeFormat) msg;
 
-        StringBuilder sb = new StringBuilder();
+
+       /* StringBuilder sb = new StringBuilder();
         byte c;
         while (in.isReadable()) {
             c = in.readByte();
             if (c == '\n') {
+                isReadComplete = true;
                 break;
             }
             sb.append((char) c);
             //System.out.println(sb);
-        }*/
+        }
         ExchangeFormat clientRequest = Tool.parseRequest(sb.toString());
 
 
         //if null
-
+*/
 
         //
         if (clientRequest.getParcelType() == Tool.RequestType.GREETING) {
@@ -99,8 +96,9 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
         serverResponse.setMessage(clientRequest.getMessage());
 
         if (clientRequest.getAttachmentSize() != 0) {
-            byte[] byteArray = new byte[clientRequest.getAttachmentSize()];
-            int i = 0;
+            byteArray = clientRequest.getAttachmentByteArray();
+
+            //in.getBytes(0, byteArray);
 /*
             while (in.isReadable()) {
                 byteArray[i] = in.readByte();
@@ -158,7 +156,8 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
                 channel.flush();
             } else {
                 channel.write(getByteBufParcel(response));
-                channel.writeAndFlush(Unpooled.copiedBuffer(response.getAttachmentByteArray()));
+                channel.write(Unpooled.copiedBuffer(response.getAttachmentByteArray()));
+                channel.flush();
             }
         }
     }

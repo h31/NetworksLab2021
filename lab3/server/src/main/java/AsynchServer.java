@@ -3,6 +3,9 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.handler.codec.Delimiters;
+import io.netty.handler.codec.string.StringDecoder;
 
 public class AsynchServer {
 
@@ -22,9 +25,10 @@ public class AsynchServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
-                            //ch.pipeline().addLast(new RequestDecoder());
+                            ch.config().setRecvByteBufAllocator(new FixedRecvByteBufAllocator(8192));
+                            ch.pipeline().addLast(new MessageDecoder());
+                           // ch.pipeline().addLast(new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter()));
                             ch.pipeline().addLast(new ServerInputHandler());
-                            //ch.config().setRecvByteBufAllocator(new FixedRecvByteBufAllocator(Integer.MAX_VALUE));
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)
