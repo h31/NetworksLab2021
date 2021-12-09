@@ -3,7 +3,6 @@ from signal import SIGINT, signal
 import asyncio
 import logger
 from toss_client_holder import TossClientHolder
-from typing import List, Callable
 from pillow import Actions, ResponseStatus
 from util.misc import *
 

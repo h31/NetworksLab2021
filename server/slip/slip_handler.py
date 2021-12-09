@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Callable
 from util.misc import *
 from .slip_error import SlipError
 import re

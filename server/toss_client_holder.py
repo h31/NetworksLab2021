@@ -1,5 +1,4 @@
 import asyncio
-from typing import Callable
 
 import logger
 from slip import SlipError, SlipHandler, PeekEvent
@@ -62,32 +61,32 @@ class TossClientHolder:
             self.writer.close()
         await self.writer.wait_closed()
 
-    async def write_safely(self, to_send: dict, files: dict = None, cb: Callable = lambda: None):
+    async def write_safely(self, to_send: dict, files: dict = None, on_success: Callable = lambda: None):
         message = self.slip_handler.make_message(to_send, {'data': files})
         self.writer.write(message)
         await self.writer.drain()
-        cb()
+        on_success()
 
     async def respond(
             self, action: str,
             status: int = pillow.ResponseStatus.OK.value,
             data: dict = None,
             files: dict = None,
-            cb: Callable = lambda: None
+            on_success: Callable = lambda: None
     ):
         to_send = {'status': status, 'action': action}
         if data is not None:
             to_send['data'] = data
             to_send['data']['time'] = now()
         await self.write_safely(to_send, files)
-        cb()
+        on_success()
 
-    async def respond_w_err(self, action, errors, status: int, cb: Callable = lambda: None):
+    async def respond_w_err(self, action, errors, status: int, on_success: Callable = lambda: None):
         to_send = {'status': status, 'data': {'errors': errors}}
         if action is not None:
             to_send['action'] = action
         await self.write_safely(to_send)
-        cb()
+        on_success()
 
     async def run(self):
         while True:
