@@ -27,7 +27,7 @@ public class AsynchServer {
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ch.config().setRecvByteBufAllocator(new FixedRecvByteBufAllocator(8192));
                             ch.pipeline().addLast(new MessageDecoder());
-                           // ch.pipeline().addLast(new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter()));
+                            //ch.pipeline().addLast(new StringDecoder());
                             ch.pipeline().addLast(new ServerInputHandler());
                         }
                     })

@@ -3,6 +3,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.util.CharsetUtil;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,25 +28,6 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
 
         ExchangeFormat clientRequest = (ExchangeFormat) msg;
 
-
-       /* StringBuilder sb = new StringBuilder();
-        byte c;
-        while (in.isReadable()) {
-            c = in.readByte();
-            if (c == '\n') {
-                isReadComplete = true;
-                break;
-            }
-            sb.append((char) c);
-            //System.out.println(sb);
-        }
-        ExchangeFormat clientRequest = Tool.parseRequest(sb.toString());
-
-
-        //if null
-*/
-
-        //
         if (clientRequest.getParcelType() == Tool.RequestType.GREETING) {
             acceptNickname(clientRequest.getUsername());
             return;
@@ -98,13 +80,7 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
         if (clientRequest.getAttachmentSize() != 0) {
             byteArray = clientRequest.getAttachmentByteArray();
 
-            //in.getBytes(0, byteArray);
-/*
-            while (in.isReadable()) {
-                byteArray[i] = in.readByte();
-                i++;
-            }
-*/
+
             System.out.println("клиент вложил файл");
             serverResponse.setAttachmentName(clientRequest.getAttachmentName());
             serverResponse.setAttachmentSize(clientRequest.getAttachmentSize());
@@ -129,7 +105,8 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
     }
 
     private ByteBuf getByteBufParcel(ExchangeFormat response) {
-        return Unpooled.copiedBuffer(response.toParcel(), CharsetUtil.UTF_8);
+
+        return Unpooled.copiedBuffer(response.toParcel(), Charset.defaultCharset());
     }
 
     private void notifyAboutUserExit(String clientNickname) {
