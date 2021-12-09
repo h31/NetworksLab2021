@@ -17,8 +17,7 @@ def includes(search_in, val) -> bool:
 
 
 def find(arr: List[T], comparator: Callable[[T, int, List[T]], bool]) -> T:
-    for i in range(len(arr)):
-        item = arr[i]
+    for i, item in enumerate(arr):
         if comparator(item, i, arr):
             return item
     return None

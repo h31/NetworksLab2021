@@ -3,6 +3,19 @@ import util.misc as _
 
 
 class MiscTestCase(unittest.TestCase):
+    def test_find(self):
+        comparator = lambda item, *_: int(item.get('bin', '0'), 2) > 5
+        arr = [
+            {'dec': 15, 'bin': '1111'},
+            {'hex': 'a'},
+            {'dec': 2, 'bin': '10'},
+            {'text': 'nine'}
+        ]
+        self.assertEqual(
+            {'dec': 15, 'bin': '1111'},
+            _.find(arr, comparator)
+        )
+
     def test_get_v(self):
         data = {
             'ladder': {'step1': {'step2': {'step3': 'finish'}}},
