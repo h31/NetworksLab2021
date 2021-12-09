@@ -1,6 +1,6 @@
 import unittest
 from slip import SlipHandler, SlipError
-import util.misc as _
+from util.misc import *
 from os import path, makedirs
 from datetime import datetime
 from copy import deepcopy
@@ -9,7 +9,7 @@ from random import randint
 original_str = 'key|with|sticks>and>>arrows>and se;micolons'
 original_data = {
   '>strange->key': 12.43,
-  'data': {'idx': 12, 'val': None, 'when': _.now()},
+  'data': {'idx': 12, 'val': None, 'when': now()},
   # To ensure strange encodings don't mess everything up
   'message': 'Привет! Ô',
   'is_read': False,
@@ -111,29 +111,29 @@ class SlipTestCase(unittest.TestCase):
             route: str or list,
             old_handler: SlipHandler = None
     ):
-        f_path = path.join(_.dirname(__file__), 'original_files', original_name)
+        f_path = path.join(dirname(__file__), 'original_files', original_name)
         with open(f_path, 'rb') as file:
             f_bytes = file.read()
 
         to_serialize = deepcopy(payload)
         files_dict = {}
-        _.set_v(to_serialize, route, f_bytes)
-        _.set_v(files_dict, route, original_name)
+        set_v(to_serialize, route, f_bytes)
+        set_v(files_dict, route, original_name)
 
         new_handler, serialized_data = self.serialization_fixture(to_serialize, files_dict)
         handler = old_handler if old_handler else new_handler
         deserialized_data = self.use_chunks_fixture(handler, serialized_data, 2048)
 
         to_compare = deepcopy(payload)
-        _.set_v(to_compare, route, {'file': f_bytes, 'name': original_name})
+        set_v(to_compare, route, {'file': f_bytes, 'name': original_name})
 
         self.assertEqual(to_compare, deserialized_data)
 
-        parsed_dir = path.join(_.dirname(__file__), 'parsed_files')
+        parsed_dir = path.join(dirname(__file__), 'parsed_files')
         if not path.exists(parsed_dir):
             makedirs(parsed_dir)
 
-        parsed_file_data = _.get_v(deserialized_data, route)
+        parsed_file_data = get_v(deserialized_data, route)
         path_to_parsed_file = path.join(parsed_dir, parsed_file_data['name'])
 
         with open(path_to_parsed_file, 'wb+') as parsed_img_file:

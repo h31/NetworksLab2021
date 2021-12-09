@@ -1,5 +1,5 @@
 import unittest
-import util.misc as _
+from util.misc import *
 
 
 class MiscTestCase(unittest.TestCase):
@@ -13,7 +13,7 @@ class MiscTestCase(unittest.TestCase):
         ]
         self.assertEqual(
             {'dec': 15, 'bin': '1111'},
-            _.find(arr, comparator)
+            find(arr, comparator)
         )
 
     def test_get_v(self):
@@ -24,14 +24,14 @@ class MiscTestCase(unittest.TestCase):
         }
         self.assertEqual(
             {'step3': 'finish'},
-            _.get_v(data, 'ladder.step1.step2')
+            get_v(data, 'ladder.step1.step2')
         )
-        self.assertEqual('Hello!', _.get_v(data, 'plain_str'))
-        self.assertEqual('two', _.get_v(data, ['yaharr', '2']))
+        self.assertEqual('Hello!', get_v(data, 'plain_str'))
+        self.assertEqual('two', get_v(data, ['yaharr', '2']))
 
     def test_set_v(self):
         data = {'field': 'value'}
-        _.set_v(data, ['extra_field', 0, 'hidden'], 'loot')
+        set_v(data, ['extra_field', 0, 'hidden'], 'loot')
         self.assertEqual(
             {'field': 'value', 'extra_field': [{'hidden': 'loot'}]},
             data
@@ -41,24 +41,24 @@ class MiscTestCase(unittest.TestCase):
         arr = [2, 3, 4, 1, 5, 7]
         other = [7, 5, 3]
 
-        self.assertEqual([2, 4, 1], _.difference(arr, other))
+        self.assertEqual([2, 4, 1], difference(arr, other))
 
     def test_includes(self):
-        self.assertTrue(_.includes('Hello!', 'll'))
-        self.assertFalse(_.includes([1, 2, 3], 5))
+        self.assertTrue(includes('Hello!', 'll'))
+        self.assertFalse(includes([1, 2, 3], 5))
 
     def test_snake_case(self):
         self.assertEqual(
             'green_slithery_scales',
-            _.snake_case('greenSlitheryScales')
+            snake_case('greenSlitheryScales')
         )
         self.assertEqual(
             'green_slithery_scales',
-            _.snake_case('green Slithery Scales')
+            snake_case('green Slithery Scales')
         )
         self.assertEqual(
             'green_slithery_scales',
-            _.snake_case('GreenSlitheryScales')
+            snake_case('GreenSlitheryScales')
         )
 
 

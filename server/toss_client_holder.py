@@ -4,7 +4,7 @@ from typing import Callable
 import logger
 from slip import SlipError, SlipHandler, PeekEvent
 import pillow
-import util.misc as _
+from util.misc import *
 from toss_error import TossError
 
 
@@ -24,7 +24,7 @@ class TossClientHolder:
         self.slip_handler.on(
             PeekEvent.collected_header,
             lambda sz: logger.log(
-                comment=f'Collected the full Header for {self}, expecting {_.w_amount(sz, "byte")} of Body',
+                comment=f'Collected the full Header for {self}, expecting {w_amount(sz, "byte")} of Body',
                 status=logger.Status.success
             )
         )
@@ -38,21 +38,21 @@ class TossClientHolder:
         self.slip_handler.on(
             PeekEvent.received_chunk,
             lambda sz, part: logger.log(
-                comment=f'Received {_.w_amount(sz, "byte")} of data from {self} (collecting {part.value})',
+                comment=f'Received {w_amount(sz, "byte")} of data from {self} (collecting {part.value})',
                 status=logger.Status.info
             )
         )
         self.slip_handler.on(
             PeekEvent.body_size,
             lambda sz: logger.log(
-                comment=f'Sending {_.w_amount(sz, "byte")} of Body to {self}',
+                comment=f'Sending {w_amount(sz, "byte")} of Body to {self}',
                 status=logger.Status.info
             )
         )
         self.slip_handler.on(
             PeekEvent.header_size,
             lambda sz: logger.log(
-                comment=f'Sending {_.w_amount(sz, "byte")} of Header to {self}',
+                comment=f'Sending {w_amount(sz, "byte")} of Header to {self}',
                 status=logger.Status.info
             )
         )
@@ -78,7 +78,7 @@ class TossClientHolder:
         to_send = {'status': status, 'action': action}
         if data is not None:
             to_send['data'] = data
-            to_send['data']['time'] = _.now()
+            to_send['data']['time'] = now()
         await self.write_safely(to_send, files)
         cb()
 
@@ -131,7 +131,7 @@ class TossClientHolder:
                     occasion_type=logger.OccasionType.error.value,
                     occasion_name=pillow.PillowError.__name__,
                     status=logger.Status.error,
-                    comment=f'Payload validation failed with {_.w_amount(len(err.errors), "error")} '
+                    comment=f'Payload validation failed with {w_amount(len(err.errors), "error")} '
                             f'for {self}:\n{err.to_representation()}'
                 )
                 await self.respond_w_err(action_to_respond, err.errors, pillow.ResponseStatus.ERR_REQ_DATA.value)
@@ -141,7 +141,7 @@ class TossClientHolder:
             data = payload['data']
 
             try:
-                await self.__getattribute__(f'handle_{_.snake_case(action)}')(action=action, data=data)
+                await self.__getattribute__(f'handle_{snake_case(action)}')(action=action, data=data)
                 logger.log(
                     occasion_type=logger.OccasionType.action.value,
                     occasion_name=action,
@@ -162,7 +162,7 @@ class TossClientHolder:
     async def handle_log_in(self, action, data):
         username = data.get('username', None)
         no_username = not username
-        duplicate_username = _.find(self.server_ref.clients, lambda client, *_: client.username == username)
+        duplicate_username = find(self.server_ref.clients, lambda client, *_: client.username == username)
         if duplicate_username or no_username:
             comment_ending = 'no username' if no_username else f'duplicate username: {username}'
             err_text = 'Username can\'t be empty' if no_username else f'User with username {username} already exists'

@@ -1,5 +1,5 @@
 from .validators import check_shape
-import util.misc as _
+from util.misc import *
 from .pillow_error import PillowError
 from enum import Enum
 
@@ -104,19 +104,19 @@ def validate_send_message(data):
     errors = check_shape(data, send_message_shape)
     if data is not None and not data.get('message', None) and not data.get('attachment', None):
         errors['data'] = ['Either a message or an attachment must be present']
-    if not _.is_empty(errors):
+    if not is_empty(errors):
         raise PillowError(errors)
 
 
 def validate_log_in(data):
     errors = check_shape(data, log_in_shape)
-    if not _.is_empty(errors):
+    if not is_empty(errors):
         raise PillowError(errors)
 
 
 def validate_chunks(data):
     errors = check_shape(data, chunks_shape)
-    if not _.is_empty(errors):
+    if not is_empty(errors):
         raise PillowError(errors)
 
     if data['chunks'] < 0:
@@ -125,11 +125,11 @@ def validate_chunks(data):
 
 def validate_request(payload):
     payload_errors = check_shape(payload, request_shape)
-    if not _.is_empty(payload_errors):
+    if not is_empty(payload_errors):
         raise PillowError(payload_errors)
 
     action = payload['action']
     data = payload['data']
-    globals()[f'validate_{_.snake_case(action)}'](data)
+    globals()[f'validate_{snake_case(action)}'](data)
 
     return payload

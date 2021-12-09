@@ -1,5 +1,5 @@
 from colorama import init as init_c, Fore
-import util.misc as _
+from util.misc import *
 from enum import Enum
 
 
@@ -22,7 +22,7 @@ def init():
 
 
 def log(occasion_type: str = None, occasion_name: str = None, comment: str = None, status: Status = Status.plain):
-    to_log = [_.format_time()]
+    to_log = [format_time()]
 
     if occasion_name and occasion_type:
         to_log.extend([f'  {occasion_type}: ', status.value + occasion_name])

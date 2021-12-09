@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Callable
-import util.misc as _
+from util.misc import *
 from .slip_error import SlipError
 import re
 import datetime
@@ -63,7 +63,7 @@ class SlipHandler:
         sz = len(data)
         # for some strange cases when we receive more data then expected
         if sz > self.__to_collect:
-            byte_str = _.w_amount(sz - self.__to_collect, 'byte')
+            byte_str = w_amount(sz - self.__to_collect, 'byte')
             raise SlipError(f'Received {byte_str} bytes more then expected while collecting message body')
 
         to_append = min(self.__to_collect, sz)
@@ -146,20 +146,20 @@ class SlipHandler:
                 items.append((str(i), data[i]))
 
         for key, val in items:
-            clean_type = _.get_clean_type(val)
+            clean_type = get_clean_type(val)
             the_type = cls.__TYPES.get(clean_type, None)
             filename = None
             if the_type == cls.__TYPES['NoneType']:
                 representation = bytes(0)
             elif the_type == cls.__TYPES['datetime']:
-                representation = _.to_b(f'{val.isoformat(timespec="milliseconds")}Z')
+                representation = to_b(f'{val.isoformat(timespec="milliseconds")}Z')
             elif the_type == cls.__TYPES['list']:
                 representation = cls.make_body(val, files_dict.get(key, None) if files_dict else None)
-            elif _.includes(['int', 'float'], clean_type):
-                representation = _.to_b(str(val))
+            elif includes(['int', 'float'], clean_type):
+                representation = to_b(str(val))
                 the_type = cls.__TYPES['number']
             elif clean_type == 'bytes':
-                is_file = _.includes(files_dict.keys(), key)
+                is_file = includes(files_dict.keys(), key)
                 representation = val
                 if is_file:
                     filename = files_dict.get(key)
@@ -176,44 +176,44 @@ class SlipHandler:
                 if representation is None:
                     raise SlipError(f"Can't serialize {clean_type} {key}")
 
-                representation = _.to_b(representation)
+                representation = to_b(representation)
 
             esc_key = cls.escape_characters(key)
-            if _.includes([cls.__TYPES['bool'], cls.__TYPES['NoneType']], the_type):
+            if includes([cls.__TYPES['bool'], cls.__TYPES['NoneType']], the_type):
                 sz = ''
             else:
                 sz = f'{len(representation)}|'
 
             serialized_filename = bytes(cls.escape_characters(filename), 'utf8') if filename else None
 
-            result += _.to_b(f'{esc_key}|{the_type}{sz}')
+            result += to_b(f'{esc_key}|{the_type}{sz}')
             result += representation
             if serialized_filename:
                 result += serialized_filename
-            result += _.to_b(';')
+            result += to_b(';')
 
         return result
 
     @staticmethod
     def parse_bool(text: str) -> bool:
-        if not _.includes(['0', '1'], text):
+        if not includes(['0', '1'], text):
             raise SlipError(f'Boolean must be defined as 0 or 1, got {text}')
-        return bool(_.num(text))
+        return bool(num(text))
 
     @classmethod
     def parse_list(cls, buf: bytes) -> list:
         as_dict = cls.parse_body(buf)
         as_list = list(as_dict.items())
         as_list.sort()
-        return _.l_map(lambda entry: entry[1], as_list)
+        return l_map(lambda entry: entry[1], as_list)
 
     @classmethod
     def parse_body(cls, payload: bytes) -> dict:
-        clean_type = _.get_clean_type(payload)
+        clean_type = get_clean_type(payload)
         if clean_type != 'bytes':
             raise SlipError(f'Expected a byte array, got {clean_type}')
 
-        as_string = _.from_b(payload)
+        as_string = from_b(payload)
         result = {}
         current_buf_idx = 0
         current_str_idx = 0
@@ -232,7 +232,7 @@ class SlipHandler:
 
             if text:
                 current_str_idx += len(text)
-                current_buf_idx += len(_.to_b(text))
+                current_buf_idx += len(to_b(text))
 
             check_len()
 
@@ -247,7 +247,7 @@ class SlipHandler:
             change_idx(1, raw_key)
 
             key = cls.unescape_characters(raw_key)
-            the_type = _.invert(cls.__TYPES).get(as_string[current_str_idx], None)
+            the_type = invert(cls.__TYPES).get(as_string[current_str_idx], None)
             if the_type is None:
                 raise SlipError({'str': as_string, 'idx': current_str_idx})
 
@@ -278,12 +278,12 @@ class SlipHandler:
                 change_idx(1, content_size_str)
 
             raw_content = payload[current_buf_idx:current_buf_idx + content_size]
-            raw_content_as_string = _.from_b(raw_content)
+            raw_content_as_string = from_b(raw_content)
 
             result[key] = {
                 cls.__TYPES['datetime']: lambda: cls.get_date(raw_content_as_string),
                 cls.__TYPES['str']: lambda: raw_content_as_string,
-                cls.__TYPES['number']: lambda: _.num(raw_content_as_string),
+                cls.__TYPES['number']: lambda: num(raw_content_as_string),
                 cls.__TYPES['dict']: lambda: cls.parse_body(raw_content),
                 cls.__TYPES['file']: lambda: {'file': raw_content},
                 cls.__TYPES['bool']: lambda: cls.parse_bool(raw_content_as_string),
@@ -291,7 +291,7 @@ class SlipHandler:
                 cls.__TYPES['NoneType']: lambda: None
             }[type_symbol]()
 
-            if not _.includes(cls.__USING_RAW_BYTES, type_symbol):
+            if not includes(cls.__USING_RAW_BYTES, type_symbol):
                 change_idx(0, raw_content_as_string)
             else:
                 current_str_idx += len(raw_content_as_string)

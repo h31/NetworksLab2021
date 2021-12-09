@@ -5,7 +5,7 @@ import logger
 from toss_client_holder import TossClientHolder
 from typing import List, Callable
 from pillow import Actions, ResponseStatus
-import util.misc as _
+from util.misc import *
 
 
 class GracefulExit(SystemExit):
@@ -27,7 +27,7 @@ class TossServer:
         raise GracefulExit()
 
     def get_handling_now(self):
-        return f'Handling {_.w_amount(len(self.clients), "connection")} now'
+        return f'Handling {w_amount(len(self.clients), "connection")} now'
 
     async def broadcast(
             self, action: str,
@@ -45,9 +45,9 @@ class TossServer:
         amount = len(filtered_clients)
         error_count = 0
 
-        logger.log(comment=f'Broadcasting to {_.w_amount(amount, "client")}...', status=logger.Status.prefix)
+        logger.log(comment=f'Broadcasting to {w_amount(amount, "client")}...', status=logger.Status.prefix)
 
-        time = _.now()  # So that the time is the same for each client
+        time = now()  # So that the time is the same for each client
         for client in filtered_clients:
             to_send = {'action': action, 'status': get_status(client)}
             data = get_data(client)
@@ -64,7 +64,7 @@ class TossServer:
                 error_count += 1
 
         logger.log(
-            comment=f'Finished broadcasting with {_.w_amount(error_count, "error")}',
+            comment=f'Finished broadcasting with {w_amount(error_count, "error")}',
             status=logger.Status.warn if error_count else logger.Status.success
         )
         cb()
@@ -73,7 +73,7 @@ class TossServer:
         if err:
             logger.log(
                 occasion_type=logger.OccasionType.error.value,
-                occasion_name=_.get_clean_type(err),
+                occasion_name=get_clean_type(err),
                 status=logger.Status.error,
                 comment=str(err)
             )
@@ -81,7 +81,7 @@ class TossServer:
         waiting_for = len(self.clients)
         if waiting_for:
             logger.log(
-                comment=f'Closing the server, waiting for {_.w_amount(waiting_for, "client")} to disconnect...',
+                comment=f'Closing the server, waiting for {w_amount(waiting_for, "client")} to disconnect...',
                 status=logger.Status.prefix
             )
             await self.broadcast(
@@ -108,7 +108,7 @@ class TossServer:
         except BaseException as err:  # All the known exceptions are handled within the Client
             logger.log(
                 occasion_type=logger.OccasionType.error.value,
-                occasion_name=_.get_clean_type(err),
+                occasion_name=get_clean_type(err),
                 status=logger.Status.error,
                 comment=f'{client}: {str(err)}'
             )
@@ -120,7 +120,7 @@ class TossServer:
                 await client.write_safely(to_send)
 
     async def unregister_client(self, client: TossClientHolder):
-        self.clients = _.l_filter(lambda c: c != client, self.clients)
+        self.clients = l_filter(lambda c: c != client, self.clients)
         await client.finish()
         logger.log(
             status=logger.Status.info,

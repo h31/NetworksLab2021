@@ -1,19 +1,19 @@
-import util.misc as _
+from util.misc import *
 from typing import List
 from copy import deepcopy
 
 
 def check_choices(data, choices):
-    if not choices or _.includes(choices, data):
+    if not choices or includes(choices, data):
         return None
     return f'Unsupported value {data}, expected one of {", ".join(list(map(str, choices)))}'
 
 
 def check_type(data, the_type):
     t_name = the_type.__name__
-    article = 'an' if _.includes(['a', 'e', 'i', 'o', 'u'], t_name.lower()) else 'a'
-    if data and _.get_clean_type(data) != t_name:
-        return f'Expected {article} {t_name}, got {_.get_clean_type(data)}'
+    article = 'an' if includes(['a', 'e', 'i', 'o', 'u'], t_name.lower()) else 'a'
+    if data and get_clean_type(data) != t_name:
+        return f'Expected {article} {t_name}, got {get_clean_type(data)}'
     return None
 
 
@@ -25,8 +25,8 @@ def check_fields(data: dict, _proper_fields: List[str], required: bool):
 
     check_args = (proper_fields, actual_keys) if required else (actual_keys, proper_fields)
     text = 'This field is required' if required else 'This field is not supported'
-    improper_fields = _.difference(*check_args)
-    return _.l_map(lambda field: f'{field}: {text}', improper_fields)
+    improper_fields = difference(*check_args)
+    return l_map(lambda field: f'{field}: {text}', improper_fields)
 
 
 def check_required(data, required: bool):
@@ -38,13 +38,13 @@ def check_required(data, required: bool):
 def rearrange_errors(raw_errors: dict) -> dict:
     result = deepcopy(raw_errors)
     for key, value in raw_errors.items():
-        if _.includes(key, '.'):
+        if includes(key, '.'):
             split_key = key.split('.')
             top_level_key = split_key[0]
             if result.get(top_level_key, None) is None:
                 result[top_level_key] = []
             result[top_level_key].extend(
-                _.l_map(lambda err_msg: f'{".".join(split_key[1:])}: {err_msg}', value)
+                l_map(lambda err_msg: f'{".".join(split_key[1:])}: {err_msg}', value)
             )
             result.pop(key)
     return result
@@ -93,7 +93,7 @@ def check_shape(data, shape: dict, rearrange: bool = True):
                     lambda key, val: _add_err(f'{"" if top_level else f"{name}."}{key}', val)
                 )
 
-            proper_fields = _.l_map(lambda field: field['name'], fields)
+            proper_fields = l_map(lambda field: field['name'], fields)
             fields_err = check_fields(_data, proper_fields, False)
             for one_err in fields_err:
                 _add_err(name, one_err)
