@@ -23,35 +23,33 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.*
 
-class Client() {
+class Client(private val host: String, private val port: Int) {
 
     private lateinit var name: String
-    private var stillWorking = true
+    private lateinit var socket: Socket
+    private lateinit var receiver: ByteReadChannel
+    private lateinit var sender: ByteWriteChannel
     private val logger = LoggerFactory.getLogger("com.monkeys.pcss.client.ClientKt")
 
     private suspend fun readLineSuspending(): String =
         withContext(Dispatchers.IO) { return@withContext readLine()!! }
 
-    suspend fun start(host: String, port: Int) = coroutineScope {
-        val socket = aSocket(ActorSelectorManager(Dispatchers.IO))
+    suspend fun start() = coroutineScope {
+        socket = aSocket(ActorSelectorManager(Dispatchers.IO))
             .tcp().connect(InetSocketAddress(host, port))
-        val receiver = socket.openReadChannel()
-        val sender = socket.openWriteChannel(true)
+        receiver = socket.openReadChannel()
+        sender = socket.openWriteChannel(true)
 
         var nameExist = false
-        var isSingingInNow = true
         println("Enter your nickname or \'q\' to exit.")
 
         when (val userInput = readLineSuspending()) {
             "" -> {
-                stillWorking = false
-            }
-            null -> {
-                stillWorking = false
+                stopConnection()
             }
             "q" -> {
                 sender.writeFully(ByteBuffer.wrap("EXIT".toByteArray()))
-                stillWorking = false
+                stopConnection()
             }
             else -> {
 
@@ -66,14 +64,14 @@ class Client() {
 
                 val fullServerMessage = getNewMessage(receiver)
                 val serverMessage = fullServerMessage.first
-                messageInfo = serverMessage!!.data.messageText
+                messageInfo = serverMessage.data.messageText
                 val type = serverMessage.header.type
                 val senderName = serverMessage.data.senderName
 
                 if (messageInfo == "Name is taken, please try to connect again"
                     && type == MessageType.LOGIN && senderName == "server"
                 ) {
-                    stillWorking = false
+                    //
                     nameExist = true
                 } else {
                     name = userInput
@@ -86,22 +84,22 @@ class Client() {
             }
         }
         if (nameExist) {
-            stopConnection(socket, sender, receiver)
+            stopConnection()
         } else {
-            launch(Dispatchers.IO) { sendMessages(socket, sender, receiver) }
-            launch(Dispatchers.IO) { receiveMessages(socket, sender, receiver) }
+            launch(Dispatchers.IO) { sendMessages() }
+            launch(Dispatchers.IO) { receiveMessages() }
         }
     }
 
-    private suspend fun sendMessages(socket: Socket, sender: ByteWriteChannel, receiver: ByteReadChannel) {
+    private suspend fun sendMessages() {
         try {
-            while (stillWorking) {
+            while (!socket.isClosed) {
                 print("m: ")
                 when (val userMessage = readLine()) {
                     "" -> continue
                     "q" -> {
                         sender.writeFully(ByteBuffer.wrap("EXIT".toByteArray()))
-                        stillWorking = false
+                        stopConnection()
                     }
                     else -> {
                         val parsedMessage = parseUserMessage(userMessage.toString())
@@ -143,13 +141,13 @@ class Client() {
         } catch (e: Exception) {
             logger.error("!E: There is an ERROR while sending ur message. Probably the server was destroyed by evil goblins.")
             e.printStackTrace()
-            stopConnection(socket, sender, receiver)
+            stopConnection()
         }
     }
 
-    private suspend fun receiveMessages(socket: Socket, sender: ByteWriteChannel, receiver: ByteReadChannel) {
+    private suspend fun receiveMessages() {
         try {
-            while (stillWorking) {
+            while (!socket.isClosed) {
 
                 val fullMessage = getNewMessage(receiver)
                 val serverMessage = fullMessage.first
@@ -206,14 +204,13 @@ class Client() {
         } catch (e: Exception) {
             logger.error("!E: There is an ERROR while receiving new messages. Probably the server was destroyed by evil goblins.")
             e.printStackTrace()
-            stopConnection(socket, sender, receiver)
+            stopConnection()
         }
     }
 
 
-    private fun stopConnection(socket: Socket, sender: ByteWriteChannel, receiver: ByteReadChannel) {
+    private fun stopConnection() {
         try {
-            sender.close()
             socket.close()
             println("Bye!")
         } catch (e: SocketException) {
