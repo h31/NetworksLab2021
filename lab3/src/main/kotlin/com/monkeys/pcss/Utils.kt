@@ -18,7 +18,7 @@ fun parseArguments(args: List<String>): WorkType = when {
     args.contains("-s") && args.size == 2 -> {
         if (args.indexOf("-s") == 1) {
             println(
-                "Incorrect arguments or it is impossible to establish a connection with the specified server.\n" +
+                "Incorrect arguments.\n" +
                         "Connection not establishment"
             )
             HELP

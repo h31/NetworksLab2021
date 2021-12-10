@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
+import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.time.ZonedDateTime
 
@@ -44,7 +45,7 @@ class Server(private val host: String, private val port: Int) {
         if (loginRes.first) {
             startCommunication(loginRes.second)
         } else {
-            client.close()
+            clientList.closeSocketSuspending(client)
         }
     }
 
@@ -69,9 +70,13 @@ class Server(private val host: String, private val port: Int) {
 
 
             return Pair(isSuccessfullyLogin, name)
-        } catch (e: Exception) {
+        } catch (e: SocketException) {
             logger.error("!E: Client connection was closed! He will come later probably?")
-            e.printStackTrace()
+            logger.error(e.stackTraceToString())
+            return Pair(false, "server")
+        } catch (e: Exception) {
+            logger.error("!E: Troubles with client while login")
+            logger.error(e.stackTraceToString())
             return Pair(false, "server")
         }
     }
@@ -118,8 +123,16 @@ class Server(private val host: String, private val port: Int) {
                     )
                 }
             }
+        } catch (e: SocketTimeoutException) {
+            logger.error("E!: Connection with client $clientId  was closed! Deleting him from client list...")
+            clientList.finishConnection(clientId)
+        } catch (e: SocketException) {
+            logger.error("E!: Troubles with socket from client $clientId! Deleting him from client list...")
+            logger.error (e.stackTraceToString())
+            clientList.finishConnection(clientId)
         } catch (e: Exception) {
-            logger.error("!E: Connection with client was closed! Deleting him from clients list...")
+            logger.error("!E: Some troubles with client $clientId")
+            logger.error (e.stackTraceToString())
             clientList.finishConnection(clientId)
         }
     }

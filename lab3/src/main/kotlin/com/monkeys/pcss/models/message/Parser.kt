@@ -1,14 +1,19 @@
 package com.monkeys.pcss.models.message
 
+import org.intellij.lang.annotations.Language
 import java.io.File
 
 fun parseData(dataMessage: String): Data {
-    val fileSizeRegex = """[A-Za-z0-9]+""".toRegex().pattern
-    val senderNameRegex = """[A-Za-z0-9А-Яа-я]+""".toRegex().pattern
-    val timeRegex =
-        """[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]+((\+[0-9]{2}:[0-9]{2})|Z)\{[A-Za-z/]+\}""".toRegex().pattern
-    val messageTextRegex = """[^\[\]]*""".toRegex().pattern
-    val fileNameRegex = """([^(\[\])]+)\.([a-z0-9A-Z]+)""".toRegex().pattern
+    @Language("RegExp")
+    val fileSizeRegex = """[A-Za-z0-9]+"""
+    @Language("RegExp")
+    val senderNameRegex = "[A-Za-z0-9А-Яа-я]+"
+    @Language("RegExp")
+    val timeRegex = """[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]+((\+[0-9]{2}:[0-9]{2})|Z)\{[A-Za-z/]+\}"""
+    @Language("RegExp")
+    val messageTextRegex = """[^\[\]]*"""
+    @Language("RegExp")
+    val fileNameRegex = """([^(\[\])]+)\.([a-z0-9A-Z]+)"""
     val fullRegex =
         """_\[($fileSizeRegex)?\],\[($senderNameRegex)\],\[($timeRegex)?\],\[($messageTextRegex)?\],\[($fileNameRegex)?\]_;_""".toRegex()
     val matchResult = fullRegex.matchEntire(dataMessage)
@@ -56,6 +61,7 @@ fun parseHostAndPort(arg: String): Pair<String, Int> {
         val arg2 = arg.split(":")
         Pair(arg1, arg2[arg2.size - 1].toInt())
     } catch (e: Exception) {
+        e.printStackTrace()
         Pair("Error", 0)
     }
 }

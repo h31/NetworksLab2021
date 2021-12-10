@@ -138,9 +138,12 @@ class Client(private val host: String, private val port: Int) {
                     }
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SocketException) {
             logger.error("!E: There is an ERROR while sending ur message. Probably the server was destroyed by evil goblins.")
             e.printStackTrace()
+            stopConnection()
+        } catch (e: Exception) {
+            logger.error(e.stackTraceToString())
             stopConnection()
         }
     }
@@ -201,9 +204,12 @@ class Client(private val host: String, private val port: Int) {
                     print("m: ")
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: SocketException) {
             logger.error("!E: There is an ERROR while receiving new messages. Probably the server was destroyed by evil goblins.")
             e.printStackTrace()
+            stopConnection()
+        } catch (e: Exception) {
+            logger.error(e.stackTraceToString())
             stopConnection()
         }
     }
@@ -215,6 +221,9 @@ class Client(private val host: String, private val port: Int) {
             println("Bye!")
         } catch (e: SocketException) {
             logger.error("ERROR! Socket wasn't closed by client(probably it was closed by server)!")
+        } catch (e: Exception) {
+            logger.error(e.stackTraceToString())
+            stopConnection()
         }
     }
 }

@@ -7,8 +7,11 @@ import com.monkeys.pcss.models.message.Message
 import com.monkeys.pcss.models.message.MessageType
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.net.SocketException
 import java.nio.ByteBuffer
 import java.util.*
 
@@ -56,12 +59,18 @@ class ClientList() {
     suspend fun finishConnection(id: String) {
         clients[id]!!.writeChannel.close()
         clients.remove(id)
-        socketList[id]!!.close()
+        closeSocketSuspending(socketList[id]!!)
         socketList.remove(id)
         val data = Data(0, id, "", "Client $id disconnected from chat", null)
         val dataSize = data.getServerMessage().toByteArray().size
         val header = Header(MessageType.SPECIAL, false, dataSize)
         writeToEveryBody(Message(header, data), ByteArray(0))
+    }
+
+    suspend fun closeSocketSuspending(socket: Socket) {
+        withContext(Dispatchers.IO) {
+            socket.close()
+        }
     }
 
     suspend fun writeToEveryBody(message: Message, fileByteArray: ByteArray) {
@@ -71,12 +80,17 @@ class ClientList() {
             try {
                 if (client.key != name) {
                     val sender = client.value.writeChannel
-                    val messageBuffer = message.getMessage().plus(fileByteArray)
+                    val messageBuffer = message.getMessage() + fileByteArray
                     sender.writeFully(messageBuffer)
                     names.add(client.key)
                 }
-            } catch (e: Exception) {
+            } catch (e: SocketException) {
                 logger.error("!E: Connection with client ${client.key} was closed!")
+                names.remove(client.key)
+                finishConnection(client.key)
+            } catch (e: Exception) {
+                logger.error("!E: error with client ${client.key}!")
+                logger.error(e.stackTraceToString())
                 names.remove(client.key)
                 finishConnection(client.key)
             }
