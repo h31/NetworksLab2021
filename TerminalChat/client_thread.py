@@ -4,13 +4,14 @@ import threading
 import decoder
 import server
 
+lock = threading.Lock()
+
 
 class ClientThread(threading.Thread):
 
-    def __init__(self, clientsocket, semaphore, serversocket):
+    def __init__(self, clientsocket, serversocket):
         super().__init__()
         self.clientsocket = clientsocket
-        self.semaphore = semaphore
         self.serversocket = serversocket
         self.name = ''
 
@@ -23,13 +24,13 @@ class ClientThread(threading.Thread):
                     self.clientsocket.chat_send(decoder.encode(msg_arr))
                     continue
                 elif msg_arr[0] == MessageId.request_connection.value:
-                    self.semaphore.acquire()
+                    lock.acquire()
                     if msg_arr[1] in server.names:
                         self.clientsocket.chat_send(decoder.encode(['0', 'Name ' + msg_arr[1] + ' is already in use.']))
-                        self.semaphore.release()
+                        lock.release()
                         continue
                     server.names[msg_arr[1]] = self.clientsocket
-                    self.semaphore.release()
+                    lock.release()
                     self.name = msg_arr[1]
                     self.broadcast(decoder.encode(['2', 'User ' + self.name + ' join the chat.']))
                 elif msg_arr[0] == MessageId.send_simple_message.value:
@@ -49,6 +50,7 @@ class ClientThread(threading.Thread):
                 else:
                     self.clientsocket.chat_send(decoder.encode(['0', 'Message is incorrect.']))
         except ConnectionError:
+            lock.release()
             if self.name != '':
                 self.close()
             return -1
@@ -59,8 +61,8 @@ class ClientThread(threading.Thread):
             ct.chat_send(msg)
 
     def close(self):
-        self.semaphore.acquire()
+        lock.acquire()
         if self.name in server.names:
             server.names.pop(self.name)
-        self.semaphore.release()
+        lock.release()
         self.broadcast(decoder.encode(['2', 'User ' + self.name + ' left the chat.']))
