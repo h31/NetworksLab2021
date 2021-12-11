@@ -1,74 +1,118 @@
-from flask import Flask, request
-import sys, math, socket
+# python_socketio==4.6.0; python_engineio==3.13.2; flask_socketio==4.3.1
+from flask import Flask
+from flask_socketio import SocketIO, emit, disconnect
+import flask_login, functools, sys, math, socket
+from flask_login import LoginManager, UserMixin, current_user
 from multiprocessing import Pool
-from flask_basicauth import BasicAuth
 
-app = Flask("app")
-app.config['BASIC_AUTH_USERNAME'] = 'login'
-app.config['BASIC_AUTH_PASSWORD'] = 'password'
-app.config['BASIC_AUTH_FORCE'] = True
-basic_auth = BasicAuth(app)
+app = Flask(__name__)
+app.secret_key = "secret_key"
+socketio = SocketIO(app)
 
-fast_operations = ["+", "-", "*", "/"]
-slow_operations = ["sqrt", "!"]
+login_manager = LoginManager()
+login_manager.init_app(app)
+users = {"user1":"user1", "user2":"user2"}
 
-@app.route('/', methods=["GET"])
-def login():
-	return("Hello. You are logged in.")
+@login_manager.user_loader
+def user_loader(login):
+	if login not in users:
+		return
 
-@app.route('/calc', methods=["GET"])
-def getResult():
-	operation = request.args.get("operation")
-	if operation in fast_operations:
-		try:
-			operand1 = float(request.args.get("operand1"))
-			operand2 = float(request.args.get("operand2"))
-		except ValueError or TypeError:
-			return "ERROR: Invalid operand"
-		
-		return str(calc_fast_operation(operation, operand1, operand2))
-	elif operation in slow_operations:
-		try:
-			value = float(request.args.get("value"))
-		except ValueError or TypeError:
-			return "ERROR: Invalid value"
-		
-		pool = Pool()
-		asyncResult = pool.apply_async(calc_slow_operation, (operation, value))
-		asyncResult.wait(int(sys.argv[1]))
-		if asyncResult.ready():
-			answer = asyncResult.get()
-			pool.terminate()
-			return answer
-		else:
-			pool.terminate()
-			return "ERROR: Time out"
+	user = UserMixin()
+	user.id = login
+	return user
+
+@login_manager.request_loader
+def request_loader(request):
+	login = request.form.get("login")
+	if login not in users:
+		return
+
+	user = UserMixin()
+	user.id = login
+	return user
+
+@socketio.on('login')
+def login(data):
+	user_login = data["login"]
+	if user_login in users:
+		if data["password"] == users[user_login]:
+			user = UserMixin()
+			user.id = user_login
+			flask_login.login_user(user)
+			
+	if current_user.is_authenticated:
+		return {"status":"success", "user_login":current_user.get_id()}
 	else:
-		return "ERROR: Wrong operation"
+		return {"status":"failed"}
 
-def calc_fast_operation(operation, operand1, operand2):
-	match operation:
+def authenticated_only(f):
+	@functools.wraps(f)
+	def wrapped(*args, **kwargs):
+		if not current_user.is_authenticated:
+			disconnect()
+		else:
+			return f(*args, **kwargs)
+	return wrapped
+
+@socketio.on('fast_calc')
+@authenticated_only
+def fast_calc(data):	
+	if data["operation"] not in ("+", "-", "*", "/"):
+		return "ERROR: Wrong operation"
+	try:
+		operand1 = float(data["operand1"])
+		operand2 = float(data["operand2"])
+	except ValueError or TypeError:
+		return "ERROR: Invalid operand"
+	
+	match data["operation"]:
 		case "+":
-			answer = str(operand1) + " + " + str(operand2) + " = " + str(operand1 + operand2) 
+			return "Answer: " + str(operand1) + " + " + str(operand2) + " = " + str(operand1 + operand2)
 		case "-":
-			answer = str(operand1) + " - " + str(operand2) + " = " + str(operand1 - operand2) 
+			return "Answer: " + str(operand1) + " - " + str(operand2) + " = " + str(operand1 - operand2)
 		case "*":
-			answer = str(operand1) + " * " + str(operand2) + " = " + str(operand1 * operand2) 
+			return "Answer: " + str(operand1) + " * " + str(operand2) + " = " + str(operand1 * operand2)
 		case "/":
 			if operand2 > -0.0000001 and operand2 < 0.0000001:
-				answer = "ERROR: Division by zero"
+				return "ERROR: Division by zero"
 			else:
-				answer = str(operand1) + " / " + str(operand2) + " = " + str(operand1 / operand2) 
-	return answer
+				return "Answer: " + str(operand1) + " / " + str(operand2) + " = " + str(operand1 / operand2)
 
-def calc_slow_operation(operation, value):
-	if value < 0: return "The value must be greater than 0"
+@socketio.on('slow_calc')
+@authenticated_only
+def slow_calc(data):
+	if data["operation"] not in ("sqrt", "!"):
+		return "ERROR: Wrong operation"
+	try:
+		value = float(data["value"])
+	except ValueError or TypeError:
+		return "ERROR: Invalid value"
+	
+	emit("server_message", "INFO: Please wait until the operation is completed")
+	
+	pool = Pool()
+	asyncResult = pool.apply_async(calculate, (data["operation"], value))
+	asyncResult.wait(int(sys.argv[1]))
+	if asyncResult.ready():
+		result = asyncResult.get()
+		pool.terminate()
+		return result
+	else:
+		pool.terminate()
+		return "ERROR: Timeout"
+
+def calculate(operation, value):
+	if value < 0: return "ERROR: The value must be greater than 0"
 	match operation:
 		case "sqrt":
-			answer = "sqrt(" + str(value) + ") = " + str(math.sqrt(value))
+			return "Answer: sqrt(" + str(value) + ") = " + str(math.sqrt(value))
 		case "!":
-			answer =  str(int(value)) + "! = " + str(math.factorial(int(value)))
-	return answer
+			try:
+				factorial = math.factorial(int(value))
+				return "Answer: " + str(int(value)) + "! = " + str(factorial)
+			except OverflowError:
+				return "ERROR: The factorial argument should not exceed 2147483647"
 
 def get_local_IP():
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
