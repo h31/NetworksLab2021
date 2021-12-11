@@ -40,11 +40,6 @@ public class UserController {
         return ResponseEntity.ok(userService.saveMessage(model));
     }
 
-    @PostMapping("/user/register")
-    public ResponseEntity<UserModel> register(@RequestBody UserModel userModel) {
-        return ResponseEntity.ok(userService.registerNewUser(userModel));
-    }
-
     @GetMapping("/forum/allUsers")
     public ResponseEntity<List<UserModel>> allUsers() {
         return ResponseEntity.ok(userService.getAllUsers());

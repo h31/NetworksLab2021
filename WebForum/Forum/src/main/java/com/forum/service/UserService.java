@@ -59,11 +59,6 @@ public class UserService {
         return model;
     }
 
-    public UserModel registerNewUser(UserModel userModel) {
-        userRepository.register(userModel);
-        return userModel;
-    }
-
     public List<UserModel> getAllUsers() {
         return userRepository.getAllRegistered();
     }

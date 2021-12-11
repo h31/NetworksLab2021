@@ -55,15 +55,6 @@ public class UserRepository {
         return users;
     }
 
-    public UserModel register(UserModel userModel) {
-        if(isUserExists(userModel.getUserName())) {
-            throw new IllegalArgumentException();
-        }
-
-        users.add(userModel);
-        return userModel;
-    }
-
     public List<UserModel> getAllRegistered() {
         return users;
     }

@@ -143,20 +143,6 @@ returns:
 ```
 
 ###User endoints
-POST: `/user/register`
-accepts: 
-```
-{
-    "userName":"vasd",
-    "password":"asfasd"
-}
-```
-returns:
-```
-{
-    "userName": "vasd"
-}
-```
 POST: `/user/sendMessage`
 accepts:
 ```
