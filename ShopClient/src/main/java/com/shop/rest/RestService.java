@@ -30,7 +30,7 @@ public class RestService {
 
     public List<Good> getAllGoods() throws IOException {
         Request request = new Request.Builder()
-                .url(HOST + BASE_URL + "/")
+                .url(HOST + BASE_URL + "/all")
                 .build();
         Response response = client.newCall(request).execute();
         String json = Objects.requireNonNull(response.body()).string();
@@ -42,7 +42,7 @@ public class RestService {
         ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
         RequestBody formBody = RequestBody.create(ow.writeValueAsString(good), JSON);
         Request request = new Request.Builder()
-                .url(HOST + BASE_URL + "/admin/addGoods")
+                .url(HOST + BASE_URL + "/admin/add")
                 .post(formBody)
                 .build();
         Response response = client.newCall(request).execute();
@@ -55,7 +55,7 @@ public class RestService {
                 .add("id", id.toString())
                 .build();
         Request request = new Request.Builder()
-                .url(HOST + BASE_URL + "/buyGoods")
+                .url(HOST + BASE_URL + "/buy")
                 .post(formBody)
                 .build();
         Response response = client.newCall(request).execute();

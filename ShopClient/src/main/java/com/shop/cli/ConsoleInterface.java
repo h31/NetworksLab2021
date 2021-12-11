@@ -32,6 +32,7 @@ public class ConsoleInterface implements Runnable{
         if(!checkConnection()) {
             System.exit(THE_ANSWER_TO_THE_MAIN_QUESTION_OF_THE_UNIVERSE);
         }
+        System.out.println("Connection was established\nType: \"help\" for information about all commands");
         String command;
         while (true) {
             if(in.hasNext()) {
@@ -41,6 +42,11 @@ public class ConsoleInterface implements Runnable{
                     for (Good good : goods) {
                         System.out.println(good.toString());
                     }
+                }
+                if(command.contains("help")) {
+                    System.out.println("Get goods list usage: get");
+                    System.out.println("Buy goods usage: buy <id> <count>");
+                    System.out.println("(Admin option) Add goods usage: add <id> <count>");
                 }
                 if(command.contains("buy")) {
                     String[] commandParts = command.split(" ");
