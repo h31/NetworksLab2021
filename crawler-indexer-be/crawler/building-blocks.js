@@ -4,6 +4,7 @@ import { JSDOM } from 'jsdom';
 import normalizeUrl from 'normalize-url';
 import natural from 'natural';
 import LanguageDetect from 'languagedetect';
+import crypto from 'crypto';
 
 
 const langDetector = new LanguageDetect();
@@ -35,6 +36,19 @@ const EVENTS = {
   data: 'data',
   end: 'end'
 };
+
+const SHINGLE_SIZE = 10;
+function shingleSelector(shingle) {
+  return shingle % 25 === 0;
+}
+
+function checksum(str, algorithm = 'md5', encoding = 'hex') {
+  const asStr = crypto
+    .createHash(algorithm)
+    .update(str, 'utf8')
+    .digest(encoding);
+  return Number(`0x${asStr}`);
+}
 
 /**
  *
@@ -122,23 +136,45 @@ function selectNaturalTools(lang) {
   return { tokenizer: new natural[tokenizerName](), stemmer: natural[stemmerName] }
 }
 
-function makeInverseFile(fullText) {
+function makeFileIndex(fullText) {
   const paragraphs = fullText.split('\n');
-  return paragraphs.map(par => {
+
+  const allRawTokens = [];
+
+  // Inverse File
+  const inverseFile = {};
+  paragraphs.forEach((par, blockIdx) => {
     const lang = detectLang(par);
-    const naturalTools = selectNaturalTools(lang);
-    return naturalTools.tokenizer.tokenize(par).map(token => naturalTools.stemmer.stem(token));
+    const { tokenizer, stemmer } = selectNaturalTools(lang);
+    tokenizer.tokenize(par).map((token, idxInBlock) => {
+      allRawTokens.push(token);
+      const stemmedToken = stemmer.stem(token);
+      if (!inverseFile[stemmedToken]) {
+        inverseFile[stemmedToken] = [];
+      }
+      inverseFile[stemmedToken].push({ blockIdx, offset: idxInBlock });
+    });
   });
+
+  // Shingles
+  const shingles = [...Array(allRawTokens.length - SHINGLE_SIZE + 1)]
+    .map((_, startIdx) => {
+      const shingleSource = allRawTokens.slice(startIdx, startIdx + SHINGLE_SIZE).join(' ');
+      return checksum(shingleSource);
+    })
+    .filter(shingleSelector);
+
+  return { inverseFile, shingles };
 }
 
 function processDocument(contentAsString) {
   const document = new JSDOM(contentAsString).window.document;
   const fullText = document.body.textContent;
   const lang = detectLang(fullText);
-  const inverseFile = makeInverseFile(fullText);
+  const fileIndex = makeFileIndex(fullText);
 
   const hrefs = extractHrefs(document);
-  return { hrefs, data: { lang, inverseFile } };
+  return { hrefs, data: { lang, ...fileIndex } };
 }
 
 export { fetch, processDocument, normalize, resolve, RESPONSE_TYPE };

@@ -1,9 +1,11 @@
 import { fetch, processDocument, normalize, resolve, RESPONSE_TYPE } from './building-blocks.js';
-// import useDb from '../database';
+import useDb from 'database';
+import { DocumentIndex } from '../database/models.js';
 import robotsParser from 'robots-txt-parser';
 
 async function crawl({ entryPoint: rawEntryPoint, maxDepth }) {
-  //await useDb();
+  await useDb();
+
   const robots = robotsParser();
 
   const entryPoint = normalize(rawEntryPoint);
@@ -24,10 +26,15 @@ async function crawl({ entryPoint: rawEntryPoint, maxDepth }) {
         switch (fetchResult.type) {
           case RESPONSE_TYPE.OK:
             const documentData = processDocument(fetchResult.content);
-            console.log({
+            const newEntry = new DocumentIndex({
               url: currentHref,
-              data: documentData.data
-            });
+              lang: documentData.data.lang,
+              shingles: documentData.data.shingles,
+              inverseFile: Object.entries(documentData.data.inverseFile)
+                .map(([word, entries]) => ({ word, entries }))
+            })
+            await newEntry.save();
+            console.log(newEntry);
             hrefs.push(...documentData.hrefs);
             break;
           case RESPONSE_TYPE.REDIRECT:
