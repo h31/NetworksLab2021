@@ -15,6 +15,7 @@ class Application {
         //if ()
         //else
         startTerminal()
+        println(getURL("/dfv"))
     }
 
     private fun startTerminal() {
