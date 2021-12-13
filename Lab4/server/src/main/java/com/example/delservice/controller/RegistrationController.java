@@ -1,9 +1,15 @@
 package com.example.delservice.controller;
 
+import com.example.delservice.model.User;
+import com.example.delservice.repository.UserRepository;
 import com.example.delservice.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 public class RegistrationController {
@@ -11,20 +17,31 @@ public class RegistrationController {
     @Autowired
     private UserService userService;
 
-   /* @PostMapping("/register")
-    String register(
+    @Autowired
+    private UserRepository userRepository;
+
+
+    @GetMapping("/register")
+    Iterable<User> getUsers() {
+        return userRepository.findAll();
+    }
+
+    @PostMapping("/register")
+    void register(
             @RequestParam("username") final String username,
             @RequestParam("password") final String password) {
-        users
-                .save(
-                        User
-                                .builder()
-                                .id(username)
-                                .username(username)
-                                .password(password)
-                                .build()
-                );
 
-        return login(username, password);
-    }*/
+        boolean status = userService
+                .saveUser(new User(username, password));
+
+        if(!status) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User already exist");
+        }
+    }
+
+    @GetMapping("/login")
+    void login() {
+        throw new ResponseStatusException(HttpStatus.OK, "Login success");
+    }
+
 }

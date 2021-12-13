@@ -15,18 +15,19 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-   // @Size(min = 2, message = "Логин должен быть больше 2-х знаков")
-//    @NotBlank(message = "Поле не может быть пустым или состоять из пробельных символов")
     private String username;
 
-   // @Size(min = 2, message = "Пароль должен быть больше 2-х знаков")
-  //  @NotBlank(message = "Поле не может быть пустым или состоять из пробельных символов")
     private String password;
 
     @ManyToMany(fetch = FetchType.EAGER)
     private Set<UserRole> userRoles;
 
     public User() {}
+
+    public User(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
