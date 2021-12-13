@@ -1,14 +1,13 @@
-import mongoose from 'mongoose';
-import { DB_PORT, DB_NAME, DB_HOST} from './settings.js';
+const mongoose = require('mongoose');
+const { DB_PORT, DB_NAME, DB_HOST} = require('./settings');
 
 
-async function useDb() {
-  return mongoose
-    .connect(`mongodb://${DB_HOST}:${DB_PORT}/${DB_NAME}`)
-    .catch(e => {
-      console.log(e);
-      process.exit(1);
-    });
+async function startUsingDb() {
+  return mongoose.connect(`mongodb://${DB_HOST}:${DB_PORT}/${DB_NAME}`);
 }
 
-export default useDb;
+async function endUsingDb() {
+  return mongoose.disconnect();
+}
+
+module.exports = { startUsingDb, endUsingDb };

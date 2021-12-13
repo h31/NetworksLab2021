@@ -1,10 +1,11 @@
 {
-  "type": "module",
   "name": "crawler-indexer-be",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "runserver": "node server/index.js"
+  },
   "keywords": [],
   "author": "GreenBeaver",
   "license": "MIT",
@@ -13,7 +14,7 @@
     "languagedetect": "^2.0.0",
     "mongoose": "^6.1.1",
     "natural": "^5.1.11",
-    "normalize-url": "^7.0.2",
+    "normalize-url": "^5.3.1",
     "robots-txt-parser": "^2.0.2",
     "yargs": "^17.3.0"
   }

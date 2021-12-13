@@ -2,7 +2,7 @@ const DB_HOST = 'localhost';
 const DB_PORT = 27017;
 const DB_NAME = 'crawler-indexer';
 
-export {
+module.exports = {
   DB_HOST,
   DB_PORT,
   DB_NAME

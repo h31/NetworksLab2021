@@ -1,18 +1,23 @@
-import { Schema } from 'mongoose';
+const { Schema } = require('mongoose');
 
 const documentIndexSchema = new Schema({
-  url: String,
+  url: { type: String, index: true, unique: true },
+  title: String,
   lang: String,
-  shingles: [Number],
-  inverseFile: [{
-    word: String,
-    entries: [{
-      blockIdx: Number,
-      offset: Number
-    }],
-  }]
+  shingles: [String],
+  inverseFile: { // [word]: [offset]
+    type: Map,
+    of: [Number]
+  }
 });
 
-export {
-  documentIndexSchema
+const wordStatisticsSchema = new Schema({
+  word: { type: String, index: true , unique: true },
+  tfByUrl: [{ url: String, tf: Number }],
+  idf: Number
+});
+
+module.exports = {
+  documentIndexSchema,
+  wordStatisticsSchema
 };

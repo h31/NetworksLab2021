@@ -1,8 +1,7 @@
-import { documentIndexSchema } from './schemas.js';
-import { model } from 'mongoose';
+const { documentIndexSchema, wordStatisticsSchema } = require('./schemas');
+const { model } = require('mongoose');
 
 const DocumentIndex = model('DocumentIndex', documentIndexSchema);
+const WordStatistics = model('WordStatistics', wordStatisticsSchema);
 
-export {
-  DocumentIndex
-};
+module.exports = { DocumentIndex, WordStatistics };
