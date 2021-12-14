@@ -1,5 +1,5 @@
 package com.monkeys
 
-fun main() {
+suspend fun main() {
     Application().startClient()
 }
