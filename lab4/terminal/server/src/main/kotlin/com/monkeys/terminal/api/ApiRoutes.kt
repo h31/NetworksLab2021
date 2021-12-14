@@ -2,10 +2,8 @@ package com.monkeys.terminal.api
 
 import com.monkeys.terminal.models.AuthModel
 import com.monkeys.terminal.models.CdRequest
-import com.monkeys.terminal.models.response.ErrorResponseModel
-import com.monkeys.terminal.models.response.OkList
-import com.monkeys.terminal.models.response.OkResponseModel
-import com.monkeys.terminal.models.response.OkString
+import com.monkeys.terminal.models.KillRequest
+import com.monkeys.terminal.models.response.*
 import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.http.*
@@ -20,7 +18,53 @@ fun Route.api(controller: UserController) {
                 val principal = call.authentication.principal<AuthModel>()
                 if (principal != null) {
                     val result = controller.ls(principal.login, call.parameters["location"] ?: "")
-                    if (result != null) {
+                    if (result == null) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponseModel(
+                                "Deleted",
+                                OkString("No client with login ${principal.login} in clients list, relogin please"),
+                                HttpStatusCode.BadRequest
+                            )
+                        )
+                    } else if (result.isNotEmpty()) {
+                        call.respond(HttpStatusCode.OK, OkResponseModel("OK", OkList(result), HttpStatusCode.OK))
+                    } else {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponseModel(
+                                "Bad Request",
+                                OkString("Problems with location to ls"),
+                                HttpStatusCode.BadRequest
+                            )
+                        )
+                    }
+                } else {
+                    call.respond(
+                        HttpStatusCode.Forbidden,
+                        ErrorResponseModel(
+                            message = OkString("No token, please signIn"),
+                            code = HttpStatusCode.Forbidden
+                        )
+                    )
+                }
+            }
+
+            get("/ls") {
+                val principal = call.authentication.principal<AuthModel>()
+                if (principal != null) {
+                    val result = controller.ls(principal.login, "")
+                    if (result == null) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponseModel(
+                                "Deleted",
+                                OkString("No client with login ${principal.login} in clients list, relogin please"),
+                                HttpStatusCode.BadRequest
+                            )
+                        )
+
+                    } else if (result.isNotEmpty()) {
                         call.respond(HttpStatusCode.OK, OkResponseModel("OK", OkList(result), HttpStatusCode.OK))
                     } else {
                         call.respond(
@@ -48,7 +92,16 @@ fun Route.api(controller: UserController) {
                 val cdRequest = call.receive<CdRequest>()
                 if (principal != null) {
                     val result = controller.cd(principal.login, cdRequest)
-                    if (result != "Error") {
+                    if (result == null) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponseModel(
+                                "Deleted",
+                                OkString("No client with login ${principal.login} in clients list, relogin please"),
+                                HttpStatusCode.BadRequest
+                            )
+                        )
+                    } else if (result != "Error") {
                         call.respond(
                             HttpStatusCode.OK,
                             OkResponseModel(
@@ -80,18 +133,82 @@ fun Route.api(controller: UserController) {
 
             get("/who") {
                 val principal = call.authentication.principal<AuthModel>()
-                //returns OkResponseModel with OkList inside full of names and locations for every user
+                if (principal != null) {
+                    val res = controller.who()
+                    call.respond(
+                        HttpStatusCode.OK,
+                        OkResponseModel(
+                            "OK",
+                            OkListOfPairs(res),
+                            HttpStatusCode.OK
+                        )
+                    )
+                } else {
+                    call.respond(
+                        HttpStatusCode.Forbidden,
+                        ErrorResponseModel(
+                            message = OkString("No token, please signIn"),
+                            code = HttpStatusCode.Forbidden
+                        )
+                    )
+                }
             }
 
             post("/kill") {
                 val principal = call.authentication.principal<AuthModel>()
-                //need killRequest inside request body
-                //if u'r admin - returns result in OkResponseModel inside that is OkString else error with code not enough rights
+                if (principal != null) {
+                    if (principal.role.lowercase() == "admin") {
+                        val killRequest = call.receive<KillRequest>()
+                        controller.kill(killRequest)
+                        call.respond(
+                            HttpStatusCode.OK,
+                            OkResponseModel(
+                                "OK",
+                                OkString("${killRequest.userToKill} was killed"),
+                                HttpStatusCode.OK
+                            )
+                        )
+                    } else {
+                        call.respond(
+                            HttpStatusCode.Forbidden,
+                            ErrorResponseModel(
+                                message = OkString("You have not enough rights"),
+                                code = HttpStatusCode.Forbidden
+                            )
+                        )
+                    }
+                } else {
+                    call.respond(
+                        HttpStatusCode.Forbidden,
+                        ErrorResponseModel(
+                            message = OkString("No token, please signIn"),
+                            code = HttpStatusCode.Forbidden
+                        )
+                    )
+                }
             }
 
             get("/logout") {
                 val principal = call.authentication.principal<AuthModel>()
-                //returns OkResponseModel with OkString that says that u'r logged out
+                if (principal != null) {
+                    controller.logout(principal.login)
+                    call.respond(
+                        HttpStatusCode.OK,
+                        OkResponseModel(
+                            "OK",
+                            OkString("You was killed (logout successful)"),
+                            HttpStatusCode.OK
+                        )
+                    )
+                } else {
+                    call.respond(
+                        HttpStatusCode.Forbidden,
+                        ErrorResponseModel(
+                            message = OkString("No token, please signIn"),
+                            code = HttpStatusCode.Forbidden
+                        )
+                    )
+                }
             }
         }
     }

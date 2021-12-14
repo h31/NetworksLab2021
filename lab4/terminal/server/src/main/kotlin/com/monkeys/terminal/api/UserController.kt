@@ -3,6 +3,7 @@ package com.monkeys.terminal.api
 import com.monkeys.terminal.executeBashProcessWithResult
 import com.monkeys.terminal.models.AuthModel
 import com.monkeys.terminal.models.CdRequest
+import com.monkeys.terminal.models.KillRequest
 import com.monkeys.terminal.separateListByElements
 import java.util.*
 
@@ -30,7 +31,7 @@ class UserController() {
         } else null
     }
 
-    fun cd(userName: String, request: CdRequest): String {
+    fun cd(userName: String, request: CdRequest): String? {
         val clientLocation = clients[userName]
         return if (clientLocation != null) {
             var res = executeBashProcessWithResult("cd ${request.location}")
@@ -47,16 +48,16 @@ class UserController() {
                 return clients[userName]!!
             }
         } else {
-            "Error"
+            null
         }
     }
 
-    fun who(): List<String> {
-        return emptyList()
+    fun who(): List<Pair<String, String>> {
+        return clients.entries.map { it.key to it.value }
     }
 
-    fun kill() {
-        println("kill")
+    fun kill(killRequest: KillRequest) {
+        clients.remove(killRequest.userToKill)
     }
 
     fun logout(userName: String) {
