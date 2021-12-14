@@ -19,33 +19,19 @@ object Buffer {
 }
 
 object Client {
-    fun startClient(serverHost: String, serverPort: Int) {
-        val socket = Socket(serverHost, serverPort)
-
-        val sender = MessageWriter(socket.getOutputStream())
+    fun startClient(socket: Socket) {
         val receiver = MessageReader(socket.getInputStream())
 
         while (!currentThread().isInterrupted) {
-            if (isNotReadyForAnyInteraction(receiver)) {
-                sleep(100)
-            }
-            if (senderBuffer.size > 0) {
-                val messageWithContent = senderBuffer.poll()
-                sender.write(messageWithContent)
-            } else if (receiver.readyForMessageReading()) {
-                val message = receiver.read()
-                readMessage(message)
-            }
+            val message = receiver.read()
+            readMessage(message)
+
         }
         try {
             socket.close()
         } catch (e: SocketException) {
             e.printStackTrace()
         }
-    }
-
-    private fun isNotReadyForAnyInteraction(receiver: MessageReader): Boolean {
-        return senderBuffer.size == 0 && !receiver.readyForMessageReading();
     }
 
     private fun readMessage(messageWithContent: MessageWithContent) {
@@ -61,9 +47,9 @@ object Client {
 
     private fun createDir(): String {
         val directory = File(
-            System.getProperty(USER_HOME) +
-                    File.separator + DESKTOP +
-                    File.separator + userName
+                System.getProperty(USER_HOME) +
+                        File.separator + DESKTOP +
+                        File.separator + userName
         )
         if (!directory.exists()) directory.mkdir()
         return directory.absolutePath
