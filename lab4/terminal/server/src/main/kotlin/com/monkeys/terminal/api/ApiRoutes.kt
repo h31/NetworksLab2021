@@ -2,17 +2,45 @@ package com.monkeys.terminal.api
 
 import com.monkeys.terminal.models.AuthModel
 import com.monkeys.terminal.models.CdRequest
+import com.monkeys.terminal.models.response.ErrorResponseModel
+import com.monkeys.terminal.models.response.OkList
+import com.monkeys.terminal.models.response.OkResponseModel
+import com.monkeys.terminal.models.response.OkString
 import io.ktor.application.*
 import io.ktor.auth.*
+import io.ktor.http.*
 import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.routing.*
 
-fun Route.api() {
+fun Route.api(controller: UserController) {
     route("/terminal") {
         authenticate("validate") {
-            get("/ls") {
+            get("/ls/{location}") {
                 val principal = call.authentication.principal<AuthModel>()
-                //returns OkResponseModel with OkList inside full of names of directories and files
+                if (principal != null) {
+                    val result = controller.ls(principal.login, call.parameters["location"] ?: "")
+                    if (result != null) {
+                        call.respond(HttpStatusCode.OK, OkResponseModel("OK", OkList(result), HttpStatusCode.OK))
+                    } else {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponseModel(
+                                "Bad Request",
+                                OkString("Problems with location to ls"),
+                                HttpStatusCode.BadRequest
+                            )
+                        )
+                    }
+                } else {
+                    call.respond(
+                        HttpStatusCode.Forbidden,
+                        ErrorResponseModel(
+                            message = OkString("No token, please signIn"),
+                            code = HttpStatusCode.Forbidden
+                        )
+                    )
+                }
             }
 
             post("/cd") {

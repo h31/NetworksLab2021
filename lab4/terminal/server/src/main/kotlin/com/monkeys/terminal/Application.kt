@@ -3,6 +3,7 @@ package com.monkeys.terminal
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.google.gson.FieldNamingPolicy
+import com.monkeys.terminal.api.UserController
 import com.monkeys.terminal.api.api
 import com.monkeys.terminal.auth.AuthRepo
 import com.monkeys.terminal.auth.auth
@@ -60,12 +61,13 @@ fun Application.configure() {
     }
 
     val authRepo = AuthRepo()
+    val userController = UserController()
 
     routing {
         route("/api/v1") {
             route("") {
-                auth(authRepo)
-                api()
+                auth(authRepo, userController)
+                api(userController)
             }
         }
     }
