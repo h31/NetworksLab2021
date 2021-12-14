@@ -1,5 +1,6 @@
 package com.monkeys.terminal.auth
 
+import com.monkeys.terminal.api.UserController
 import com.monkeys.terminal.models.AuthModel
 import io.ktor.application.*
 import io.ktor.auth.*
@@ -7,8 +8,8 @@ import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 
-fun Route.auth(authRepo: AuthRepo) {
-    val controller = AuthController(authRepo)
+fun Route.auth(authRepo: AuthRepo, userController: UserController) {
+    val controller = AuthController(authRepo, userController)
 
     route("/auth") {
         post("/signin") {

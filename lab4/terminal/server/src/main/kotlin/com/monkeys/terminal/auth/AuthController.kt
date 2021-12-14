@@ -2,16 +2,18 @@ package com.monkeys.terminal.auth
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import com.monkeys.terminal.api.UserController
 import com.monkeys.terminal.models.AuthModel
 import com.monkeys.terminal.models.Roles
 import com.monkeys.terminal.models.response.*
 import io.ktor.http.*
 
-class AuthController(private val repo: AuthRepo) {
+class AuthController(private val repo: AuthRepo, private val userController: UserController) {
     fun signIn(model: AuthModel) : ResponseModel {
         return if (repo.signIn(model.login, model.password, model.role)) {
             val jwt = createJwt(model)
-            OkResponseModel("OK", AuthOkModel(jwt, "/home/${model.login}/"), HttpStatusCode.OK)
+            val location = userController.addUser(model)
+            OkResponseModel("OK", AuthOkModel(jwt, location), HttpStatusCode.OK)
         } else {
             ErrorResponseModel("Error", OkString("Bad credentials"), HttpStatusCode.BadRequest)
         }
