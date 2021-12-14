@@ -21,17 +21,37 @@ class UserController() {
         }
     }
 
-    fun ls(userName: String, request: String) : List<String>? {
-        val location = clients[userName] + request.trim()
-        val bashResult = executeBashProcessWithResult("ls $location")
-        return separateListByElements(bashResult)
+    fun ls(userName: String, request: String): List<String>? {
+        val clientLocation = clients[userName]
+        return if (clientLocation != null) {
+            val location = clientLocation + request.trim()
+            val bashResult = executeBashProcessWithResult("ls $location") ?: Collections.singletonList("")
+            separateListByElements(bashResult)
+        } else null
     }
 
-    fun cd(request: CdRequest) : String {
-        return ""
+    fun cd(userName: String, request: CdRequest): String {
+        val clientLocation = clients[userName]
+        return if (clientLocation != null) {
+            var res = executeBashProcessWithResult("cd ${request.location}")
+            if (res == null) {
+                res = executeBashProcessWithResult("cd $clientLocation${request.location}")
+                if (res != null) {
+                    clients[userName] = clientLocation + request.location + "/"
+                    return clients[userName]!!
+                } else {
+                    "Error"
+                }
+            } else {
+                clients[userName] = request.location + "/"
+                return clients[userName]!!
+            }
+        } else {
+            "Error"
+        }
     }
 
-    fun who() : List<String> {
+    fun who(): List<String> {
         return emptyList()
     }
 
