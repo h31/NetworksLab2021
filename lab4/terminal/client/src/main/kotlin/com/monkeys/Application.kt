@@ -11,11 +11,11 @@ class Application {
 
     suspend fun startClient() {
         println("Hello what do you want to do?\n[1] - registration, [2] - authentication")
-        val regOrAuth = scanner.nextLine().toInt()
-        if (regOrAuth != 1 && regOrAuth != 2) {
+        val regOrAuth = scanner.nextLine()
+        if (regOrAuth != "1" && regOrAuth != "2") {
             print("Invalid input. Try to connect again")
         } else {
-            if (regOrAuth == 1) {
+            if (regOrAuth.toInt() == 1) {
                 terminalService = regOrLoginUser("Create a login: ", "Create a password: ")
                 if (terminalService.reg())
                     startTerminal()
