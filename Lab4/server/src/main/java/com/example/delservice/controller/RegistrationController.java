@@ -5,6 +5,8 @@ import com.example.delservice.repository.UserRepository;
 import com.example.delservice.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,8 +38,15 @@ public class RegistrationController {
     }
 
     @GetMapping("/login")
-    void login() {
-        throw new ResponseStatusException(HttpStatus.OK, "Login success");
+    boolean login() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        boolean hasUserRole = authentication.getAuthorities().stream()
+                .anyMatch(r -> r.getAuthority().equals("ROLE_SELLER"));
+
+        throw new ResponseStatusException(HttpStatus.OK, String.valueOf(hasUserRole));
+
     }
 
 }
