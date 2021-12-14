@@ -30,6 +30,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .csrf().disable()
                 .authorizeRequests()
                 .antMatchers("/", "/register").permitAll()
+                .antMatchers("/manage/**").hasRole("SELLER")
                 .anyRequest().authenticated()
                 .and().httpBasic()
                 .and().sessionManagement().disable();

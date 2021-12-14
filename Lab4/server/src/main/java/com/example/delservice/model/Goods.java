@@ -27,6 +27,9 @@ public class Goods {
     public Goods() {
     }
 
+    public Goods(String name) {
+        this.name = name;
+    }
 
     public String getName() {
         return name;

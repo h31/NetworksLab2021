@@ -28,7 +28,7 @@ public class Market {
     private Integer geoArea;
 
     @JsonView(View.ExtendedModel.class)
-    @OneToMany(fetch = FetchType.EAGER, mappedBy = "market")
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "market", cascade = CascadeType.ALL)
     @JsonManagedReference
     private Set<MarketGoods> marketGoods = new HashSet<MarketGoods>();
 

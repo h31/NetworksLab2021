@@ -21,10 +21,6 @@ public class RegistrationController {
     private UserRepository userRepository;
 
 
-    @GetMapping("/register")
-    Iterable<User> getUsers() {
-        return userRepository.findAll();
-    }
 
     @PostMapping("/register")
     void register(

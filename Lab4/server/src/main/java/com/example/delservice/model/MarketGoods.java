@@ -32,6 +32,12 @@ public class MarketGoods {
     public MarketGoods() {
     }
 
+    public MarketGoods(Market market, Goods goods, Integer price) {
+        this.market = market;
+        this.goods = goods;
+        this.price = price;
+    }
+
     public Market getMarket() {
         return market;
     }
