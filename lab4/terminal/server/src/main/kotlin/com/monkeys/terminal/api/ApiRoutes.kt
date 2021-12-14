@@ -46,8 +46,36 @@ fun Route.api(controller: UserController) {
             post("/cd") {
                 val principal = call.authentication.principal<AuthModel>()
                 val cdRequest = call.receive<CdRequest>()
-                //need cdRequest inside request body
-                //returns OkResponseModel with OkString that says new location
+                if (principal != null) {
+                    val result = controller.cd(principal.login, cdRequest)
+                    if (result != "Error") {
+                        call.respond(
+                            HttpStatusCode.OK,
+                            OkResponseModel(
+                                "OK",
+                                OkString(result),
+                                HttpStatusCode.OK
+                            )
+                        )
+                    } else {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponseModel(
+                                "Bad Request",
+                                OkString("Wrong location to cd"),
+                                HttpStatusCode.BadRequest
+                            )
+                        )
+                    }
+                } else {
+                    call.respond(
+                        HttpStatusCode.Forbidden,
+                        ErrorResponseModel(
+                            message = OkString("No token, please signIn"),
+                            code = HttpStatusCode.Forbidden
+                        )
+                    )
+                }
             }
 
             get("/who") {
