@@ -59,39 +59,53 @@ class HttpProcessor(BaseHTTPRequestHandler):
             self.wfile.write(bytes(json.dumps(response), 'utf-8'))
 
     def do_POST(self):
-        if self.headers.get('Authorization') is None:
-            self.do_AUTHHEAD()
+        rtype = self.requestline.split()[1].split('/')[1]
 
-            response = {
-                'success': False,
-                'error': 'No auth header received'
-            }
+        if 'REGISTRATION' in rtype:
+            username, password = map(lambda x: x.split('=')[1],
+                                     self.requestline.split()[1].split('/')[1].split('?')[1].split('&'))
+            if username not in self.server.get_users():
+                self.send_response(200)
+                self.send_header('content-type', 'text/html')
+                self.end_headers()
+                self.server.add_auth(username, password)
+                response = {
+                    'success': True,
+                    'message': 'Successful registration'
+                }
+                self.wfile.write(bytes(json.dumps(response), 'utf-8'))
+            else:
+                self.send_response(403)
+                self.send_header('content-type', 'text/html')
+                self.end_headers()
+                response = {
+                    'success': False,
+                    'message': 'Username already used'
+                }
+                self.wfile.write(bytes(json.dumps(response), 'utf-8'))
 
-            self.wfile.write(bytes(json.dumps(response), 'utf-8'))
-
-        else:
-            rtype = self.requestline.split()[1].split('/')[1]
-
-            if 'REGISTRATION' in rtype:
-                username, password = map(lambda x: x.split('=')[1],
-                                         self.requestline.split()[1].split('/')[1].split('?')[1].split('&'))
-                if username not in self.server.get_users():
-                    self.send_response(200)
-                    self.send_header('content-type', 'text/html')
-                    self.end_headers()
-                    self.server.add_auth(username, password)
-                    response = {
-                        'success': True,
-                        'message': 'Successful registration'
-                    }
-                    self.wfile.write(bytes(json.dumps(response), 'utf-8'))
-                else:
-                    response = {
-                        'success': False,
-                        'message': 'Username already used'
-                    }
-                    self.wfile.write(bytes(json.dumps(response), 'utf-8'))
-
+        elif 'AUTHENTICATION' in rtype:
+            keys = map(lambda x: 'Basic ' + str(x), self.server.get_auth_key())
+            username, password = map(lambda x: x.split('=')[1],
+                                     self.requestline.split()[1].split('/')[1].split('?')[1].split('&'))
+            if username not in self.server.get_users() or self.headers.get('Authorization') not in keys:
+                self.send_response(400)
+                self.send_header('content-type', 'text/html')
+                self.end_headers()
+                response = {
+                    'success': False,
+                    'message': 'User doesn\'t exist'
+                }
+                self.wfile.write(bytes(json.dumps(response), 'utf-8'))
+            else:
+                self.send_response(200)
+                self.send_header('content-type', 'text/html')
+                self.end_headers()
+                response = {
+                    'success': True,
+                    'message': f'Hello, {username}!'
+                }
+                self.wfile.write(bytes(json.dumps(response), 'utf-8'))
 
     def do_AUTHHEAD(self):
         self.send_response(401)
