@@ -16,9 +16,9 @@ fun executeBashProcessWithResult(command: String): List<String>? {
     }
 }
 
-fun separateListByElements(list: List<String>) : List<String>? {
+fun separateListByElements(list: List<String>) : List<String> {
     return if (list.isEmpty()) {
-        null
+        emptyList()
     } else {
         val res = mutableListOf<String>()
         list.forEach{
