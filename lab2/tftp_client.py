@@ -1,5 +1,6 @@
 import socket
 import os.path
+
 from tftp_info import TFTP_OPCODES, TFTP_SERVER_ERRORS, CLIENT_COMMANDS
 
 SERVER_ADDRESS = 'localhost'
@@ -100,26 +101,24 @@ def read_request(current_socket, filename):
 def write_request(current_socket, filename):
     exp_ack_num = 1
     block_num_to_send = 0
-    block_to_send = []
+    last_block = False
 
-    with open(filename, 'rb') as file:
-        for byte in iter(lambda: file.read(BLOCK_SIZE), b''):
-            block_to_send.append(byte)
-    num_of_blocks = len(block_to_send)
-
+    file = open(filename, 'rb')
     while True:
         current_socket.settimeout(TIMEOUT)
         try:
             data, server = current_socket.recvfrom(BLOCK_SIZE + 4)
         except socket.timeout:
             if exp_ack_num == 1:
+                file.close()
                 print('Нет соединения с сервером')
                 exit(1)
             else:
                 try:
-                    data_to_send = data_msg(block_to_send[block_num_to_send], exp_ack_num)
+                    data_to_send = data_msg(block_to_send, exp_ack_num)
                     current_socket.sendto(data_to_send, server)
                 except:
+                    file.close()
                     print('Сервер отключился')
                     exit(1)
 
@@ -128,7 +127,7 @@ def write_request(current_socket, filename):
 
             if opcode == TFTP_OPCODES['ack']:
                 received_ack_block_num = 256 * data[2] + data[3]
-                if received_ack_block_num == num_of_blocks:
+                if last_block:
                     size = (received_ack_block_num - 1) * 512 + len(block_to_send)
                     print('Отправка данных завершена, было отправлен(о)', size, 'байт')
                     current_socket.close()
@@ -144,7 +143,10 @@ def write_request(current_socket, filename):
                 current_socket.close()
                 return
 
-        data_to_send = data_msg(block_to_send[block_num_to_send], exp_ack_num)
+        block_to_send = file.read(512)
+        if len(block_to_send) < 512:
+            last_block = True
+        data_to_send = data_msg(block_to_send, exp_ack_num)
         current_socket.sendto(data_to_send, server)
 
 

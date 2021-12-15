@@ -2,7 +2,8 @@ import random
 import os.path
 import socket
 
-from tftp_info import TFTP_OPCODES, TFTP_SERVER_ERRORS
+from tftp_info import TFTP_OPCODES, TFTP_SERVER_ERRORS, CLIENT_COMMANDS
+
 
 SERVER_ADDRESS = 'localhost'
 BLOCKSIZE = 512
@@ -31,9 +32,11 @@ def read_request(data, client):
 
     exp_ack_num = 1
     block_num_to_send = 0
-    block_to_send = []
     filename, exist_file = check_file(data)
     limit_to_recv = 5
+    last_block = False
+
+    file = open(filename, 'rb')
     if not exist_file:
         print(f'Error (code : 1)\n'
               f'Message: {TFTP_SERVER_ERRORS[1]}')
@@ -41,13 +44,11 @@ def read_request(data, client):
         current_socket.sendto(error_to_send, client)
         return
 
-    with open(filename, 'rb') as file:
-        for byte in iter(lambda: file.read(BLOCKSIZE), b''):
-            block_to_send.append(byte)
-    num_of_blocks = len(block_to_send)
-
     while True:
-        data_to_send = data_msg(block_to_send[block_num_to_send], exp_ack_num)
+        block_to_send = file.read(512)
+        if len(block_to_send) < 512:
+            last_block = True
+        data_to_send = data_msg(block_to_send, exp_ack_num)
         current_socket.sendto(data_to_send, client)
 
         current_socket.settimeout(TIMEOUT)
@@ -58,6 +59,7 @@ def read_request(data, client):
                 limit_to_recv = limit_to_recv - 1
                 continue
             else:
+                file.close()
                 print('Connection terminated')
                 current_socket.close()
                 return
@@ -65,7 +67,8 @@ def read_request(data, client):
             opcode = data[1]
             if opcode == TFTP_OPCODES['ack']:
                 recv_ack_num = 256 * data[2] + data[3]
-                if recv_ack_num == num_of_blocks:
+                if last_block:
+                    file.close()
                     print('File has been sent')
                     current_socket.close()
                     return
@@ -76,6 +79,7 @@ def read_request(data, client):
                 elif recv_ack_num < exp_ack_num:
                     continue
             elif opcode == TFTP_OPCODES['error']:
+                file.close()
                 err_code = data[3]
                 print(f'Error (code : {err_code})\n'
                       f'Message: {TFTP_SERVER_ERRORS[err_code]}')
