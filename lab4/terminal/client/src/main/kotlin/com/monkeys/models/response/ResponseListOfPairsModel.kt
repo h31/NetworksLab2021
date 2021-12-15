@@ -5,9 +5,9 @@ import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class OkResponseListOfPairsModel (
+data class ResponseListOfPairsModel (
     override val status: String,
-    override val message: OkListOfPairs,
+    override val message: ListOfPairs,
     @Contextual
     override val code: HttpStatusCode
 ) : ResponseModel

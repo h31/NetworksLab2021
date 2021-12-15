@@ -10,23 +10,33 @@ class Application {
     private lateinit var terminalService: TerminalService
 
     suspend fun startClient() {
-        println("Hello what do you want to do?\n[1] - registration, [2] - authentication")
+        println("Hello! What do you want to do?\n[1] - registration, [2] - authentication")
         val regOrAuth = scanner.nextLine()
         if (regOrAuth != "1" && regOrAuth != "2") {
             print("Invalid input. Try to connect again")
         } else {
             if (regOrAuth.toInt() == 1) {
-                terminalService = regOrLoginUser("Create a login: ", "Create a password: ")
-                if (terminalService.reg())
-                    startTerminal()
-                else
-                    println("Sorry! You were not registered")
+                terminalService = regOrLoginUser("Create a login: ",
+                    "Create a password: ")
+                if (terminalService.role == "Error") {
+                    print("Invalid input. Try to connect again")
+                } else {
+                    if (terminalService.reg())
+                        startTerminal()
+                    else
+                        println("Sorry! You were not registered")
+                }
             } else {
-                terminalService = regOrLoginUser("Enter login: ", "Enter password: ")
-                if (terminalService.auth())
-                    startTerminal()
-                else
-                    println("Incorrect username or password. Try to connect again")
+                terminalService = regOrLoginUser("Enter login: ",
+                    "Enter password: ")
+                if (terminalService.role == "Error") {
+                    print("Invalid input. Try to connect again")
+                } else {
+                    if (terminalService.auth())
+                        startTerminal()
+                    else
+                        println("Incorrect username or password. Try to connect again")
+                }
             }
         }
     }
@@ -54,8 +64,12 @@ class Application {
         when (command.size) {
             1 -> {
                 val ls = terminalService.getDirContent(LS_WITHOUT_ARGS)
-                ls.forEach {
-                    println(it)
+                if (ls.first) {
+                    ls.second.forEach {
+                        println(it)
+                    }
+                } else {
+                    println("Bad credentials")
                 }
             }
             2 -> {
@@ -63,8 +77,12 @@ class Application {
                     println("")
                 else {
                     val ls = terminalService.getDirContent(command[1])
-                    ls.forEach {
-                        println(it)
+                    if (ls.first) {
+                        ls.second.forEach {
+                            println(it)
+                        }
+                    } else {
+                        println("Bad credentials")
                     }
                 }
             }
@@ -78,7 +96,7 @@ class Application {
         when (command.size) {
             1 -> print(terminalService.getCurrentDir()+"> ")
             2 -> {
-                print(terminalService.getChangeDir(command[1]))
+                terminalService.getChangeDir(command[1])
             }
             else -> {
                 println("Wrong command")
@@ -90,14 +108,18 @@ class Application {
         if (command.size == 1) {
             val ls = terminalService.getCurrUsersAndDirs()
             var biggestLength = 0
-            ls.forEach {
-                if (it.first.length > biggestLength)
-                    biggestLength = it.first.length
-            }
-            biggestLength += 3
-            ls.forEach {
-                println(it.first.padEnd(biggestLength, ' ') + it.second)
-            }
+            if (ls.first) {
+                val list = ls.second
+                list.forEach {
+                    if (it.first.length > biggestLength)
+                        biggestLength = it.first.length
+                }
+                biggestLength += 3
+                list.forEach {
+                    println(it.first.padEnd(biggestLength, ' ') + it.second)
+                }
+            } else
+                println("Bad credentials")
         } else {
             println("Wrong command")
         }
@@ -106,7 +128,7 @@ class Application {
     private suspend fun callKill(command: List<String>) {
         if (command.size == 2) {
             val msg = terminalService.kill()
-            if (msg == "OK") {
+            if (msg == "${terminalService.getLogin()} was killed") {
                 println(msg)
                 terminalService.stopClient()
             } else {
@@ -119,7 +141,7 @@ class Application {
     private suspend fun callLogout(command: List<String>) {
         if (command.size == 1) {
             val msg = terminalService.logout()
-            if (msg == "OK") {
+            if (msg == "You was killed (logout successful)") {
                 println(msg)
                 terminalService.stopClient()
             } else {
@@ -135,6 +157,17 @@ class Application {
         val login = scanner.nextLine()
         print(psw_str)
         val psw = scanner.nextLine()
-        return TerminalService(login, psw)
+        print("Choose your role: ")
+        println("[1] - user, [2] - admin")
+        var role = scanner.nextLine()
+        role = if (role != "1" && role != "2") {
+            "Error"
+        } else {
+            if (role.toInt() == 1)
+                "user"
+            else
+                "admin"
+        }
+        return TerminalService(login, psw, role)
     }
 }

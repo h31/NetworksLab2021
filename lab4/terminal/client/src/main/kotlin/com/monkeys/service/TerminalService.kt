@@ -14,10 +14,12 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import java.lang.Exception
 
-class TerminalService(private val name: String, private val psw: String) {
+class TerminalService(private val name: String,
+                      private val psw: String,
+                      val role: String) {
 
-    private lateinit var token: String
-    private lateinit var location: String
+    private var token: String = ""
+    private var location: String = ""
 
     private val httpClient: HttpClient = HttpClient(CIO) {
         install(JsonFeature) {
@@ -32,104 +34,89 @@ class TerminalService(private val name: String, private val psw: String) {
     suspend fun reg(): Boolean {
         val response = httpClient.post<HttpResponse>(getURL(SIGN_UP_URL)) {
             contentType(ContentType.Application.Json)
-            body = AuthModel(name, psw, "user")
+            body = AuthModel(name, psw, role)
         }
-        try {
-            val receive = response.receive<OkResponseAuthModel>()
-            val message = receive.message
-            token = message.jwt
-            location = message.location
-            return true
-        } catch (e: Exception) {
-            e.stackTrace
+        val receive = response.receive<ResponseAuthModel>()
+        val message = receive.message
+        val msg = message.msg
+        token = message.jwt
+        location = message.location
+        if (msg == "Bad credentials") {
+            return false
         }
-        return false
+        return true
     }
 
     suspend fun auth(): Boolean {
         val response = httpClient.post<HttpResponse>(getURL(SIGN_IN_URL)) {
             contentType(ContentType.Application.Json)
-            body = AuthModel(name, psw, "user")
+            body = AuthModel(name, psw, role)
         }
-        try {
-            val receive = response.receive<OkResponseAuthModel>()
-            val message = receive.message
-            token = message.jwt
-            location = message.location
-            return true
-        } catch (e: Exception) {
-            e.stackTrace
+        val receive = response.receive<ResponseAuthModel>()
+        val message = receive.message
+        val msg = message.msg
+        token = message.jwt
+        location = message.location
+        if (msg == "Bad credentials") {
+            return false
         }
-        return false
+        return true
     }
 
     //ls
-    suspend fun getDirContent(dir: String): List<String> {
+    suspend fun getDirContent(dir: String): Pair<Boolean, List<String>> {
         val response = httpClient.get<HttpResponse>(getURL(LS_URL + dir)) {
             headers {
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
             }
             contentType(ContentType.Application.Json)
         }
-        if (response.status.value == 200) {
-            try {
-                val receive = response.receive<OkResponseListOfStringsModel>()
-                val message = receive.message
-                return message.msg
-            } catch (e: Exception) {
-                e.stackTrace
-            }
-        } else {
-            try {
-                val receive = response.receive<ErrorResponseListOfStringModel>()
-                val message = receive.status
-                return ArrayList<String>()
-            } catch (e: Exception) {
-                e.stackTrace
-            }
-        }
-        return ArrayList<String>()
-    }
 
-    fun getCurrentDir(): String {
-        return location
+        val receive = response.receive<ResponseListOfStringsModel>()
+        val message = receive.message
+        val msg = message.msg
+        val resp = message.response
+        if (msg == "Bad credentials") {
+            return Pair(false, ArrayList())
+        }
+        return Pair(true, resp)
     }
 
     //cd
     suspend fun getChangeDir(dir: String): String {
-        val response = httpClient.get<HttpResponse>(getURL(CD_URL)) {
+        val response = httpClient.post<HttpResponse>(getURL(CD_URL)) {
             headers {
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
             }
             contentType(ContentType.Application.Json)
             body = CdRequest(dir)
         }
-        val status = response.status
-        try {
-            val receive = response.receive<OkResponseStringModel>()
-            val message = receive.message
-            return message.msg
-        } catch (e: Exception) {
-            e.stackTrace
-        }
-        return ""
-    }
 
+        val receive = response.receive<ResponseStringModel>()
+        val message = receive.message
+        val msg = message.msg
+        location = message.response
+        if (msg == "Bad credentials") {
+            return msg
+        }
+        return location
+
+    }
     //who
-    suspend fun getCurrUsersAndDirs(): List<Pair<String, String>> {
+    suspend fun getCurrUsersAndDirs(): Pair<Boolean, List<Pair<String, String>>> {
         val response = httpClient.get<HttpResponse>(getURL(WHO_URL)) {
             headers {
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
             }
         }
-        try {
-            val receive = response.receive<OkResponseListOfPairsModel>()
-            val message = receive.message
-            return message.msg
-        } catch (e: Exception) {
-            e.stackTrace
+        val receive = response.receive<ResponseListOfPairsModel>()
+        val message = receive.message
+        val resp = message.response
+        val msg = message.msg
+        if (msg == "Bad credentials") {
+            return Pair(false, ArrayList())
         }
-        return ArrayList<Pair<String, String>>()
+        return Pair(true, resp)
     }
 
     //logout
@@ -139,34 +126,32 @@ class TerminalService(private val name: String, private val psw: String) {
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
             }
         }
-        try {
-            val receive = response.receive<OkResponseStringModel>()
-            val message = receive.message
-            return message.msg
-        } catch (e: Exception) {
-            e.stackTrace
-        }
-        return ""
+        val receive = response.receive<ResponseStringModel>()
+        val message = receive.message
+        return message.msg
     }
 
     //kill
     suspend fun kill(): String {
-        val response = httpClient.get<HttpResponse>(getURL(KILL_URL)) {
+        val response = httpClient.post<HttpResponse>(getURL(KILL_URL)) {
             headers {
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
             }
         }
-        try {
-            val receive = response.receive<OkResponseStringModel>()
-            val message = receive.message
-            return message.msg
-        } catch (e: Exception) {
-            e.stackTrace
-        }
-        return ""
+        val receive = response.receive<ResponseStringModel>()
+        val message = receive.message
+        return message.msg
     }
 
     fun getClient(): HttpClient = httpClient
+
+    fun getCurrentDir(): String {
+        return location
+    }
+
+    fun getLogin(): String {
+        return name
+    }
 
     fun stopClient() {
         try {

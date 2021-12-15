@@ -5,9 +5,9 @@ import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ErrorResponseStringModel (
+data class ResponseAuthModel (
     override val status: String,
-    override val message: OkString,
+    override val message: AuthModel,
     @Contextual
     override val code: HttpStatusCode
 ) : ResponseModel

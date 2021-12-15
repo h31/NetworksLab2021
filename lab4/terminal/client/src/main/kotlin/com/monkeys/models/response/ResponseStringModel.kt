@@ -5,7 +5,7 @@ import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class OkResponseStringModel (
+data class ResponseStringModel (
     override val status: String,
     override val message: OkString,
     @Contextual
