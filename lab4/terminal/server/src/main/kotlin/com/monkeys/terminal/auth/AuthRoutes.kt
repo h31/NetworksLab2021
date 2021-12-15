@@ -2,8 +2,10 @@ package com.monkeys.terminal.auth
 
 import com.monkeys.terminal.api.UserController
 import com.monkeys.terminal.models.AuthModel
+import com.monkeys.terminal.models.response.OkResponseModel
 import io.ktor.application.*
 import io.ktor.auth.*
+import io.ktor.http.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
@@ -13,11 +15,21 @@ fun Route.auth(authRepo: AuthRepo, userController: UserController) {
 
     route("/auth") {
         post("/signin") {
-            call.respond(controller.signIn(call.receive<AuthModel>()))
+            val res = controller.signIn(call.receive<AuthModel>())
+            if (res is OkResponseModel) {
+                call.respond(HttpStatusCode.OK, res)
+            } else {
+                call.respond(HttpStatusCode.BadRequest, res)
+            }
         }
 
         post("/signup") {
-            call.respond(controller.signUp(call.receive<AuthModel>()))
+            val res = controller.signUp(call.receive<AuthModel>())
+            if (res is OkResponseModel) {
+                call.respond(HttpStatusCode.OK, res)
+            } else {
+                call.respond(HttpStatusCode.BadRequest, res)
+            }
         }
 
         authenticate("validate") {

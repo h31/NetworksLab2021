@@ -14,7 +14,7 @@ import io.ktor.routing.*
 fun Route.api(controller: UserController) {
     route("/terminal") {
         authenticate("validate") {
-            get("/ls/{location}") {
+            get("/ls/{location?}") {
                 val principal = call.authentication.principal<AuthModel>()
                 if (principal != null) {
                     val result = controller.ls(principal.login, call.parameters["location"] ?: "")
@@ -27,43 +27,6 @@ fun Route.api(controller: UserController) {
                                 HttpStatusCode.BadRequest
                             )
                         )
-                    } else if (result.isNotEmpty()) {
-                        call.respond(HttpStatusCode.OK, OkResponseModel("OK", OkList(result), HttpStatusCode.OK))
-                    } else {
-                        call.respond(
-                            HttpStatusCode.BadRequest,
-                            ErrorResponseModel(
-                                "Bad Request",
-                                OkString("Problems with location to ls"),
-                                HttpStatusCode.BadRequest
-                            )
-                        )
-                    }
-                } else {
-                    call.respond(
-                        HttpStatusCode.Forbidden,
-                        ErrorResponseModel(
-                            message = OkString("No token, please signIn"),
-                            code = HttpStatusCode.Forbidden
-                        )
-                    )
-                }
-            }
-
-            get("/ls") {
-                val principal = call.authentication.principal<AuthModel>()
-                if (principal != null) {
-                    val result = controller.ls(principal.login, "")
-                    if (result == null) {
-                        call.respond(
-                            HttpStatusCode.BadRequest,
-                            ErrorResponseModel(
-                                "Deleted",
-                                OkString("No client with login ${principal.login} in clients list, relogin please"),
-                                HttpStatusCode.BadRequest
-                            )
-                        )
-
                     } else if (result.isNotEmpty()) {
                         call.respond(HttpStatusCode.OK, OkResponseModel("OK", OkList(result), HttpStatusCode.OK))
                     } else {

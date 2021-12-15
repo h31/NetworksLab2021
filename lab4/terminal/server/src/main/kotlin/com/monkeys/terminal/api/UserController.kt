@@ -34,18 +34,12 @@ class UserController() {
     fun cd(userName: String, request: CdRequest): String? {
         val clientLocation = clients[userName]
         return if (clientLocation != null) {
-            var res = executeBashProcessWithResult("cd ${request.location}")
-            if (res == null) {
-                res = executeBashProcessWithResult("cd $clientLocation${request.location}")
-                if (res != null) {
-                    clients[userName] = clientLocation + request.location + "/"
-                    return clients[userName]!!
-                } else {
-                    "Error"
-                }
+            val res = executeBashProcessWithResult("cd $clientLocation; cd ${request.location}; pwd")
+            if (res != null && res.isNotEmpty()) {
+                clients[userName] = res[0]
+                res[0]
             } else {
-                clients[userName] = request.location + "/"
-                return clients[userName]!!
+                "Error"
             }
         } else {
             null
