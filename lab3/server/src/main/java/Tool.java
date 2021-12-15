@@ -42,28 +42,6 @@ public class Tool {
     }
 
 
-    public static boolean isClientMessageNull(String message) {
-        if (message == null || message.isEmpty()) {
-            return true;
-        }
-        return false;
-    }
-
-    public static String readLine(ByteBuf inputStream) throws IOException {
-        //StringBuilder stringBuilder = new StringBuilder();
-        List<Integer> bytesList = new ArrayList<>();
-        int c;
-        while ((c = inputStream.readByte()) != '\n') {
-            bytesList.add(c);
-        }
-        byte[] krakos = new byte[bytesList.size()];
-        for (int i = 0; i < bytesList.size(); i++) {
-            krakos[i] = (byte) (bytesList.get(i) & 0xFF);
-        }
-        return new String(krakos);
-    }
-
-
     public static ExchangeFormat parseRequest(String format) {
 
 

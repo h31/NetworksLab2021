@@ -32,7 +32,7 @@ public class ServerInputHandler extends ChannelInboundHandlerAdapter {
             acceptNickname(clientRequest.getUsername());
             return;
         }
-        //if exit
+
         if (clientRequest.getParcelType() == Tool.RequestType.EXIT) {
             channels.remove(getCurrentClientChannel());
             notifyAboutUserExit(getCurrentClientNickname());

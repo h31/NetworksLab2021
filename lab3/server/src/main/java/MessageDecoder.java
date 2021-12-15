@@ -12,13 +12,12 @@ import java.util.List;
 public class MessageDecoder extends ByteToMessageDecoder {
 
     boolean isReadComplete = false;
-    byte[] byteArray;
-    int offset = 0;
     ExchangeFormat parcel;
     StringBuilder sb;
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     byte[] bufferByteArray;
-    ByteBuf stringByteArray;
+    ByteArrayOutputStream stringByteArray = new ByteArrayOutputStream();
+    ByteBuf stringByteBuf;
 
 
     @Override
@@ -47,8 +46,6 @@ public class MessageDecoder extends ByteToMessageDecoder {
         }
 
 
-        //sb = new StringBuilder();
-        stringByteArray = Unpooled.buffer(8192);
         byte c;
         while (in.isReadable()) {
             c = in.readByte();
@@ -56,15 +53,21 @@ public class MessageDecoder extends ByteToMessageDecoder {
                 isReadComplete = true;
                 break;
             }
-            //sb.append((char) c);
-            stringByteArray.writeByte(c);
+            stringByteArray.write(c);
         }
-        parcel = Tool.parseRequest(stringByteArray.toString(Charset.defaultCharset()));
+        if(!isReadComplete) {
+            return;
+        }
+
+        stringByteBuf = Unpooled.copiedBuffer(stringByteArray.toByteArray());
+
+        parcel = Tool.parseRequest(stringByteBuf.toString(Charset.defaultCharset()));
         if(parcel.getAttachmentSize() > 0) {
             isReadComplete = true;
             return;
         }
         isReadComplete = false;
+        stringByteArray.reset();
         out.add(parcel);
         return;
 
