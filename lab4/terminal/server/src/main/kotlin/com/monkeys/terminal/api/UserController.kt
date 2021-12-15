@@ -39,8 +39,8 @@ class UserController() {
                 if (res[0] == clientLocation) {
                     "Error"
                 } else {
-                    clients[userName] = res[0]
-                    res[0]
+                    clients[userName] = res[0] + "/"
+                    res[0] + "/"
                 }
             } else {
                 "Error"
