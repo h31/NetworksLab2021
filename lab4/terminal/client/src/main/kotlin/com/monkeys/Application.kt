@@ -130,7 +130,7 @@ class Application {
     private suspend fun callKill(command: List<String>) {
         if (command.size == 2) {
             val msg = terminalService.kill(command[1])
-            if (msg == "${terminalService.getLogin()} was killed") {
+            if (msg == "${command[1]} was killed") {
                 println(msg)
                 terminalService.stopClient()
             } else {
