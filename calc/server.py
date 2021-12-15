@@ -1,8 +1,8 @@
 # python_socketio==4.6.0; python_engineio==3.13.2; flask_socketio==4.3.1
 from flask import Flask
-from flask_socketio import SocketIO, emit, disconnect
-import flask_login, functools, sys, math, socket
-from flask_login import LoginManager, UserMixin, current_user
+from flask_socketio import SocketIO, emit
+import flask_login, sys, math, socket
+from flask_login import LoginManager, UserMixin, current_user, logout_user
 from multiprocessing import Pool
 
 app = Flask(__name__)
@@ -12,31 +12,30 @@ socketio = SocketIO(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 users = {"user1":"user1", "user2":"user2"}
+logged_in_users = []
 
 @login_manager.user_loader
 def user_loader(login):
-	if login not in users:
+	if login not in logged_in_users:
 		return
 
 	user = UserMixin()
 	user.id = login
 	return user
 
-@login_manager.request_loader
-def request_loader(request):
-	login = request.form.get("login")
-	if login not in users:
-		return
-
-	user = UserMixin()
-	user.id = login
-	return user
+@socketio.on("logout")
+def logout():
+	if current_user.is_authenticated:
+		logged_in_users.remove(current_user.get_id())
+		logout_user()
 
 @socketio.on('login')
 def login(data):
 	user_login = data["login"]
 	if user_login in users:
 		if data["password"] == users[user_login]:
+			if user_login not in logged_in_users:
+				logged_in_users.append(user_login)
 			user = UserMixin()
 			user.id = user_login
 			flask_login.login_user(user)
@@ -46,18 +45,11 @@ def login(data):
 	else:
 		return {"status":"failed"}, 401
 
-def authenticated_only(f):
-	@functools.wraps(f)
-	def wrapped(*args, **kwargs):
-		if not current_user.is_authenticated:
-			disconnect()
-		else:
-			return f(*args, **kwargs)
-	return wrapped
-
 @socketio.on('fast_calc')
-@authenticated_only
 def fast_calc(data):	
+	if not current_user.is_authenticated:
+		return {"ERROR":"Login required"}, 400
+	
 	if data["operation"] not in ("+", "-", "*", "/"):
 		return {"ERROR":"Wrong operation"}, 400
 	try:
@@ -80,7 +72,6 @@ def fast_calc(data):
 				return {"Answer":str(operand1) + " / " + str(operand2) + " = " + str(operand1 / operand2)}, 200
 
 @socketio.on('slow_calc')
-@authenticated_only
 def slow_calc(data):
 	if data["operation"] not in ("sqrt", "!"):
 		return {"ERROR":"Wrong operation"}, 400
@@ -129,4 +120,3 @@ if __name__ == "__main__":
 		print("Args: timeout")
 		exit()
 	app.run(host = get_local_IP(), port = 5000)
-	
