@@ -74,7 +74,7 @@ class Application {
             }
             2 -> {
                 if (command[1].contains("/"))
-                    println("")
+                    println("You can use the command ls no further than 1 folder")
                 else {
                     val ls = terminalService.getDirContent(command[1])
                     if (ls.first) {
@@ -131,8 +131,12 @@ class Application {
         if (command.size == 2) {
             when (val msg = terminalService.kill(command[1])) {
                 "${command[1]} was killed" -> {
-                    println(msg)
-                    terminalService.stopClient()
+                    if (command[1] == terminalService.getLogin()) {
+                        println(msg)
+                        terminalService.stopClient()
+                    }
+                    else
+                        println(msg)
                 }
                 "You have not enough rights" -> {
                     println(msg)

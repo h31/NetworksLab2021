@@ -23,6 +23,7 @@ class TerminalService(private val name: String,
     private var location: String = ""
 
     private val httpClient: HttpClient = HttpClient(CIO) {
+        expectSuccess = false
         install(JsonFeature) {
             serializer = GsonSerializer() {
                 setPrettyPrinting()
@@ -79,6 +80,8 @@ class TerminalService(private val name: String,
             val resp = message.response
             Pair(true, resp)
         } else {
+            if (receive.status == "Deleted")
+                stopClient()
             println(msg)
             Pair(false, ArrayList())
         }
@@ -95,7 +98,10 @@ class TerminalService(private val name: String,
         }
         val receive = response.receive<ResponseStringModel>()
         val message = receive.message
-        checkDeleted(receive.status)
+        if (response.status.value == 200 && !checkDeleted(receive.status))
+            location = message.msg
+        if (receive.status == "Deleted")
+            stopClient()
         return message.msg
     }
 
