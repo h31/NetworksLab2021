@@ -129,12 +129,16 @@ class Application {
 
     private suspend fun callKill(command: List<String>) {
         if (command.size == 2) {
-            val msg = terminalService.kill(command[1])
-            if (msg == "${command[1]} was killed") {
-                println(msg)
-                terminalService.stopClient()
-            } else {
-                println("Unsuccessful logout")
+            when (val msg = terminalService.kill(command[1])) {
+                "${command[1]} was killed" -> {
+                    println(msg)
+                    terminalService.stopClient()
+                }
+                "You have not enough rights" -> {
+                    println(msg)
+                }
+                else ->
+                    println("Unsuccessful logout")
             }
         } else
             println("Wrong command")
