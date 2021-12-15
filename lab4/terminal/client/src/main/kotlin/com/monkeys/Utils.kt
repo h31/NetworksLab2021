@@ -1,7 +1,5 @@
 package com.monkeys
 
-import io.ktor.http.*
-
 const val HOST = "0.0.0.0"
 const val PORT = 8080
 const val HTTP_PREF = "http://"
@@ -14,6 +12,5 @@ const val WHO_URL = "/api/v1/terminal/who"
 const val KILL_URL = "/api/v1/terminal/kill"
 const val LOGOUT_URL = "/api/v1/terminal/logout"
 const val LS_WITHOUT_ARGS = ""
-val OK_HTTP_STATUS_CODE = HttpStatusCode(200, "OK")
 
 fun getURL(request: String) = "$HTTP_PREF$HOST:$PORT$request"

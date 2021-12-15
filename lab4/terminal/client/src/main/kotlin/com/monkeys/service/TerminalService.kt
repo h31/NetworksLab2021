@@ -71,15 +71,16 @@ class TerminalService(private val name: String,
             }
             contentType(ContentType.Application.Json)
         }
-
         val receive = response.receive<ResponseListOfStringsModel>()
         val message = receive.message
         val msg = message.msg
-        val resp = message.response
-        if (msg == "Bad credentials") {
-            return Pair(false, ArrayList())
+        return if (response.status.value == 200) {
+            val resp = message.response
+            Pair(true, resp)
+        } else {
+            println(msg)
+            Pair(false, ArrayList())
         }
-        return Pair(true, resp)
     }
 
     //cd
@@ -91,17 +92,11 @@ class TerminalService(private val name: String,
             contentType(ContentType.Application.Json)
             body = CdRequest(dir)
         }
-
         val receive = response.receive<ResponseStringModel>()
         val message = receive.message
-        val msg = message.msg
-        location = message.response
-        if (msg == "Bad credentials") {
-            return msg
-        }
-        return location
-
+        return message.msg
     }
+
     //who
     suspend fun getCurrUsersAndDirs(): Pair<Boolean, List<Pair<String, String>>> {
         val response = httpClient.get<HttpResponse>(getURL(WHO_URL)) {
@@ -111,12 +106,14 @@ class TerminalService(private val name: String,
         }
         val receive = response.receive<ResponseListOfPairsModel>()
         val message = receive.message
-        val resp = message.response
         val msg = message.msg
-        if (msg == "Bad credentials") {
-            return Pair(false, ArrayList())
+        return if (response.status.value == 200) {
+            val resp = message.response
+            Pair(true, resp)
+        } else {
+            println(msg)
+            Pair(false, ArrayList())
         }
-        return Pair(true, resp)
     }
 
     //logout

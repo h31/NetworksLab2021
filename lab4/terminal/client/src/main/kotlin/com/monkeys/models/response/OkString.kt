@@ -4,6 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class OkString(
-    val msg: String,
-    val response: String
+    val msg: String
 ) : OkModel

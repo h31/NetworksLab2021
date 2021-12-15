@@ -94,9 +94,11 @@ class Application {
 
     private suspend fun callCd(command: List<String>) {
         when (command.size) {
-            1 -> print(terminalService.getCurrentDir()+"> ")
+            1 -> println(terminalService.getCurrentDir()+"> ")
             2 -> {
-                terminalService.getChangeDir(command[1])
+                val msg = terminalService.getChangeDir(command[1])
+                if (terminalService.getChangeDir(command[1]) == "Wrong location to cd")
+                    println(msg)
             }
             else -> {
                 println("Wrong command")
