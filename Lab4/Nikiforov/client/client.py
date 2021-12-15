@@ -1,3 +1,4 @@
+import ast
 import json
 
 import requests
@@ -7,7 +8,7 @@ from prettytable import PrettyTable
 class Client:
 
     def __init__(self):
-        self.address = 'http://192.168.0.29:8080/'
+        self.address = 'http://192.168.137.96:8080/'
         self.session = requests.Session()
         self.username = ""
         self.password = ""
@@ -20,7 +21,7 @@ class Client:
                 if login_method == '1':
                     login = self.session.get(f'{self.address}login', auth=(self.username, self.password))
                     status = login.status_code
-                    self.is_seller = False if json.loads(login.text)["message"] == "false" else True
+                    self.is_seller = ast.literal_eval(json.loads(login.text)["message"].capitalize())
                 elif login_method == '2':
                     status = self.session.get(f'{self.address}register',
                                               data={'username': self.username, 'password': self.password}).status_code
@@ -47,15 +48,17 @@ class Client:
             ids.append(market['id'])
             prompt += f"{market['id']})\tShow {market['name']}'s goods\n"
             market_table.add_row([market['id'], market['name'], market['geoArea']])
+        market_table.sortby = '№'
         return prompt, ids, market_table
 
-    def show_goods(self, id):
-        market = self.session.get(f'{self.address}markets/{id}', auth=(self.username, self.password)).json()
+    def show_goods(self, market_id):
+        market = self.session.get(f'{self.address}markets/{market_id}', auth=(self.username, self.password)).json()
         goods_table = PrettyTable()
         goods_table.field_names = ['№', 'Name', 'Price']
         print(f"{market['name']}'s goods")
         for market_goods in market['marketGoods']:
             goods_table.add_row([market_goods['goods']['id'], market_goods['goods']['name'], market_goods['price']])
+        goods_table.sortby = '№'
         return goods_table
 
     def client_requests(self):
@@ -86,20 +89,27 @@ class Client:
                         body = {"marketId": str(market_id), "userArea": user_area, "goodsIdArray": goods_list}
                         prices = self.session.get(f'{self.address}order', data=json.dumps(body),
                                                   auth=(self.username, self.password)).json()
-                        for entry in prices.items():
-                            print(f"{entry[0]}\t{entry[1]}")
-                        print(f"Total\t{sum(prices.values())}")
+                        print("Your order price:")
+                        order_price = PrettyTable()
+                        order_price.field_names = ['', 'Price']
+                        order_price.add_row(['Delivery price', prices['deliveryPrice']])
+                        order_price.add_row(['Order price', prices['orderPrice']])
+                        order_price.add_row(['Total', sum(prices.values())])
+                        print(order_price)
                 else:
                     market_name = input("Enter market name: ")
                     market_area = int(input("Enter market area: "))
                     market_goods = []
                     while input('0)\tEnd\n1)\tAdd goods\n') != '0':
                         goods_name = input("Enter goods name: ")
-                        goods_price = int(input("Enter goods price: "))
+                        goods_price = input("Enter goods price: ")
                         market_goods.append({'goodsName': goods_name, 'goodsPrice': goods_price})
                     market_data = {'marketName': market_name, 'marketArea': market_area, "goodsPriceList": market_goods}
-                    self.session.post(f"{self.address}manage/add/market", data=json.dumps(market_data),
-                                      auth=(self.username, self.password))
+                    result = json.loads(
+                        self.session.post(f"{self.address}manage/add/market", data=json.dumps(market_data),
+                                          auth=(self.username, self.password)).text)
+                    if result['status'] != requests.codes.ok:
+                        print(result['message'])
             elif option == '3':
                 self.session.close()
                 break
