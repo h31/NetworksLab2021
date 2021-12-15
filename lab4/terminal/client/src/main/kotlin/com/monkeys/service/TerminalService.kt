@@ -75,7 +75,7 @@ class TerminalService(private val name: String,
         val receive = response.receive<ResponseListOfStringsModel>()
         val message = receive.message
         val msg = message.msg
-        return if (response.status.value == 200) {
+        return if (response.status.value == 200 && !checkDeleted(receive.status)) {
             val resp = message.response
             Pair(true, resp)
         } else {
@@ -95,6 +95,7 @@ class TerminalService(private val name: String,
         }
         val receive = response.receive<ResponseStringModel>()
         val message = receive.message
+        checkDeleted(receive.status)
         return message.msg
     }
 
@@ -135,6 +136,7 @@ class TerminalService(private val name: String,
             headers {
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
             }
+            contentType(ContentType.Application.Json)
             body = KillRequest(user)
         }
         val receive = response.receive<ResponseStringModel>()
@@ -158,5 +160,14 @@ class TerminalService(private val name: String,
         } catch (e: Exception) {
 
         }
+    }
+
+    fun checkDeleted(status: String): Boolean {
+        if (status == "Deleted") {
+            println("You was killed")
+            stopClient()
+            return true
+        }
+        return false
     }
 }
