@@ -1,1 +1,0 @@
-# com.poly.models.PolySerializable
