@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface MarketRepository extends CrudRepository<Market, Long> {
 
     Optional<Market> findByNameAndGeoArea(String name, Integer area);
+
+    boolean existsByNameAndGeoArea(String name, Integer area);
 }

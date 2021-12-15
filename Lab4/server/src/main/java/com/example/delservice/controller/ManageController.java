@@ -2,6 +2,7 @@ package com.example.delservice.controller;
 
 import com.example.delservice.dto.MarketDTO;
 import com.example.delservice.dto.OrderDTO;
+import com.example.delservice.repository.MarketRepository;
 import com.example.delservice.service.MarketService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +22,8 @@ public class ManageController {
     @Autowired
     private MarketService marketService;
 
+    @Autowired
+    private MarketRepository marketRepository;
 
     @ApiOperation(
             value = "Добавить новый магазин",
@@ -38,6 +41,13 @@ public class ManageController {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Incorrect data");
+        }
+
+        boolean isExist =
+        marketRepository.existsByNameAndGeoArea(marketDTO.getMarketName(), marketDTO.getMarketArea());
+
+        if(isExist) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Market already exist");
         }
 
         boolean result = marketService.addNewMarket(marketDTO);
