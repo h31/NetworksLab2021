@@ -94,24 +94,38 @@ fun Route.routedAPI() {
                 call.respondText("Test added correctly", status = HttpStatusCode.Created)
             }
             post("/sendAnswers"){
+                //getting the user answers
                 val answers = call.receive<Answers>()
+
+                //getting the correct answers and their values
+                val correctAnswers = mutableListOf<Int>()
+                val values = mutableListOf<Int>()
                 val questionsSet = conn.createStatement()
                     .executeQuery("select * from testapp.questions where testId='${answers.testId}' order by id;")
-
-                var resultSum = 0
-                for (i in 0..answers.answers.size) {
-                    questionsSet.next()
-                    val value = questionsSet.getInt(3)
-                    val correctAnswer = questionsSet.getInt(9)
-                    if (correctAnswer == answers.answers[i]) {
-                        resultSum += value
-                    }
+                while (questionsSet.next()) {
+                    correctAnswers.add(questionsSet.getInt(9))
+                    values.add(questionsSet.getInt(3))
                 }
-                val principal = call.principal<JWTPrincipal>()
-                val login = principal!!.payload.getClaim("login").asString()
-                conn.createStatement()
-                    .execute("update testapp.users set lastTestId='${answers.testId}', lastResult='$resultSum' where login='$login';")
-                call.respond(status = HttpStatusCode.OK, AnswersResult(resultSum))
+
+                //check if incoming answers are ok
+                if (correctAnswers.size != answers.answers.size) {
+                    call.respondText("Incorrect amount of answers", status = HttpStatusCode.BadRequest)
+                }
+                else {
+                    //comparing and calculating the sum of values
+                    var resultSum = 0
+                    for (i in 0 until answers.answers.size) {
+                        if (correctAnswers[i] == answers.answers[i]) {
+                            resultSum += values[i]
+                        }
+                    }
+
+                    //updating the user stats
+                    val login = answers.username
+                    conn.createStatement()
+                        .execute("update testapp.users set lastTestId='${answers.testId}', lastResult='$resultSum' where login='$login';")
+                    call.respond(status = HttpStatusCode.OK, AnswersResult(resultSum))
+                }
             }
         }
 

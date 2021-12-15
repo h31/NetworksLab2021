@@ -12,13 +12,16 @@ suspend fun interact(client: HttpClient, token: String) {
 
         when (input[0]) {
             "list" -> {
-                val request = client.get<List<Item>>("$baseUrl/item"){
-                    header(HttpHeaders.Authorization, "bearer $token")
-                    contentType(ContentType.Application.Json)
+                try {
+                    val request = client.get<List<Item>>("$baseUrl/item") {
+                        header(HttpHeaders.Authorization, "bearer $token")
+                        contentType(ContentType.Application.Json)
+                    }
+                    for (item in request) {
+                        println("${item.name} : ${item.amount} available for ${item.price} each.")
+                    }
                 }
-                for (item in request) {
-                    println("${item.name} : ${item.amount} available for ${item.price} each.")
-                }
+                catch (e: ResponseException) { e.response }
             }
             "addPos" -> {
                 try {
@@ -36,6 +39,7 @@ suspend fun interact(client: HttpClient, token: String) {
                     printArgFormatMsg()
                     continue
                 }
+                catch (e: ResponseException) { e.response }
             }
             "buy" -> {
                 try {
@@ -54,10 +58,7 @@ suspend fun interact(client: HttpClient, token: String) {
                     printArgFormatMsg()
                     continue
                 }
-                catch (e: ClientRequestException) {
-                    println(e.message.split("Text: ")[1])
-                    continue
-                }
+                catch (e: ResponseException) { e.response }
             }
             "add" -> {
                 try {
@@ -76,10 +77,7 @@ suspend fun interact(client: HttpClient, token: String) {
                     printArgFormatMsg()
                     continue
                 }
-                catch (e: ClientRequestException) {
-                    println(e.message.split("Text: ")[1])
-                    continue
-                }
+                catch (e: ResponseException) { e.response }
             }
             "help" -> { printHelpMsg() }
             "exit" -> {
