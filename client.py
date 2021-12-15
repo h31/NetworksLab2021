@@ -1,31 +1,22 @@
-# python_socketio==4.6.0; python_engineio==3.13.2; flask_socketio==4.3.1
 from socketIO_client import SocketIO
 import sys, re
 
 def parse(string):
 	string = string.replace(" ", "")
-	if re.fullmatch("(-|)([0-9]+[.|])?[0-9]+\+([0-9]+[.|])?[0-9]+", string):
-		operator = "+"
-		operands = string.split("+")
-	elif re.fullmatch("([0-9]+[.|])?[0-9]+\-([0-9]+[.|])?[0-9]+", string):
-		operator = "-"
-		operands = string.split("-")
-	elif re.fullmatch("([0-9]+[.|])?[0-9]+\*([0-9]+[.|])?[0-9]+", string):
-		operator = "*"
-		operands = string.split("*")
-	elif re.fullmatch("([0-9]+[.|])?[0-9]+\/([0-9]+[.|])?[0-9]+", string):
-		operator = "/"
-		operands = string.split("/")
-	elif re.fullmatch("sqrt\(([0-9]+[.|])?[0-9]+\)", string):
-		operator = "sqrt"
-		operands = (string[5:-1], None)
-	elif re.fullmatch("\d+!", string):
-		operator = "!"
-		operands = (string[:-1], None)
-	else:
-		return None, None, None
-
-	return operator, operands[0], operands[1]
+	
+	match_result = re.match("(?P<first>(-|)([0-9]+[.|])?[0-9]+)(?P<sign>\+|-|\*|\/)(?P<second>([0-9]+[.|])?[0-9]+)", string)
+	if match_result != None:
+		return match_result.group("sign", "first", "second")
+	
+	match_result = re.match("sqrt\((?P<value>([0-9]+[.|])?[0-9]+)\)", string)
+	if match_result != None:
+		return "sqrt", match_result.group("value"), None
+	
+	match_result = re.match("(?P<value>\d+)!", string)
+	if match_result != None:
+		return "!", match_result.group("value"), None
+	
+	return None, None, None
 
 if len(sys.argv) != 4:
 	print("Args: server login password")
@@ -33,9 +24,11 @@ if len(sys.argv) != 4:
 
 sio = SocketIO("http://" + sys.argv[1], 5000)
 
-def show_callback_result(*args):
-	print(*args)
+def show_callback_result(*args): # args[0] = json; args[1] = status code
+	for key in args[0]:
+		print(key + ": " + args[0][key])
 	print()
+	
 sio.on("server_message", show_callback_result)
 
 # Step 3 = make requests for calculations and get the results
@@ -80,4 +73,5 @@ sio.emit(	"login",
 sio.wait_for_callbacks()
 
 # before exit
+sio.emit("logout")
 sio.disconnect()
