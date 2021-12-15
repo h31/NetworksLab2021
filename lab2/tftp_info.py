@@ -6,6 +6,12 @@ TFTP_OPCODES = {
     'error': 5
 }
 
+CLIENT_COMMANDS = {
+    'RD': 1,
+    'WR': 2,
+    'Q': 3
+}
+
 TFTP_SERVER_ERRORS = {
     1: "File not found.",
     2: "Access violation.",
