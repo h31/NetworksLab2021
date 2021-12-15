@@ -26,7 +26,7 @@ class UserController() {
         val clientLocation = clients[userName]
         return if (clientLocation != null) {
             val location = clientLocation + request.trim()
-            val bashResult = executeBashProcessWithResult("ls $location") ?: Collections.singletonList("")
+            val bashResult = executeBashProcessWithResult("ls $location") ?: emptyList()
             separateListByElements(bashResult)
         } else null
     }
@@ -36,8 +36,12 @@ class UserController() {
         return if (clientLocation != null) {
             val res = executeBashProcessWithResult("cd $clientLocation; cd ${request.location}; pwd")
             if (res != null && res.isNotEmpty()) {
-                clients[userName] = res[0]
-                res[0]
+                if (res[0] == clientLocation) {
+                    "Error"
+                } else {
+                    clients[userName] = res[0]
+                    res[0]
+                }
             } else {
                 "Error"
             }
