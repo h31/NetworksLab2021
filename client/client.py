@@ -3,6 +3,7 @@ import struct
 import threading
 from datetime import datetime
 import sys
+
 sys.path.append('..')
 from tools import getNonExistentName
 
@@ -56,8 +57,6 @@ def backFunc():
     while True:
         msg_time, msg_name, msg_msg, msg_file_path = clientRecv()
         printMsg(msg_time, msg_name, msg_msg, msg_file_path)
-
-
 
 
 def clientSend(msg: bytes, path=None):

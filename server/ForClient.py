@@ -22,7 +22,10 @@ class ForClient():
         msg = bytes()
         loop = asyncio.get_event_loop()
         while size != 0:
-            msg_tmp = await loop.sock_recv(self.sock, size)
+            try:
+                msg_tmp = await loop.sock_recv(self.sock, size)
+            except:
+                self.sock.close()
             size -= len(msg_tmp)
             msg += msg_tmp
         return msg
