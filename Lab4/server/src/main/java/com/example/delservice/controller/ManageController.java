@@ -5,6 +5,8 @@ import com.example.delservice.dto.OrderDTO;
 import com.example.delservice.service.MarketService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,9 +21,15 @@ public class ManageController {
     @Autowired
     private MarketService marketService;
 
+
+    @ApiOperation(
+            value = "Добавить новый магазин",
+            notes = "Добавление нового магазина с указанием его зоны и продуктами в наличии"
+    )
     @PostMapping("/manage/add/market")
     @ResponseBody
-    public void addNewMarket(@RequestBody String json) {
+    public void addNewMarket(
+            @RequestBody String json) {
         ObjectMapper objectMapper = new ObjectMapper();
 
         MarketDTO marketDTO;

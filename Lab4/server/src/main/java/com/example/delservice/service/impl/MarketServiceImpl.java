@@ -3,6 +3,7 @@ package com.example.delservice.service.impl;
 import com.example.delservice.dto.GoodsPriceDTO;
 import com.example.delservice.dto.MarketDTO;
 import com.example.delservice.dto.OrderDTO;
+import com.example.delservice.dto.OrderPriceDTO;
 import com.example.delservice.model.Goods;
 import com.example.delservice.model.Market;
 import com.example.delservice.model.MarketGoods;
@@ -27,8 +28,8 @@ public class MarketServiceImpl implements MarketService {
     @Autowired
     private GoodsRepository goodsRepository;
 
-    public Map<String, Integer> calculateTheOrder(OrderDTO orderDTO) {
-        Map<String, Integer> result = new HashMap<>();
+    public OrderPriceDTO calculateTheOrder(OrderDTO orderDTO) {
+        OrderPriceDTO orderPriceDTO = new OrderPriceDTO();
 
         Market market;
         Optional<Market> marketContainer = marketRepository.findById(orderDTO.getMarketId());
@@ -48,7 +49,7 @@ public class MarketServiceImpl implements MarketService {
             price += marketGoods.getPrice();
         }
 
-        result.put("Order price", price);
+        orderPriceDTO.setOrderPrice(price);
 
         int deliveryPrice = 0;
         if (orderDTO.getUserArea().equals(market.getGeoArea())) {
@@ -57,9 +58,9 @@ public class MarketServiceImpl implements MarketService {
             deliveryPrice = (Math.abs(orderDTO.getUserArea() - market.getGeoArea()) + 1) * 1000;
         }
 
-        result.put("Delivery price", deliveryPrice);
+        orderPriceDTO.setDeliveryPrice(deliveryPrice);
 
-        return result;
+        return orderPriceDTO;
     }
 
     public boolean addNewMarket(MarketDTO marketDTO) {
