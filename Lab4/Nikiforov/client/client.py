@@ -11,21 +11,24 @@ class Client:
         self.session = requests.Session()
         self.username = ""
         self.password = ""
-        status = '400'
-        while not status == requests.codes.ok:
+        status = requests.codes.unauthorized
+        while status != requests.codes.ok:
             try:
                 login_method = input("1)\tLogin\n2)\tRegistration\n")
                 self.set_username("Username:")
                 self.set_password("Password:")
                 if login_method == '1':
-                    status = self.session.get(f'{self.address}login', auth=(self.username, self.password)).status_code
+                    login = self.session.get(f'{self.address}login', auth=(self.username, self.password))
+                    status = login.status_code
+                    self.is_seller = False if json.loads(login.text)["message"] == "false" else True
                 elif login_method == '2':
                     status = self.session.get(f'{self.address}register',
                                               data={'username': self.username, 'password': self.password}).status_code
+                    self.is_seller = False
                 else:
                     raise IndexError
             except IndexError:
-                print("Incorrect credentials!")
+                print("Incorrect option!")
                 self.session.close()
 
     def set_username(self, reason=''):
@@ -57,7 +60,10 @@ class Client:
 
     def client_requests(self):
         while True:
-            option = input("1)\tList markets\n2)\tCreate order\n3)\tExit\n")
+            if not self.is_seller:
+                option = input("1)\tList markets\n2)\tCreate order\n3)\tExit\n")
+            else:
+                option = input("1)\tList markets\n2)\tAdd market\n3)\tExit\n")
             if option == '1':
                 prompt, ids, market_table = self.show_markets()
                 print(market_table)
@@ -69,19 +75,31 @@ class Client:
                     elif int(option) in ids:
                         print(self.show_goods(int(option)))
             elif option == '2':
-                user_area = input("Enter your area: ")
-                _, ids, market_table = self.show_markets()
-                print(market_table)
-                market_id = int(input("Enter market №: "))
-                if market_id in ids:
-                    print(self.show_goods(market_id))
-                    goods_list = input("Enter goods №: ").split(" ")
-                    body = {"marketId": str(market_id), "userArea": user_area, "goodsIdArray": goods_list}
-                    prices = self.session.get(f'{self.address}order', data=json.dumps(body),
-                                              auth=(self.username, self.password)).json()
-                    for entry in prices.items():
-                        print(f"{entry[0]}\t{entry[1]}")
-                    print(f"Total\t{sum(prices.values())}")
+                if not self.is_seller:
+                    user_area = input("Enter your area: ")
+                    _, ids, market_table = self.show_markets()
+                    print(market_table)
+                    market_id = int(input("Enter market №: "))
+                    if market_id in ids:
+                        print(self.show_goods(market_id))
+                        goods_list = input("Enter goods №: ").split(" ")
+                        body = {"marketId": str(market_id), "userArea": user_area, "goodsIdArray": goods_list}
+                        prices = self.session.get(f'{self.address}order', data=json.dumps(body),
+                                                  auth=(self.username, self.password)).json()
+                        for entry in prices.items():
+                            print(f"{entry[0]}\t{entry[1]}")
+                        print(f"Total\t{sum(prices.values())}")
+                else:
+                    market_name = input("Enter market name: ")
+                    market_area = int(input("Enter market area: "))
+                    market_goods = []
+                    while input('0)\tEnd\n1)\tAdd goods\n') != '0':
+                        goods_name = input("Enter goods name: ")
+                        goods_price = int(input("Enter goods price: "))
+                        market_goods.append({'goodsName': goods_name, 'goodsPrice': goods_price})
+                    market_data = {'marketName': market_name, 'marketArea': market_area, "goodsPriceList": market_goods}
+                    self.session.post(f"{self.address}manage/add/market", data=json.dumps(market_data),
+                                      auth=(self.username, self.password))
             elif option == '3':
                 self.session.close()
                 break
