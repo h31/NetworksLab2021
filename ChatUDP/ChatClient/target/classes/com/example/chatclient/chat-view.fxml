@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox alignment="CENTER" prefHeight="480.0" prefWidth="640.0" spacing="20.0" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.chatclient.ChatController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+    </padding>
+    <children>
+      <HBox prefHeight="25.0" prefWidth="600.0">
+         <children>
+            <Label prefHeight="25.0" text="Your nickname:">
+               <HBox.margin>
+                  <Insets right="15.0" />
+               </HBox.margin>
+            </Label>
+            <TextField fx:id="nickname" onKeyPressed="#onNicknameInput" />
+            <Button fx:id="changeNickname" disable="true" mnemonicParsing="false" onAction="#changeNickname" text="Change">
+               <HBox.margin>
+                  <Insets left="15.0" />
+               </HBox.margin>
+            </Button>
+         </children>
+      </HBox>
+      <ScrollPane fx:id="scrollPane" prefHeight="285.0" prefWidth="600.0">
+         <content>
+            <VBox fx:id="vBox" prefWidth="585.0">
+               <padding>
+                  <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+               </padding>
+            </VBox>
+         </content>
+      </ScrollPane>
+        <Pane prefHeight="70.0" prefWidth="442.0">
+            <children>
+                <TextArea id="message" fx:id="message" prefHeight="70.0" prefWidth="478.0" promptText="Enter your message..." wrapText="true" />
+                <Button id="send-button" fx:id="sendButton" layoutX="486.0" mnemonicParsing="false" onAction="#onSend" prefHeight="70.0" prefWidth="114.0" text="Send" />
+            </children>
+        </Pane>
+    </children>
+</VBox>
