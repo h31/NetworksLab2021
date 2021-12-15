@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.awt.*;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -28,18 +29,18 @@ public class MarketController {
             responseContainer = "List")
     @GetMapping("/markets")
     @JsonView(View.Public.class)
-    public Iterable<Market> list() {
-        return marketRepository.findAll();
+    public List<Market> list() {
+        return (List<Market>) marketRepository.findAll();
     }
 
     @ApiOperation(
             value = "Информация о магазине",
             notes = "Возвращает JSON со списком с подробной информацией по указанному магазину",
             response = Market.class)
-    @ApiImplicitParam(name = "market_id", value = "Market ID", required = true, dataType = "String", paramType = "path")
     @GetMapping("/markets/{market_id}")
     @JsonView(View.ExtendedModel.class)
-    public Optional<Market> chosenMarket(@PathVariable String market_id) {
+    public Optional<Market> chosenMarket(
+            @PathVariable @ApiParam(value = "Идентификатор магазине", example = "12") String market_id) {
         return marketRepository.findById(Long.valueOf(market_id));
     }
 
