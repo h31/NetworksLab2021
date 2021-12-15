@@ -3,6 +3,7 @@ package com.monkeys.service
 import com.google.gson.FieldNamingPolicy
 import com.monkeys.*
 import com.monkeys.models.CdRequest
+import com.monkeys.models.KillRequest
 import com.monkeys.terminal.models.AuthModel
 import com.monkeys.terminal.models.response.*
 import io.ktor.client.*
@@ -129,11 +130,12 @@ class TerminalService(private val name: String,
     }
 
     //kill
-    suspend fun kill(): String {
+    suspend fun kill(user: String): String {
         val response = httpClient.post<HttpResponse>(getURL(KILL_URL)) {
             headers {
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
             }
+            body = KillRequest(user)
         }
         val receive = response.receive<ResponseStringModel>()
         val message = receive.message

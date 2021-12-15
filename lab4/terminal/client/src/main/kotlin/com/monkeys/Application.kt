@@ -21,7 +21,7 @@ class Application {
                 if (terminalService.role == "Error") {
                     print("Invalid input. Try to connect again")
                 } else {
-                    if (terminalService.reg())
+                    if (terminalService.reg() && terminalService.auth())
                         startTerminal()
                     else
                         println("Sorry! You were not registered")
@@ -97,7 +97,7 @@ class Application {
             1 -> println(terminalService.getCurrentDir()+"> ")
             2 -> {
                 val msg = terminalService.getChangeDir(command[1])
-                if (terminalService.getChangeDir(command[1]) == "Wrong location to cd")
+                if (msg == "Wrong location to cd")
                     println(msg)
             }
             else -> {
@@ -129,7 +129,7 @@ class Application {
 
     private suspend fun callKill(command: List<String>) {
         if (command.size == 2) {
-            val msg = terminalService.kill()
+            val msg = terminalService.kill(command[1])
             if (msg == "${terminalService.getLogin()} was killed") {
                 println(msg)
                 terminalService.stopClient()
