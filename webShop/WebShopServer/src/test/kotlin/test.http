@@ -1,0 +1,41 @@
+POST http://26.82.19.20:5555/auth/login
+Content-Type: application/json
+
+{
+  "login": "putin2",
+  "pwdHash": "123456"
+}
+###
+POST http://26.82.19.20:5555/auth/register
+Content-Type: application/json
+
+{
+  "login": "putin2",
+  "pwdHash": "123456"
+}
+###
+POST http://26.82.19.20:5555/item
+Content-Type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJwd2RIYXNoIjoiMTIzNDU2IiwibG9naW4iOiJwdXRpbjIifQ.w8zJQ-uXYbxf1-V9Bz53o_fOSAc2gj22ao4rQWD6x1Q
+
+{
+  "name": "test4",
+  "amount": 40,
+  "price": 37.0
+}
+###
+PUT http://127.0.0.1:5555/item/buy
+Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJwd2RIYXNoIjoiMTIzNDU2IiwibG9naW4iOiJwdXRpbjIifQ.1-Retbx1CRF0XkpzZd6U0MZirde-9iAxzM5ia6wPkqhuix-D6U3zWpV65ZKfF2SJIvidGWyRQA3htrypn5xl3w
+
+name=test&amount=1
+###
+PUT http://127.0.0.1:5555/item/add
+Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJwd2RIYXNoIjoiMTIzNDU2IiwibG9naW4iOiJwdXRpbjIifQ.1-Retbx1CRF0XkpzZd6U0MZirde-9iAxzM5ia6wPkqhuix-D6U3zWpV65ZKfF2SJIvidGWyRQA3htrypn5xl3w
+
+name=test&amount=4
+###
+GET http://26.82.19.20:5555/item
+Accept: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJwd2RIYXNoIjoiMTIzNDU2IiwibG9naW4iOiJwdXRpbjIifQ.1-Retbx1CRF0XkpzZd6U0MZirde-9iAxzM5ia6wPkqhuix-D6U3zWpV65ZKfF2SJIvidGWyRQA3htrypn5xl3w
