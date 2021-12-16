@@ -1,12 +1,13 @@
 import ast
 import base64
+import json
 import math
 import operator
 import sqlite3
 from functools import reduce
-from time import sleep
 
-from bottle import get, run, request, post, auth_basic, response
+from bottle import request, response, auth_basic, get, post, run
+from gevent import monkey, sleep
 
 
 def check(username, password):
@@ -16,50 +17,44 @@ def check(username, password):
     return cursor.fetchone()[0]
 
 
-@get('/fast/sum')
+@get('/fast/<operation>')
 @auth_basic(check)
-def fast_sum():
-    return repr(reduce(operator.add, ast.literal_eval(request.query.args))).encode()
+def fast_operation(operation):
+    if operation == 'sum':
+        yield repr(reduce(operator.add, ast.literal_eval(request.query.args))).encode()
+    elif operation == 'mul':
+        yield repr(reduce(operator.mul, ast.literal_eval(request.query.args))).encode()
+    elif operation == 'sub':
+        yield repr(reduce(operator.sub, ast.literal_eval(request.query.args))).encode()
+    elif operation == 'div':
+        try:
+            yield repr(reduce(operator.truediv, ast.literal_eval(request.query.args))).encode()
+        except ZeroDivisionError:
+            response.status = 400
+            yield "Пресечена попытка деления на ноль!".encode()
 
 
-@get('/fast/mul')
+@get('/slow/<operation>')
 @auth_basic(check)
-def fast_mul():
-    return repr(reduce(operator.mul, ast.literal_eval(request.query.args))).encode()
+def slow_operation(operation):
+    if operation == 'sqrt':
+        yield slow_sqrt(ast.literal_eval(request.query.args))
+    elif operation == 'fact':
+        yield slow_fact(ast.literal_eval(request.query.args))
 
 
-@get('/fast/sub')
-@auth_basic(check)
-def fast_sub():
-    return repr(reduce(operator.sub, ast.literal_eval(request.query.args))).encode()
-
-
-@get('/fast/div')
-@auth_basic(check)
-def fast_div():
+def slow_fact(args):
+    sleep(len(args) * 2)
     try:
-        return repr(reduce(operator.truediv, ast.literal_eval(request.query.args))).encode()
-    except ZeroDivisionError:
-        response.status = 400
-        return "Пресечена попытка деления на ноль!".encode()
-
-
-@get('/slow/sqrt')
-@auth_basic(check)
-def slow_sqrt():
-    sleep(10)
-    return repr(list(map(lambda x: x ** 0.5, ast.literal_eval(request.query.args)))).encode()
-
-
-@get('/slow/fact')
-@auth_basic(check)
-def slow_fact():
-    sleep(10)
-    try:
-        return repr(list(map(lambda x: math.factorial(x), ast.literal_eval(request.query.args)))).encode()
+        return repr(list(map(lambda x: math.factorial(x), args))).encode()
     except ValueError:
         response.status = 400
         return "Пресечена попытка расчета факториала для отрицательного числа!".encode()
+
+
+def slow_sqrt(args):
+    sleep(len(args) * 2)
+    return repr(list(map(lambda x: x ** 0.5, args))).encode()
 
 
 @post('/login')
@@ -67,15 +62,12 @@ def login():
     credentials = request.auth
     if credentials is None:
         response.status = 401
-        return {'success': False,
-                'message': 'Enter authentication data!'}
+        yield json.dumps({'success': False, 'message': 'Enter authentication data!'})
     elif check(*credentials):
-        return {'success': True,
-                'message': f'Hello, {credentials[0]}!'}
+        yield json.dumps({'success': True, 'message': f'Hello, {credentials[0]}!'})
     else:
         response.status = 404
-        return {'success': False,
-                'message': 'User doesn\'t exist'}
+        yield json.dumps({'success': False, 'message': "User doesn't exist"})
 
 
 def check_username(username):
@@ -95,17 +87,16 @@ def register():
     password = request.query.password
     if not check_username(username):
         add_user(username, password)
-        return {'success': True,
-                'message': 'Successful registration'}
+        yield json.dumps({'success': True, 'message': 'Successful registration'})
     else:
         response.status = 403
-        return {'success': False,
-                'message': 'Username already used'}
+        yield json.dumps({'success': False, 'message': 'Username already used'})
 
 
 if __name__ == '__main__':
+    monkey.patch_all()
     conn = sqlite3.connect('users.sqlite')
     cursor = conn.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS users (username TEXT, token TEXT);")
-    run(host='localhost', port=8080)
+    run(host='localhost', port=8080, server='gevent')
     conn.close()
