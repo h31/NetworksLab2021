@@ -15,6 +15,9 @@ import io.ktor.auth.jwt.*
 import io.ktor.features.*
 import io.ktor.routing.*
 import io.ktor.serialization.*
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
@@ -47,6 +50,7 @@ fun Application.configure() {
 
     val authRepo = AuthRepo()
     val userController = UserController()
+    println(getCurrTimestamp())
 
     routing {
         auth(AuthController(authRepo, userController))

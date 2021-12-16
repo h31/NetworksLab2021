@@ -38,4 +38,8 @@ class UserController {
             }
         }
     }
+
+    fun logout(): Boolean {
+        return true
+    }
 }

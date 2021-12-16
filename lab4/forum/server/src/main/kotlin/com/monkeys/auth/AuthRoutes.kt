@@ -6,6 +6,7 @@ import com.monkeys.models.OkAuth
 import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.http.*
+import io.ktor.http.HttpStatusCode.Companion.Forbidden
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
@@ -19,7 +20,7 @@ fun Route.auth(controller: AuthController) {
                 call.respond(HttpStatusCode.OK, OkAuth(res))
             } else {
                 //User is not found
-                call.respond(HttpStatusCode.NotFound, res)
+                call.respond(HttpStatusCode.Unauthorized, res)
             }
         }
 
@@ -28,7 +29,11 @@ fun Route.auth(controller: AuthController) {
             if (res == "Success signup") {
                 call.respond(HttpStatusCode.OK, res)
             } else {
-                call.respond(HttpStatusCode.BadRequest, res)
+                if (res == "Something went wrong. Try to register again")
+                    call.respond(HttpStatusCode.BadRequest, res)
+                else
+                    //prohibited in client creation
+                    call.respond(Forbidden, res)
             }
         }
 

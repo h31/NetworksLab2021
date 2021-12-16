@@ -19,10 +19,14 @@ class AuthController (private val repo: AuthRepo, private val userController: Us
 
     //register
     fun signUp(model: AuthModel) : String {
-        return if (repo.signUp(model.login, model.psw))
+        val res = repo.signUp(model.login, model.psw)
+        return if (res.first)
             "Success signup"
         else
-            "Something went wrong. Еry to register again"
+            if (res.second == "23505")
+                "User ${model.login} already exists. Try to register again"
+            else
+                "Something went wrong. Try to register again"
     }
 
     private fun getGenerateToken(user: AuthModel): String {

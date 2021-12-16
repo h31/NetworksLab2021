@@ -1,6 +1,8 @@
 package com.monkeys.repo
 
 import com.monkeys.DBConnection
+import com.monkeys.getCurrTimestamp
+import java.sql.SQLException
 
 class AuthRepo {
 
@@ -9,21 +11,26 @@ class AuthRepo {
         DBConnection().getConnection().use { connection ->
             val statement = connection!!.createStatement()
             val resSet =
-                    statement.executeQuery("SELECT * FROM \"user\" WHERE (name='$login' AND psw='$password');")
-            return resSet.next()
+                    statement.executeQuery(
+                        "SELECT * FROM \"user\" WHERE (name='$login' AND psw='$password');")
+            val res = resSet.next()
+            if (res)
+                statement.executeUpdate(
+                    "UPDATE \"user\" SET active = 'true', last_time_of_activity = '${getCurrTimestamp()}' WHERE name = 'yana';")
+            return res
         }
     }
 
     //try to register new user
-    fun signUp(login: String, password: String): Boolean {
+    fun signUp(login: String, password: String): Pair<Boolean, String> {
         DBConnection().getConnection().use { connection ->
             return try {
                 val statement = connection!!.createStatement()
-                statement.execute("INSERT INTO \"user\"(name, psw) VALUES ('$login', '$password');")
-                true
-            } catch (e: Exception) {
+                statement.execute("INSERT INTO \"user\"(name, psw, active, last_time_of_activity) VALUES ('$login', '$password', 'true', '${getCurrTimestamp()}');")
+                Pair(true, "OK")
+            } catch (e: SQLException) {
                 println("Some problems with registration new user $login")
-                false
+                Pair(false, e.sqlState)
             }
         }
     }

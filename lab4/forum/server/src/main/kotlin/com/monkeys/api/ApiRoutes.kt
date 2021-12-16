@@ -18,7 +18,7 @@ fun Route.api(controller: UserController) {
                         val res = controller.getHierarchy()
                         call.respond(
                             status = HttpStatusCode.OK,
-                            message = OkHierarchy(res))
+                            message = OkHierarchy(response = res))
                     } else {
                         call.respond(
                             status = HttpStatusCode.Forbidden,
@@ -27,8 +27,18 @@ fun Route.api(controller: UserController) {
 
                 }
 
-                post("") {
-
+                get("/logout") {
+                    val principal = call.authentication.principal<AuthModel>()
+                    if (principal != null) {
+                        val res = controller.logout()
+                        call.respond(
+                            status = HttpStatusCode.OK,
+                            message = "You have successfully logged out")
+                    } else {
+                        call.respond(
+                            status = HttpStatusCode.BadRequest,
+                            message = "Something went wrong. Try again")
+                    }
                 }
             }
         }
