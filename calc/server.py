@@ -11,7 +11,7 @@ socketio = SocketIO(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-users = {"user1":"user1", "user2":"user2"}
+users = {"user1":"user1", "user2":"user2", "user3":"user3", "user4":"user4", "user5":"user5"}
 logged_in_users = []
 
 @login_manager.user_loader
@@ -82,9 +82,6 @@ def slow_calc(data):
 	
 	emit("server_message", ({"INFO":"Please wait until the operation is completed"}, 200))
 	
-	# https://docs.python.org/3/library/multiprocessing.html
-	# https://docs-python.ru/standart-library/paket-multiprocessing-python/klass-pool-modulja-multiprocessing/
-	# https://docs-python.ru/standart-library/paket-multiprocessing-python/funktsija-process-modulja-multiprocessing/
 	pool = Pool()
 	asyncResult = pool.apply_async(calculate, (data["operation"], value))
 	asyncResult.wait(int(sys.argv[1])) # waiting for a timeout or until the result is available
