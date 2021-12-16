@@ -1,6 +1,5 @@
 package com.monkeys.models
 
-import io.ktor.http.*
 import kotlinx.serialization.Serializable
 
 @Serializable

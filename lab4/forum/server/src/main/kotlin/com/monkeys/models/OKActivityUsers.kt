@@ -4,5 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 class OKActivityUsers (
-    val response: List<String>
+    val users: List<String>
 )

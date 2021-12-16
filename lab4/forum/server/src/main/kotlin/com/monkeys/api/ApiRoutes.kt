@@ -1,5 +1,6 @@
 import com.monkeys.controller.UserController
 import com.monkeys.models.AuthModel
+import com.monkeys.models.OKActivityUsers
 import com.monkeys.models.OkHierarchy
 import io.ktor.application.*
 import io.ktor.auth.*
@@ -34,6 +35,20 @@ fun Route.api(controller: UserController) {
                         call.respond(
                             status = HttpStatusCode.OK,
                             message = "You have successfully logged out")
+                    } else {
+                        call.respond(
+                            status = HttpStatusCode.BadRequest,
+                            message = "Something went wrong. Try again")
+                    }
+                }
+
+                get("/active-users") {
+                    val principal = call.authentication.principal<AuthModel>()
+                    if (principal != null) {
+                        val res = controller.getActiveUsers()
+                        call.respond(
+                            status = HttpStatusCode.OK,
+                            message = OKActivityUsers(res))
                     } else {
                         call.respond(
                             status = HttpStatusCode.BadRequest,

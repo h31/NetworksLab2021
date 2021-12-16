@@ -2,6 +2,8 @@ package com.monkeys.controller
 
 import com.monkeys.DBConnection
 import com.monkeys.models.AuthModel
+import java.sql.CallableStatement
+import java.sql.Statement
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -41,5 +43,31 @@ class UserController {
 
     fun logout(): Boolean {
         return true
+    }
+
+    fun getActiveUsers(): List<String> {
+        DBConnection().getConnection().use { connection ->
+            return try {
+                val res = ArrayList<String>()
+                val statement = connection!!.createStatement()
+                updateInactiveUsers(statement)
+                val set = statement.executeQuery(
+                    "SELECT name FROM \"user\" WHERE active = 'true';")
+                while (set.next()) {
+                    res.add(set.getString(1))
+                }
+                return res
+            } catch (e: Exception) {
+                println("Some")
+                ArrayList()
+            }
+        }
+    }
+
+    fun getNewMessage() {}
+
+    private fun updateInactiveUsers(statement: Statement) {
+        statement.executeUpdate(
+            "UPDATE \"user\" SET active = 'false' WHERE last_time_of_activity < now() - '1 hour'::interval;")
     }
 }
