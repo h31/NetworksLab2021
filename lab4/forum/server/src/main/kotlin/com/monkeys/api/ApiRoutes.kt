@@ -1,3 +1,5 @@
+package com.monkeys.api
+
 import com.monkeys.controller.UserController
 import com.monkeys.models.*
 import io.ktor.application.*
@@ -18,7 +20,7 @@ fun Route.api(controller: UserController) {
                         val res = controller.getHierarchy()
                         call.respond(
                             status = HttpStatusCode.OK,
-                            message = OkHierarchy(response = res)
+                            message = OkHierarchy(res)
                         )
                     } else {
                         call.respond(
@@ -27,22 +29,6 @@ fun Route.api(controller: UserController) {
                         )
                     }
 
-                }
-
-                get("/logout") {
-                    val principal = call.authentication.principal<AuthModel>()
-                    if (principal != null) {
-                        val res = controller.logout()
-                        call.respond(
-                            status = HttpStatusCode.OK,
-                            message = "You have successfully logged out"
-                        )
-                    } else {
-                        call.respond(
-                            status = HttpStatusCode.BadRequest,
-                            message = "Something went wrong. Try again"
-                        )
-                    }
                 }
 
                 get("/active-users") {
@@ -55,8 +41,8 @@ fun Route.api(controller: UserController) {
                         )
                     } else {
                         call.respond(
-                            status = HttpStatusCode.BadRequest,
-                            message = "Something went wrong. Try again"
+                            status = HttpStatusCode.Forbidden,
+                            message = "No token, please signIn"
                         )
                     }
                 }
@@ -64,23 +50,30 @@ fun Route.api(controller: UserController) {
                 get("/message") {
                     val principal = call.authentication.principal<AuthModel>()
                     val msg = call.receive<MessageModel>()
-                    if (principal != null && controller.putNewMessage(principal, msg)) {
-                        call.respond(
-                            status = HttpStatusCode.OK,
-                            message = "Success"
-                        )
+                    if (principal != null) {
+                        if (controller.putNewMessage(principal, msg)) {
+                            call.respond(
+                                status = HttpStatusCode.OK,
+                                message = "Success"
+                            )
+                        } else {
+                            call.respond(
+                                status = HttpStatusCode.BadRequest,
+                                message = "Something went wrong. Try again"
+                            )
+                        }
                     } else {
                         call.respond(
-                            status = HttpStatusCode.BadRequest,
-                            message = "Something went wrong. Try again"
+                            status = HttpStatusCode.Forbidden,
+                            message = "No token, please signIn"
                         )
                     }
                 }
 
                 get("/message-list") {
                     val principal = call.authentication.principal<AuthModel>()
-                    val subTheme = call.receive<ThemeModel>()
                     if (principal != null) {
+                        val subTheme = call.receive<ThemeModel>()
                         val res = controller.getMessages(subTheme)
                         call.respond(
                             status = HttpStatusCode.OK,
@@ -88,8 +81,31 @@ fun Route.api(controller: UserController) {
                         )
                     } else {
                         call.respond(
-                            status = HttpStatusCode.BadRequest,
-                            message = "Something went wrong. Try again"
+                            status = HttpStatusCode.Forbidden,
+                            message = "No token, please signIn"
+                        )
+                    }
+                }
+
+                delete("/logout") {
+                    val principal = call.authentication.principal<AuthModel>()
+                    if (principal != null) {
+                        val res = controller.logout(principal.login)
+                        if (res) {
+                            call.respond(
+                                status = HttpStatusCode.OK,
+                                message = "You have successfully logged out"
+                            )
+                        } else {
+                            call.respond(
+                                status = HttpStatusCode.BadRequest,
+                                message = "Something went wrong. Try again"
+                            )
+                        }
+                    } else {
+                        call.respond(
+                            status = HttpStatusCode.Forbidden,
+                            message = "No token, please signIn"
                         )
                     }
                 }
@@ -97,3 +113,4 @@ fun Route.api(controller: UserController) {
         }
     }
 }
+

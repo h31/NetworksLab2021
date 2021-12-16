@@ -1,8 +1,8 @@
 package com.monkeys
 
-import api
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import com.monkeys.api.api
 import com.monkeys.auth.auth
 import com.monkeys.controller.AuthController
 import com.monkeys.controller.UserController
@@ -15,10 +15,6 @@ import io.ktor.auth.jwt.*
 import io.ktor.features.*
 import io.ktor.routing.*
 import io.ktor.serialization.*
-import java.time.Instant
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
-
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
@@ -48,12 +44,8 @@ fun Application.configure() {
         }
     }
 
-    val authRepo = AuthRepo()
-    val userController = UserController()
-    println(getCurrTimestamp())
-
     routing {
-        auth(AuthController(authRepo, userController))
-        api(userController)
+        auth(AuthController(AuthRepo()))
+        api(UserController())
     }
 }

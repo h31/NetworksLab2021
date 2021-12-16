@@ -10,43 +10,41 @@ import java.sql.CallableStatement
 import java.sql.Statement
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class UserController {
-    private val clients = Collections.synchronizedList(
-        mutableListOf<String>()
-    )
-    private val activeClients = Collections.synchronizedList(
-        mutableListOf<String>()
-    )
 
-    fun addUser(model: AuthModel) {
-        clients.add(model.login)
-        activeClients.add(model.login)
-    }
-
-    fun getHierarchy(): List<Pair<String, String>> {
+    fun getHierarchy(): Map<String,List<String>> {
         DBConnection().getConnection().use { connection ->
             return try {
-                val res = ArrayList<Pair<String, String>>()
+                val res = TreeMap<String,List<String>>()
                 val statement = connection!!.createStatement()
                 val set = statement.executeQuery(
                     //getting merged tables of main_themes and sub_themes sorted alphabetically
                     "SELECT main_theme.theme_name, st.theme_name FROM main_theme " +
                             "INNER JOIN sub_theme st on main_theme.id = st.main_theme_id " +
                             "ORDER BY main_theme.theme_name, st.theme_name;")
+                set.next()
+                var main = set.getString(1)
+                var sub = ArrayList<String>()
+                sub.add(set.getString(2))
                 while (set.next()) {
-                    res.add(Pair(set.getString(1), set.getString(2)))
+                    if (set.getString(1) == main) {
+                        sub.add(set.getString(2))
+                    } else {
+                        res[main] = sub
+                        sub = ArrayList<String>()
+                        main = set.getString(1)
+                        sub.add(set.getString(2))
+                    }
                 }
+                res[main] = sub
                 return res
             } catch (e: Exception) {
                 println("Some")
-                ArrayList()
+                HashMap()
             }
         }
-    }
-
-    fun logout(): Boolean {
-        return true
     }
 
     fun getActiveUsers(): List<String> {
@@ -107,6 +105,20 @@ class UserController {
             } catch (e: Exception) {
                 println("Some")
                 ArrayList()
+            }
+        }
+    }
+
+    fun logout(name: String): Boolean {
+        DBConnection().getConnection().use { connection ->
+            return try {
+                val statement = connection!!.createStatement()
+                statement.executeUpdate(
+                    "UPDATE \"user\" SET active = 'false' WHERE name = '${name}'")
+                true
+            } catch (e: Exception) {
+                println("Some")
+                false
             }
         }
     }

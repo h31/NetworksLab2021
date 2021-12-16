@@ -37,14 +37,6 @@ fun Route.auth(controller: AuthController) {
             }
         }
 
-        authenticate("validate") {
-            get("/check-jwt") {
-                val principal = call.authentication.principal<AuthModel>()
-                call.respond("JWT validated. " +
-                        "Login='${principal!!.login}', Password='${principal.psw}'")
-            }
-        }
-
     }
 
 }

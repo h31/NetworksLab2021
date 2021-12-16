@@ -5,12 +5,11 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.monkeys.models.AuthModel
 import com.monkeys.repo.AuthRepo
 
-class AuthController (private val repo: AuthRepo, private val userController: UserController) {
+class AuthController (private val repo: AuthRepo) {
 
     //checking user existence
     fun signIn(model: AuthModel) : String {
         return if (repo.signIn(model.login, model.psw)) {
-            userController.addUser(model)
             getGenerateToken(model)
         } else {
             "Error. Incorrect login or password"
