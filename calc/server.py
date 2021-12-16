@@ -1,9 +1,9 @@
 # python_socketio==4.6.0; python_engineio==3.13.2; flask_socketio==4.3.1
 from flask import Flask
 from flask_socketio import SocketIO, emit
-import flask_login, sys, math, socket
-from flask_login import LoginManager, UserMixin, current_user, logout_user
+from flask_login import LoginManager, UserMixin, current_user, login_user, logout_user
 from multiprocessing import Pool
+import sys, math, socket
 
 app = Flask(__name__)
 app.secret_key = "secret_key"
@@ -23,12 +23,6 @@ def user_loader(login):
 	user.id = login
 	return user
 
-@socketio.on("logout")
-def logout():
-	if current_user.is_authenticated:
-		logged_in_users.remove(current_user.get_id())
-		logout_user()
-
 @socketio.on('login')
 def login(data):
 	user_login = data["login"]
@@ -38,12 +32,22 @@ def login(data):
 				logged_in_users.append(user_login)
 			user = UserMixin()
 			user.id = user_login
-			flask_login.login_user(user)
+			login_user(user)
 			
 	if current_user.is_authenticated:
 		return {"status":"success", "user_login":current_user.get_id()}, 200
 	else:
 		return {"status":"failed"}, 401
+
+@socketio.on("logout")
+def logout():
+	if current_user.is_authenticated:
+		logged_in_users.remove(current_user.get_id())
+		logout_user()
+
+@socketio.on("disconnect")
+def disconnect():
+	logout()
 
 @socketio.on('fast_calc')
 def fast_calc(data):	
@@ -82,9 +86,10 @@ def slow_calc(data):
 	
 	emit("server_message", ({"INFO":"Please wait until the operation is completed"}, 200))
 	
+	global timeout
 	pool = Pool()
 	asyncResult = pool.apply_async(calculate, (data["operation"], value))
-	asyncResult.wait(int(sys.argv[1])) # waiting for a timeout or until the result is available
+	asyncResult.wait(timeout) # waiting for a timeout or until the result is available
 	if asyncResult.ready():
 		result = asyncResult.get()
 		pool.terminate()
@@ -113,7 +118,18 @@ def get_local_IP():
 	return ip
 
 if __name__ == "__main__":
-	if len(sys.argv) != 2 or not sys.argv[1].isdigit():
-		print("Args: timeout")
-		exit()
+	global timeout
+	match len(sys.argv):
+		case 1:
+			timeout = 2 # default timeout
+		case 2:
+			if sys.argv[1].isdigit():
+				timeout = int(sys.argv[1])
+			else:
+				print("Arg: timeout")
+				exit()
+		case _:
+			print("Arg: timeout")
+			exit()
+	
 	app.run(host = get_local_IP(), port = 5000)
