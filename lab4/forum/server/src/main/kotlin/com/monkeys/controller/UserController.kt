@@ -3,7 +3,9 @@ package com.monkeys.controller
 import com.monkeys.DBConnection
 import com.monkeys.getCurrTimestamp
 import com.monkeys.models.AuthModel
+import com.monkeys.models.Message
 import com.monkeys.models.MessageModel
+import com.monkeys.models.ThemeModel
 import java.sql.CallableStatement
 import java.sql.Statement
 import java.util.*
@@ -79,7 +81,32 @@ class UserController {
                 return false
             } catch (e: Exception) {
                 println("Some")
-                true
+                false
+            }
+        }
+    }
+
+    fun getMessages(msg: ThemeModel): List<Message> {
+        DBConnection().getConnection().use { connection ->
+            return try {
+                val res = ArrayList<Message>()
+                val statement = connection!!.createStatement()
+                var set = statement.executeQuery(
+                    "SELECT theme_name FROM sub_theme WHERE theme_name = '${msg.subTheme}';")
+                while (set.next()) {
+                    set = statement.executeQuery(
+                        "SELECT time, user_name, text FROM message WHERE sub_theme = '${msg.subTheme}';")
+                    while (set.next()) {
+                        res.add(Message(set.getString(1),
+                            set.getString(2),
+                            set.getString(3)))
+                    }
+                    return res
+                }
+                return ArrayList()
+            } catch (e: Exception) {
+                println("Some")
+                ArrayList()
             }
         }
     }
