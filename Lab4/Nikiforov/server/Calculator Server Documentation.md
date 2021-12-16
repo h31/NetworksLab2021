@@ -14,26 +14,25 @@
 
 ### POST
 
-* /REGISTRATION?username={username}&password={password} - запрос для регистрации, в котором клиент передает имя
-  пользователя и пароль
-* /AUTHENTICATION?username={username}&password={password} - запрос для аутентификации, в котором клиент передает имя
-  пользователя и пароль
+* /register?username={username}&password={password} - запрос для регистрации, в котором клиент передает имя пользователя
+  и пароль
+* /login - запрос для аутентификации, в котором клиент передает имя пользователя и пароль
 
 ### GET
 
-* /SUM - сумма чисел, переданных в теле запроса в виде одномерного массива
-* /SUB - разность чисел, переданных в теле запроса в виде одномерного массива
-* /MUL - произведение чисел, переданных в теле запроса в виде одномерного массива
-* /DIV - частное чисел, переданных в теле запроса в виде одномерного массива
-* /SQRT - квадратный корень для каждого числа, переданного в теле запроса в виде одномерного массива
-* /FACTORIAL - факториал для каждого числа, переданного в теле запроса в виде одномерного массива (в этом запросе
-  запрещается передача отрицательных чисел)
+* /fast/sum?args=[] - сумма чисел, переданных в виде одномерного массива
+* /fast/sub?args=[] - разность чисел, переданных в виде одномерного массива
+* /fast/mul?args=[] - произведение чисел, переданных в виде одномерного массива
+* /fast/div?args=[] - частное чисел, переданных в виде одномерного массива
+* /slow/sqrt?args=[] - квадратный корень для каждого числа, переданного в виде одномерного массива
+* /slow/fact?args=[] - факториал для каждого числа, переданного в виде одномерного массива (в этом запросе запрещается
+  передача отрицательных чисел)
 
 ## Примеры запросов
 
 ### POST
 
-* /REGISTRATION?username=valid_username&password=valid_password
+* /register?username=valid_username&password=valid_password
 
 ```
 {
@@ -42,7 +41,7 @@
 }
 ```
 
-* /REGISTRATION?username=invalid_username&password=invalid_password
+* /register?username=invalid_username&password=valid_password
 
 ```
 {
@@ -51,7 +50,7 @@
 }
 ```
 
-* /AUTHENTICATION?username=valid_username&password=valid_password
+* /login Authentication: (valid_username, valid_password)
 
 ```
 {
@@ -60,7 +59,7 @@
 }
 ```
 
-* /AUTHENTICATION?username=invalid_username&password=invalid_password
+* /login Authentication: (invalid_username, invalid_password)
 
 ```
 {
@@ -71,36 +70,40 @@
 
 ### GET
 
-* /SUM Body: [-1, 4, 56]
+* /fast/sum?args=[-1, 4, 56]
 
   ```59```
 
 
-* /SUB Body: [56, 4, -1]
+* /fast/sub?args=[56, 4, -1]
 
   ```53```
 
 
-* /MUL Body: [-1, 4, 56]
+* /fast/mul?args=[-1, 4, 56]
 
   ```-224```
 
 
-* /DIV Body: [56, -4]
+* /fast/div?args=[56, -4]
 
   ```-14.0```
 
+* /fast/div?args=[56, 0]
 
-* /SQRT Body: [-1, 56, 4]
+  ```Пресечена попытка деления на ноль!```
+
+
+* /slow/sqrt?args=[-1, 56, 4]
 
   ```[(6.123233995736766e-17+1j), 7.483314773547883, 2.0]```
 
 
-* /FACTORIAL Body: [56, -1, 4]
+* /slow/fact?args=[56, -1, 4]
 
   ```Пресечена попытка расчета факториала для отрицательного числа!```
 
 
-* /FACTORIAL Body: [56, 1, 4]
+* /slow/fact?args=[56, 1, 4]
 
   ```[710998587804863451854045647463724949736497978881168458687447040000000000000,1,24]```

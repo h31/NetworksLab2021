@@ -1,138 +1,111 @@
 import ast
 import base64
-import http
-import json
 import math
 import operator
+import sqlite3
 from functools import reduce
-from http.server import BaseHTTPRequestHandler
+from time import sleep
+
+from bottle import get, run, request, post, auth_basic, response
 
 
-class HttpProcessor(BaseHTTPRequestHandler):
-    def do_GET(self):
-        keys = map(lambda x: 'Basic ' + str(x), self.server.get_auth_key())
-
-        if self.headers.get('Authorization') is None:
-            self.do_AUTHHEAD()
-
-            response = {
-                'success': False,
-                'error': 'No auth header received'
-            }
-
-            self.wfile.write(bytes(json.dumps(response), 'utf-8'))
-
-        elif self.headers.get('Authorization') in keys:
-            self.send_response(200)
-            self.send_header('content-type', 'text/html')
-            self.end_headers()
-
-            content_length = int(self.headers['Content-Length'])
-            rtype = self.requestline.split()[1].split('/')
-            body = self.rfile.read(content_length)
-            operands = ast.literal_eval(body.decode())
-
-            if 'SUM' in rtype:
-                self.wfile.write(repr(reduce(operator.add, operands)).encode())
-            elif 'MUL' in rtype:
-                self.wfile.write(repr(reduce(operator.mul, operands)).encode())
-            elif 'SUB' in rtype:
-                self.wfile.write(repr(reduce(operator.sub, operands)).encode())
-            elif 'DIV' in rtype:
-                self.wfile.write(repr(reduce(operator.truediv, operands)).encode())
-            elif 'SQRT' in rtype:
-                self.wfile.write(repr(list(map(lambda x: x ** 0.5, operands))).encode())
-            elif 'FACTORIAL' in rtype:
-                try:
-                    self.wfile.write(repr(list(map(lambda x: math.factorial(x), operands))).encode())
-                except ValueError:
-                    self.wfile.write("Пресечена попытка расчета факториала для отрицательного числа!".encode())
-
-        else:
-            self.do_AUTHHEAD()
-
-            response = {
-                'success': False,
-                'error': 'Incorrect credentials'
-            }
-
-            self.wfile.write(bytes(json.dumps(response), 'utf-8'))
-
-    def do_POST(self):
-        rtype = self.requestline.split()[1].split('/')[1]
-
-        if 'REGISTRATION' in rtype:
-            username, password = map(lambda x: x.split('=')[1],
-                                     self.requestline.split()[1].split('/')[1].split('?')[1].split('&'))
-            if username not in self.server.get_users():
-                self.send_response(200)
-                self.send_header('content-type', 'text/html')
-                self.end_headers()
-                self.server.add_auth(username, password)
-                response = {
-                    'success': True,
-                    'message': 'Successful registration'
-                }
-                self.wfile.write(bytes(json.dumps(response), 'utf-8'))
-            else:
-                self.send_response(403)
-                self.send_header('content-type', 'text/html')
-                self.end_headers()
-                response = {
-                    'success': False,
-                    'message': 'Username already used'
-                }
-                self.wfile.write(bytes(json.dumps(response), 'utf-8'))
-
-        elif 'AUTHENTICATION' in rtype:
-            keys = map(lambda x: 'Basic ' + str(x), self.server.get_auth_key())
-            username, password = map(lambda x: x.split('=')[1],
-                                     self.requestline.split()[1].split('/')[1].split('?')[1].split('&'))
-            if username not in self.server.get_users() or self.headers.get('Authorization') not in keys:
-                self.send_response(400)
-                self.send_header('content-type', 'text/html')
-                self.end_headers()
-                response = {
-                    'success': False,
-                    'message': 'User doesn\'t exist'
-                }
-                self.wfile.write(bytes(json.dumps(response), 'utf-8'))
-            else:
-                self.send_response(200)
-                self.send_header('content-type', 'text/html')
-                self.end_headers()
-                response = {
-                    'success': True,
-                    'message': f'Hello, {username}!'
-                }
-                self.wfile.write(bytes(json.dumps(response), 'utf-8'))
-
-    def do_AUTHHEAD(self):
-        self.send_response(401)
-        self.send_header('WWW-Authenticate', 'Basic realm=""')
-        self.send_header('Content-type', 'application/json')
-        self.end_headers()
+def check(username, password):
+    token = base64.b64encode(bytes('%s:%s' % (username, password), 'utf-8')).decode('ascii')
+    cursor.execute(
+        f"SELECT COUNT(*) FROM users WHERE users.username = '{username}' AND users.token = '{token}';")
+    return cursor.fetchone()[0]
 
 
-class CustomHTTPServer(http.server.HTTPServer):
-    key = []
-    unames = []
+@get('/fast/sum')
+@auth_basic(check)
+def fast_sum():
+    return repr(reduce(operator.add, ast.literal_eval(request.query.args))).encode()
 
-    def __init__(self, address, handlerClass=HttpProcessor):
-        super().__init__(address, handlerClass)
 
-    def add_auth(self, username, password):
-        self.unames.append(username)
-        self.key.append(base64.b64encode(bytes('%s:%s' % (username, password), 'utf-8')).decode('ascii'))
+@get('/fast/mul')
+@auth_basic(check)
+def fast_mul():
+    return repr(reduce(operator.mul, ast.literal_eval(request.query.args))).encode()
 
-    def get_auth_key(self):
-        return self.key
 
-    def get_users(self):
-        return self.unames
+@get('/fast/sub')
+@auth_basic(check)
+def fast_sub():
+    return repr(reduce(operator.sub, ast.literal_eval(request.query.args))).encode()
+
+
+@get('/fast/div')
+@auth_basic(check)
+def fast_div():
+    try:
+        return repr(reduce(operator.truediv, ast.literal_eval(request.query.args))).encode()
+    except ZeroDivisionError:
+        response.status = 400
+        return "Пресечена попытка деления на ноль!".encode()
+
+
+@get('/slow/sqrt')
+@auth_basic(check)
+def slow_sqrt():
+    sleep(10)
+    return repr(list(map(lambda x: x ** 0.5, ast.literal_eval(request.query.args)))).encode()
+
+
+@get('/slow/fact')
+@auth_basic(check)
+def slow_fact():
+    sleep(10)
+    try:
+        return repr(list(map(lambda x: math.factorial(x), ast.literal_eval(request.query.args)))).encode()
+    except ValueError:
+        response.status = 400
+        return "Пресечена попытка расчета факториала для отрицательного числа!".encode()
+
+
+@post('/login')
+def login():
+    credentials = request.auth
+    if credentials is None:
+        response.status = 401
+        return {'success': False,
+                'message': 'Enter authentication data!'}
+    elif check(*credentials):
+        return {'success': True,
+                'message': f'Hello, {credentials[0]}!'}
+    else:
+        response.status = 404
+        return {'success': False,
+                'message': 'User doesn\'t exist'}
+
+
+def check_username(username):
+    cursor.execute(f"SELECT COUNT(*) FROM users WHERE users.username = '{username}';")
+    return cursor.fetchone()[0]
+
+
+def add_user(username, password):
+    token = base64.b64encode(bytes('%s:%s' % (username, password), 'utf-8')).decode('ascii')
+    cursor.execute(f"INSERT INTO users VALUES ('{username}', '{token}');")
+    conn.commit()
+
+
+@post('/register')
+def register():
+    username = request.query.username
+    password = request.query.password
+    if not check_username(username):
+        add_user(username, password)
+        return {'success': True,
+                'message': 'Successful registration'}
+    else:
+        response.status = 403
+        return {'success': False,
+                'message': 'Username already used'}
 
 
 if __name__ == '__main__':
-    serv = CustomHTTPServer(('localhost', 80))
-    serv.add_auth('admin', 'admin')
-    serv.serve_forever()
+    conn = sqlite3.connect('users.sqlite')
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS users (username TEXT, token TEXT);")
+    run(host='localhost', port=8080)
+    conn.close()
