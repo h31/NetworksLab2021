@@ -1,7 +1,9 @@
 package com.monkeys.controller
 
 import com.monkeys.DBConnection
+import com.monkeys.getCurrTimestamp
 import com.monkeys.models.AuthModel
+import com.monkeys.models.MessageModel
 import java.sql.CallableStatement
 import java.sql.Statement
 import java.util.*
@@ -64,10 +66,28 @@ class UserController {
         }
     }
 
-    fun getNewMessage() {}
+    fun putNewMessage(user: AuthModel, msg: MessageModel): Boolean {
+        DBConnection().getConnection().use { connection ->
+            return try {
+                val statement = connection!!.createStatement()
+                val set = statement.executeQuery(
+                    "SELECT theme_name FROM sub_theme WHERE theme_name = '${msg.subTheme}';")
+                while (set.next()) {
+                    statement.execute("INSERT INTO message (text, user_name, time, sub_theme) VALUES ('${msg.msg}', '${user.login}', '${getCurrTimestamp()}', '${msg.subTheme}');")
+                    return true
+                }
+                return false
+            } catch (e: Exception) {
+                println("Some")
+                true
+            }
+        }
+    }
 
     private fun updateInactiveUsers(statement: Statement) {
         statement.executeUpdate(
             "UPDATE \"user\" SET active = 'false' WHERE last_time_of_activity < now() - '1 hour'::interval;")
+        TODO("добавить принудительное удаление юзера")
+
     }
 }

@@ -1,10 +1,12 @@
 import com.monkeys.controller.UserController
 import com.monkeys.models.AuthModel
+import com.monkeys.models.MessageModel
 import com.monkeys.models.OKActivityUsers
 import com.monkeys.models.OkHierarchy
 import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.http.*
+import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 
@@ -49,6 +51,20 @@ fun Route.api(controller: UserController) {
                         call.respond(
                             status = HttpStatusCode.OK,
                             message = OKActivityUsers(res))
+                    } else {
+                        call.respond(
+                            status = HttpStatusCode.BadRequest,
+                            message = "Something went wrong. Try again")
+                    }
+                }
+
+                get("/message") {
+                    val principal = call.authentication.principal<AuthModel>()
+                    val msg = call.receive<MessageModel>()
+                    if (principal != null && controller.putNewMessage(principal, msg)) {
+                        call.respond(
+                            status = HttpStatusCode.OK,
+                            message = "Success")
                     } else {
                         call.respond(
                             status = HttpStatusCode.BadRequest,
