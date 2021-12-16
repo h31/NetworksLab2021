@@ -26,7 +26,7 @@ fun Route.auth(authRepo: AuthRepo, userController: UserController) {
         post("/signup") {
             val res = controller.signUp(call.receive<AuthModel>())
             if (res is OkResponseModel) {
-                call.respond(HttpStatusCode.OK, res)
+                call.respond(HttpStatusCode.Created, res)
             } else {
                 call.respond(HttpStatusCode.BadRequest, res)
             }
