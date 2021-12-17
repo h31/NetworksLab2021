@@ -26,7 +26,7 @@ sio = SocketIO("http://" + sys.argv[1], 5000)
 
 def show_callback_result(*args): # args[0] = json; args[1] = status code
 	for key in args[0]:
-		print(key + ": " + args[0][key])
+		print("(" + str(args[1]) + ")", key + ": " + args[0][key])
 	print()
 	
 sio.on("server_message", show_callback_result)
@@ -34,7 +34,7 @@ sio.on("server_message", show_callback_result)
 # Step 3 = make requests for calculations and get the results
 def input_handler():
 	while True:
-		string = input()
+		string = input(">> ")
 		if string == "\q": break
 		operation, operand1, operand2 = parse(string)
 		if operation == None:
@@ -58,7 +58,7 @@ def login_status(*data):
 	if data[0]["status"] != "success":
 		print("Invalid login or password")
 	else:
-		print("Logged in as", data[0]["user_login"])
+		print("Logged in as", data[0]["login"])
 		print("Fast operations: 1+2, 2-3, 3*4, 4/5")
 		print("Slow operations: sqrt(25), 5!")
 		print("Enter \q to quit")
@@ -66,12 +66,12 @@ def login_status(*data):
 		input_handler()
 
 # Step 1 = try to login
-sio.emit(	"login",
+sio.emit(	"user_login",
 			{'login':sys.argv[2], 'password':sys.argv[3]},
 			callback = login_status
 )
 sio.wait_for_callbacks()
 
 # before exit
-sio.emit("logout")
+sio.emit("user_logout")
 sio.disconnect()
