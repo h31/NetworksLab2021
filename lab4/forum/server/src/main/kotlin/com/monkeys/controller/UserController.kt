@@ -78,21 +78,26 @@ class UserController {
         }
     }
 
-    fun putNewMessage(user: AuthModel, msg: MessageModel): Boolean {
+    fun putNewMessage(name: String, msg: MessageModel): Pair<Boolean, String> {
         DBConnection().getConnection().use { connection ->
             return try {
                 val statement = connection!!.createStatement()
                 updateInactiveUsers(statement)
-                val set = statement.executeQuery(
-                    "SELECT theme_name FROM sub_theme WHERE theme_name = '${msg.subTheme}';")
-                while (set.next()) {
-                    statement.execute("INSERT INTO message (text, user_name, time, sub_theme) VALUES ('${msg.msg}', '${user.login}', '${getCurrTimestamp()}', '${msg.subTheme}');")
-                    return true
+                if (checkActive(statement, name)) {
+                    val set = statement.executeQuery(
+                        "SELECT theme_name FROM sub_theme WHERE theme_name = '${msg.subTheme}';"
+                    )
+                    while (set.next()) {
+                        statement.execute("INSERT INTO message (text, user_name, time, sub_theme) VALUES ('${msg.msg}', '${name}', '${getCurrTimestamp()}', '${msg.subTheme}');")
+                        return Pair(true, "OK")
+                    }
+                    return Pair(false, "No such sub theme found")
+                } else {
+                    Pair(false, "You have been inactive for 1 hour. Login again")
                 }
-                return false
             } catch (e: SQLException) {
                 e.printStackTrace()
-                false
+                Pair(false, "Something went wrong, please try again")
             }
         }
     }

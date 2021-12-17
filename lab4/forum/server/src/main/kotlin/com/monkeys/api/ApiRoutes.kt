@@ -27,10 +27,7 @@ fun Route.api(controller: UserController) {
                             enterErrors(call, res.second)
                         }
                     } else {
-                        call.respond(
-                            status = HttpStatusCode.Forbidden,
-                            message = "No token, please signIn"
-                        )
+                        enterJWTError(call)
                     }
 
                 }
@@ -48,10 +45,7 @@ fun Route.api(controller: UserController) {
                             enterErrors(call, res.second)
                         }
                     } else {
-                        call.respond(
-                            status = HttpStatusCode.Forbidden,
-                            message = "No token, please signIn"
-                        )
+                        enterJWTError(call)
                     }
                 }
 
@@ -59,22 +53,17 @@ fun Route.api(controller: UserController) {
                     val principal = call.authentication.principal<AuthModel>()
                     val msg = call.receive<MessageModel>()
                     if (principal != null) {
-                        if (controller.putNewMessage(principal, msg)) {
+                        val res = controller.putNewMessage(principal.login, msg)
+                        if (res.first) {
                             call.respond(
                                 status = HttpStatusCode.OK,
                                 message = "Success"
                             )
                         } else {
-                            call.respond(
-                                status = HttpStatusCode.BadRequest,
-                                message = "Something went wrong. Try again"
-                            )
+                            enterErrors(call, principal.login)
                         }
                     } else {
-                        call.respond(
-                            status = HttpStatusCode.Forbidden,
-                            message = "No token, please signIn"
-                        )
+                        enterJWTError(call)
                     }
                 }
 
@@ -88,10 +77,7 @@ fun Route.api(controller: UserController) {
                             message = OkListOfMessage(res)
                         )
                     } else {
-                        call.respond(
-                            status = HttpStatusCode.Forbidden,
-                            message = "No token, please signIn"
-                        )
+                        enterJWTError(call)
                     }
                 }
 
@@ -111,10 +97,7 @@ fun Route.api(controller: UserController) {
                             )
                         }
                     } else {
-                        call.respond(
-                            status = HttpStatusCode.Forbidden,
-                            message = "No token, please signIn"
-                        )
+                        enterJWTError(call)
                     }
                 }
             }
@@ -124,21 +107,31 @@ fun Route.api(controller: UserController) {
 
 suspend fun enterErrors(call: ApplicationCall, msg: String) {
     if (msg == "You have been inactive for 1 hour. Login again") {
-        call.myRespond(
+        call.respond(
             status = HttpStatusCode.Unauthorized,
             message = msg
         )
     } else {
-        call.myRespond(
-            status = HttpStatusCode.BadRequest,
-            message = msg
-        )
+        if (msg == "No such sub theme found") {
+            call.respond(
+                status = HttpStatusCode.NotFound,
+                message = msg
+            )
+        } else {
+            call.respond(
+                status = HttpStatusCode.BadRequest,
+                message = msg
+            )
+        }
     }
 }
 
-private suspend inline fun <reified T: Any> ApplicationCall.myRespond(status: HttpStatusCode, message: T) {
-    response.status(status)
-    respond(message)
+suspend fun enterJWTError(call: ApplicationCall) {
+    call.respond(
+        status = HttpStatusCode.Forbidden,
+        message = "No token, please signIn"
+    )
 }
+
 
 
