@@ -3,6 +3,7 @@ import io.ktor.utils.io.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import org.apache.commons.validator.routines.InetAddressValidator
+import java.net.SocketException
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -30,7 +31,7 @@ fun isValidIP(ip: String): Boolean {
 
 fun getMessage(reader: ByteReadChannel, fieldsAmount: Int): Flow<Pair<String, String>> = flow { // flow builder
     for (i in 0 until fieldsAmount) {
-        val msg = reader.readUTF8Line() ?: ""
+        val msg = reader.readUTF8Line() ?: throw SocketException()
         val split = msg.split(colonAndSpaceRegex, 2)
         val type = split.first().toString()
         val value = split.last().toString()
