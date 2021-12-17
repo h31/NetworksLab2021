@@ -24,17 +24,7 @@ fun Route.api(controller: UserController) {
                                 message = OkHierarchy(res.first)
                             )
                         } else {
-                            if (res.second == "You have been inactive for 1 hour. Login again") {
-                                call.respond(
-                                    status = HttpStatusCode.Unauthorized,
-                                    message = OkHierarchy(res.first)
-                                )
-                            } else {
-                                call.respond(
-                                    status = HttpStatusCode.BadRequest,
-                                    message = OkHierarchy(res.first)
-                                )
-                            }
+                            enterErrors(call, res.second)
                         }
                     } else {
                         call.respond(
@@ -48,11 +38,15 @@ fun Route.api(controller: UserController) {
                 get("/active-users") {
                     val principal = call.authentication.principal<AuthModel>()
                     if (principal != null) {
-                        val res = controller.getActiveUsers()
-                        call.respond(
-                            status = HttpStatusCode.OK,
-                            message = OKActivityUsers(res)
-                        )
+                        val res = controller.getActiveUsers(principal.login)
+                        if (res.second == "OK") {
+                            call.respond(
+                                status = HttpStatusCode.OK,
+                                message = OKActivityUsers(res.first)
+                            )
+                        } else {
+                            enterErrors(call, res.second)
+                        }
                     } else {
                         call.respond(
                             status = HttpStatusCode.Forbidden,
@@ -127,4 +121,24 @@ fun Route.api(controller: UserController) {
         }
     }
 }
+
+suspend fun enterErrors(call: ApplicationCall, msg: String) {
+    if (msg == "You have been inactive for 1 hour. Login again") {
+        call.myRespond(
+            status = HttpStatusCode.Unauthorized,
+            message = msg
+        )
+    } else {
+        call.myRespond(
+            status = HttpStatusCode.BadRequest,
+            message = msg
+        )
+    }
+}
+
+private suspend inline fun <reified T: Any> ApplicationCall.myRespond(status: HttpStatusCode, message: T) {
+    response.status(status)
+    respond(message)
+}
+
 

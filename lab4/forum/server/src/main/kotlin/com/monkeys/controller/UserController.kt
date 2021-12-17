@@ -54,21 +54,26 @@ class UserController {
         }
     }
 
-    fun getActiveUsers(): List<String> {
+    fun getActiveUsers(name: String): Pair<List<String>, String> {
         DBConnection().getConnection().use { connection ->
             return try {
                 val res = ArrayList<String>()
                 val statement = connection!!.createStatement()
                 updateInactiveUsers(statement)
-                val set = statement.executeQuery(
-                    "SELECT name FROM \"user\" WHERE active = 'true';")
-                while (set.next()) {
-                    res.add(set.getString(1))
+                if (checkActive(statement, name)) {
+                    val set = statement.executeQuery(
+                        "SELECT name FROM \"user\" WHERE active = 'true';"
+                    )
+                    while (set.next()) {
+                        res.add(set.getString(1))
+                    }
+                    return Pair(res, "OK")
+                } else {
+                    Pair(ArrayList(), "You have been inactive for 1 hour. Login again")
                 }
-                return res
             } catch (e: SQLException) {
                 e.printStackTrace()
-                ArrayList()
+                Pair(ArrayList(), "Something went wrong, please try again")
             }
         }
     }
