@@ -7,6 +7,10 @@ sys.path.append('..')
 from tools import getNonExistentName
 
 
+class ExitException(Exception):
+    pass
+
+
 class ForClient():
     def __init__(self, sock, addr, handlers):
         self.sock = sock
@@ -26,6 +30,7 @@ class ForClient():
                 msg_tmp = await loop.sock_recv(self.sock, size)
             except:
                 self.sock.close()
+                raise ExitException("exit")
             size -= len(msg_tmp)
             msg += msg_tmp
         return msg
@@ -114,10 +119,13 @@ class ForClient():
         )
 
     async def run(self):
-        await self.reg()
-        connect_msg = self.server_msg(f'{self.name} connected')
-        await self.sendToEveryone(connect_msg)
-        while True:
-            recv_msg = await self.serverRecv()
-            crt_msg = self.createMsg(*recv_msg)
-            await self.sendToEveryone(crt_msg)
+        try:
+            await self.reg()
+            connect_msg = self.server_msg(f'{self.name} connected')
+            await self.sendToEveryone(connect_msg)
+            while True:
+                recv_msg = await self.serverRecv()
+                crt_msg = self.createMsg(*recv_msg)
+                await self.sendToEveryone(crt_msg)
+        except ExitException:
+            pass
