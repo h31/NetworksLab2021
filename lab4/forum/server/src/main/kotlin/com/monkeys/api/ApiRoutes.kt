@@ -27,7 +27,7 @@ fun Route.api(controller: UserController) {
                             sendErrors(call, res.second)
                         }
                     } else {
-                        enterJWTError(call)
+                        sendModelError(call)
                     }
 
                 }
@@ -45,7 +45,7 @@ fun Route.api(controller: UserController) {
                             sendErrors(call, res.second)
                         }
                     } else {
-                        enterJWTError(call)
+                        sendModelError(call)
                     }
                 }
 
@@ -63,7 +63,7 @@ fun Route.api(controller: UserController) {
                             sendErrors(call, res.second)
                         }
                     } else {
-                        enterJWTError(call)
+                        sendModelError(call)
                     }
                 }
 
@@ -81,7 +81,7 @@ fun Route.api(controller: UserController) {
                             sendErrors(call, res.second)
                         }
                     } else {
-                        enterJWTError(call)
+                        sendModelError(call)
                     }
                 }
 
@@ -98,7 +98,7 @@ fun Route.api(controller: UserController) {
                             sendErrors(call, res.second)
                         }
                     } else {
-                        enterJWTError(call)
+                        sendModelError(call)
                     }
                 }
             }
@@ -128,10 +128,10 @@ suspend fun sendErrors(call: ApplicationCall, msg: String) {
     }
 }
 
-suspend fun enterJWTError(call: ApplicationCall) {
+suspend fun sendModelError(call: ApplicationCall) {
     call.respond(
         status = HttpStatusCode.Forbidden,
-        message = "No token, please signIn"
+        message = "User data not found"
     )
 }
 

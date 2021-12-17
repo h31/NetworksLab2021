@@ -16,23 +16,33 @@ fun Route.auth(controller: AuthController) {
         post("/sign-in") {
             val res = controller.signIn(call.receive<AuthModel>())
             if (res != "Error. Incorrect login or password") {
-                call.respond(HttpStatusCode.OK, OkAuth(res))
+                call.respond(
+                    status = HttpStatusCode.OK,
+                    message = OkAuth(res))
             } else {
                 //User is not found
-                call.respond(HttpStatusCode.Unauthorized, res)
+                call.respond(
+                    status = HttpStatusCode.Unauthorized,
+                    message = res)
             }
         }
 
         post("/sign-up") {
             val res = controller.signUp(call.receive<AuthModel>())
             if (res == "Success signup") {
-                call.respond(HttpStatusCode.OK, res)
+                call.respond(
+                    status = HttpStatusCode.OK,
+                    message = res)
             } else {
                 if (res == "Something went wrong. Try to register again")
-                    call.respond(HttpStatusCode.BadRequest, res)
+                    call.respond(
+                        status = HttpStatusCode.BadRequest,
+                        message = res)
                 else
                     //prohibited in client creation
-                    call.respond(Forbidden, res)
+                    call.respond(
+                        status = Forbidden,
+                        message = res)
             }
         }
 

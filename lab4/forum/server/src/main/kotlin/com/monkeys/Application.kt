@@ -44,8 +44,11 @@ fun Application.configure() {
         }
     }
 
+    val authRepo = AuthRepo()
+    val userController = UserController()
+
     routing {
-        auth(AuthController(AuthRepo()))
-        api(UserController())
+        auth(AuthController(authRepo))
+        api(userController)
     }
 }
