@@ -31,8 +31,11 @@ public interface ServiceAPI {
     Call<List<String>> getDiv(@Query("args") String array);
 
     @GET("slow/fact")
-    Call<List<String>> getFact(@Query("args") String array);
+    Call<JsonObject> getFact(@Query("args") String array);
 
     @GET("slow/sqrt")
-    Call<List<String>> getSqrt(@Query("args") String array);
+    Call<JsonObject> getSqrt(@Query("args") String array);
+
+    @GET("/result")
+    Call<JsonObject> getResult(@Query("id") String id);
 }

@@ -42,7 +42,7 @@ public class Main {
                 case 4:
                     div();
                     break;
-                /*case 5:
+                case 5:
                     sqrt();
                     break;
                 case 6:
@@ -50,12 +50,9 @@ public class Main {
                     break;
                 case 7:
                     return;
-            }*/
             }
         }
     }
-
-
 
 
     private static void sum() {
@@ -94,6 +91,22 @@ public class Main {
         }
     }
 
+    private static void sqrt() {
+        List<Double> list = ConsoleMenuAdapter.createQueryList();
+        try {
+            controller.getSqrt(list.toString());
+        } catch (IOException | InterruptedException e) {
+            System.out.println("Something goes wrong, try again");
+        }
+    }
 
+    private static void fact() {
+        List<Double> list = ConsoleMenuAdapter.createQueryList();
+        try {
+            controller.getFact(list.toString());
+        } catch (IOException | InterruptedException e) {
+            System.out.println("Something goes wrong, try again");
+        }
+    }
 
 }

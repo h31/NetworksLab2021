@@ -7,7 +7,6 @@ import util.ControllerUtil;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class RetrofitController {
@@ -79,33 +78,61 @@ public class RetrofitController {
         if (response.code() == 200) {
             if (response.body() != null) {
                 System.out.println("The result of " + opType + " operation a set of numbers = " + response.body());
-            }
-            else {
+            } else {
                 System.out.println("Something goes wrong, try again");
             }
         }
     }
 
 
-    protected void calcSqrt() throws IOException {
-        List<Double> requestArray = new ArrayList<>();
-        requestArray.add(-1.0);
-        requestArray.add(-1.0);
-        requestArray.add(-1.0);
-        requestArray.add(-1.0);
-        requestArray.add(-1.0);
-        requestArray.add(-1.0);
-        requestArray.add(49.0);
-        ServiceAPI api = ControllerUtil.getAPI();
-        Call<List<String>> call = api.getSqrt(requestArray.toString());
-        Response<List<String>> response;
-        response = call.execute();
-        System.out.println(response.code());
+    public void getSqrt(String numbers) throws IOException, InterruptedException {
 
+        ServiceAPI api = ControllerUtil.getAPI();
+        Call<JsonObject> call = api.getSqrt(numbers);
+        Response<JsonObject> response = call.execute();
         if (response.code() == 200) {
-            System.out.println("Успешный ответ от сервера на /sqrt");
-            List<String> jsonObject = response.body();
-            System.out.println(jsonObject.toString());
+            waitResult(response, call, api);
+        }
+    }
+
+    public void getFact(String numbers) throws IOException, InterruptedException {
+
+        ServiceAPI api = ControllerUtil.getAPI();
+        Call<JsonObject> call = api.getFact(numbers);
+        Response<JsonObject> response = call.execute();
+        if (response.code() == 200) {
+            waitResult(response, call, api);
+        }
+    }
+
+    public void waitResult(Response<JsonObject> response, Call<JsonObject> call, ServiceAPI api)
+            throws IOException, InterruptedException {
+
+        boolean isOpDone = false;
+        String opID;
+        if (response.body() != null) {
+            opID = response.body().get("id").getAsString();
+
+            while (!isOpDone) {
+                call = api.getResult(opID);
+                response = call.execute();
+                if (response.code() == 200) {
+                    if (response.body() != null) {
+                        if (response.body().get("result").getAsString().equals("Not ready yet")) { // in processing
+                            System.out.println("Waiting...");
+                            Thread.sleep(1500);
+                        } else { // if done
+                            isOpDone = true;
+                            System.out.println("The result of "
+                                    + "sqrt operation a set of numbers = " +
+                                    response.body().get("result").getAsString());
+                        }
+                    }
+                } else { // another response code
+                    System.out.println(response.message());
+                }
+            }
         }
     }
 }
+
