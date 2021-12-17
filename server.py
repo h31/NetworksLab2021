@@ -192,7 +192,7 @@ def bet_all():
     if len(bets) > 0:
         all = "\n".join(f'''<br>{str(bet)}</br>''' for bet in bets)
         return all
-    return "Not find bets"
+    return "Bets not found"
 
 
 @app.route('/start', methods=['GET'])
