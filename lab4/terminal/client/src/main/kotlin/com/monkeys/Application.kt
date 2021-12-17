@@ -16,27 +16,24 @@ class Application {
             print("Invalid input. Try to connect again")
         } else {
             if (regOrAuth.toInt() == 1) {
-                terminalService = regOrLoginUser("Create a login: ",
-                    "Create a password: ")
-                if (terminalService.role == "Error") {
-                    print("Invalid input. Try to connect again")
-                } else {
-                    if (terminalService.reg() && terminalService.auth())
-                        startTerminal()
-                    else
-                        println("Sorry! You were not registered")
-                }
+                terminalService = regOrLoginUser(
+                    "Create a login: ",
+                    "Create a password: "
+                )
+                if (terminalService.reg() && terminalService.auth())
+                    startTerminal()
+                else
+                    println("Sorry! You were not registered")
             } else {
-                terminalService = regOrLoginUser("Enter login: ",
-                    "Enter password: ")
-                if (terminalService.role == "Error") {
-                    print("Invalid input. Try to connect again")
-                } else {
-                    if (terminalService.auth())
-                        startTerminal()
-                    else
-                        println("Incorrect username or password. Try to connect again")
-                }
+                terminalService = regOrLoginUser(
+                    "Enter login: ",
+                    "Enter password: "
+                )
+                if (terminalService.auth())
+                    startTerminal()
+                else
+                    println("Incorrect username or password. Try to connect again")
+
             }
         }
     }
@@ -94,7 +91,7 @@ class Application {
 
     private suspend fun callCd(command: List<String>) {
         when (command.size) {
-            1 -> println(terminalService.getCurrentDir()+"> ")
+            1 -> println(terminalService.getCurrentDir() + "> ")
             2 -> {
                 val msg = terminalService.getChangeDir(command[1])
                 if (msg == "Wrong location to cd")
@@ -134,8 +131,7 @@ class Application {
                     if (command[1] == terminalService.getLogin()) {
                         println(msg)
                         terminalService.stopClient()
-                    }
-                    else
+                    } else
                         println(msg)
                 }
                 "You have not enough rights" -> {
@@ -167,17 +163,6 @@ class Application {
         val login = scanner.nextLine()
         print(psw_str)
         val psw = scanner.nextLine()
-        print("Choose your role: ")
-        println("[1] - user, [2] - admin")
-        var role = scanner.nextLine()
-        role = if (role != "1" && role != "2") {
-            "Error"
-        } else {
-            if (role.toInt() == 1)
-                "user"
-            else
-                "admin"
-        }
-        return TerminalService(login, psw, role)
+        return TerminalService(login, psw, "user")
     }
 }
