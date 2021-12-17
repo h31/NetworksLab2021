@@ -56,7 +56,6 @@ def redirect():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-
     if flask.request.method == 'GET':
         if flask_login.current_user.is_authenticated:
             print(flask_login.current_user.id)
@@ -97,7 +96,6 @@ def login():
                 croupier = user
             else:
                 return 'the croupier already exists', 435
-
 
         logged_in_users[local_login] = user
         flask_login.login_user(user)
