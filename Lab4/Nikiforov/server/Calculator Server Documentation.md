@@ -28,7 +28,7 @@
 * /slow/sqrt?args=[] - медленный квадратный корень для каждого числа, переданного в виде одномерного массива
 * /slow/fact?args=[] - медленный факториал для каждого числа, переданного в виде одномерного массива (в этом запросе
   запрещается передача отрицательных чисел)
-* /results?operation=operation&args=[] - получение от сервера результатов медленной операции
+* /results?id=operation_id - получение от сервера результатов медленной операции
 
 ## Примеры запросов
 
@@ -36,37 +36,37 @@
 
 * /register?username=valid_username&password=valid_password
 
-```
+```json
 {
-    'success': True,
-    'message': 'Successful registration'
+  "success": true,
+  "message": "Successful registration"
 }
 ```
 
 * /register?username=invalid_username&password=valid_password
 
-```
+```json
 {
-    'success': False,
-    'message': 'Username already used'
+  "success": false,
+  "message": "Username already used"
 }
 ```
 
 * /login Authentication: (valid_username, valid_password)
 
-```
+```json
 {
-    'success': True,
-    'message': f'Hello, valid_username!'
+  "success": true,
+  "message": "Hello, valid_username!"
 }
 ```
 
 * /login Authentication: (invalid_username, invalid_password)
 
-```
+```json
 {
-    'success': False,
-    'message': 'User doesn't exist'
+  "success": false,
+  "message": "User doesn't exist"
 }
 ```
 
@@ -74,54 +74,100 @@
 
 * /fast/sum?args=[-1, 4, 56]
 
-  ```[59]```
-
+ ```json
+[
+  59
+]
+ ```
 
 * /fast/sub?args=[56, 4, -1]
 
-  ```[53]```
-
+ ```json
+[
+  53
+]
+ ```
 
 * /fast/mul?args=[-1, 4, 56]
 
-  ```[-224]```
-
+ ```json
+ [
+  -224
+]
+ ```
 
 * /fast/div?args=[56, -4]
 
-  ```[-14.0]```
-
+ ```json
+ [
+  -14.0
+]
+ ```
 
 * /fast/div?args=[56, 0]
 
-  ```Пресечена попытка деления на ноль!```
-
+ ```json
+ {
+  "message": "An attempt to divide by zero has been stopped!"
+}
+ ```
 
 * /slow/sqrt?args=[-1, 56, 4]
 
-  ```Принято в обработку```
+ ```json
+  {
+  "id": "operation_id",
+  "message": "Accepted for processing"
+}
+```
 
+* /result?id=operation_id
 
-* /result?operation=sqrt&args=[-1, 56, 4]
+```json
+{
+  "message": "Not ready yet"
+}
+```
 
-  ```[(6.123233995736766e-17+1j), 7.483314773547883, 2.0]```
+* /result?id=operation_id
 
+ ```json
+ {
+  "result": "[(6.123233995736766e-17+1j), 7.483314773547883, 2.0]"
+}
+ ```
 
 * /slow/fact?args=[56, -1, 4]
 
-  ```Принято в обработку```
+```json
+{
+  "id": "operation_id",
+  "message": "Accepted for processing"
+}
+```
 
+* /result?id=operation_id
 
-* /result?operation=fact&args=[56, -1, 4]
-
-  ```Пресечена попытка расчета факториала для отрицательного числа!```
-
+```json
+{
+  "result": "An attempt to calculate the factorial for a negative number has been stopped!"
+}
+```
 
 * /slow/fact?args=[56, 1, 4]
 
-  ```Принято в обработку```
+```json
+{
+  "id": "operation_id",
+  "message": "Accepted for processing"
+}
 
+```
 
-* /result?operation=fact&args=[56, 1, 4]
+* /result?id=operation_id
 
-  ```[710998587804863451854045647463724949736497978881168458687447040000000000000, 1, 24]```
+```json
+{
+  "result": "[710998587804863451854045647463724949736497978881168458687447040000000000000, 1, 24]"
+}
+```

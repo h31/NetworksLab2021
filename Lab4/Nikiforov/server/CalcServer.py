@@ -5,6 +5,7 @@ import math
 import operator
 import sqlite3
 import threading
+import uuid
 from functools import reduce
 
 from bottle import request, response, auth_basic, get, post, run
@@ -20,39 +21,36 @@ def check(username, password):
 @get('/fast/<operation>')
 @auth_basic(check)
 def fast_operation(operation):
+    response.content_type = 'application/json'
     if operation == 'sum':
-        response.content_type = 'application/json'
         yield repr([reduce(operator.add, ast.literal_eval(request.query.args))]).encode()
     elif operation == 'mul':
-        response.content_type = 'application/json'
         yield repr([reduce(operator.mul, ast.literal_eval(request.query.args))]).encode()
     elif operation == 'sub':
-        response.content_type = 'application/json'
         yield repr([reduce(operator.sub, ast.literal_eval(request.query.args))]).encode()
     elif operation == 'div':
         try:
-            response.content_type = 'application/json'
             yield repr([reduce(operator.truediv, ast.literal_eval(request.query.args))]).encode()
         except ZeroDivisionError:
             response.status = 400
-            yield "Пресечена попытка деления на ноль!".encode()
+            yield json.dumps({'message': 'An attempt to divide by zero has been stopped!'})
 
 
 @get('/result')
 @auth_basic(check)
 def get_result():
-    operation = request.query.operation
-    args = request.query.args
+    operation_id = request.query.id
+    response.content_type = 'application/json'
     for result in results:
-        if operation == result['operation'] and args == result['args']:
-            response.content_type = 'application/json'
-            return result['result']
-    return "Еще не готово".encode()
+        if operation_id == result['id']:
+            response.status = 400 if result['success'] else 200
+            return json.dumps({'result': results.pop(results.index(result))['result']})
+    return json.dumps({'message': 'Not ready yet'})
 
 
-def check_results(operation, args):
+def check_results(operation_id):
     for result in results:
-        if operation == result['operation'] and args == result['args']:
+        if operation_id == result['id']:
             return True
     return False
 
@@ -65,33 +63,30 @@ def add_result(result):
 @get('/slow/<operation>')
 @auth_basic(check)
 def slow_operation(operation):
+    operation_id = str(uuid.uuid4())
+    response.content_type = 'application/json'
     if operation == 'sqrt':
-        threading.Thread(target=slow_sqrt, args=(ast.literal_eval(request.query.args),)).start()
-        response.content_type = 'application/json'
-        yield "Принято в обработку".encode()
+        threading.Thread(target=slow_sqrt, args=(operation_id, ast.literal_eval(request.query.args))).start()
     elif operation == 'fact':
-        threading.Thread(target=slow_fact, args=(ast.literal_eval(request.query.args),)).start()
-        response.content_type = 'application/json'
-        yield "Принято в обработку".encode()
+        threading.Thread(target=slow_fact, args=(operation_id, ast.literal_eval(request.query.args))).start()
+    yield json.dumps({'id': operation_id, 'message': 'Accepted for processing'})
 
 
-def slow_fact(args):
-    if not check_results('fact', args):
+def slow_fact(operation_id, args):
+    if not check_results(operation_id):
         sleep(len(args) * 2)
         try:
-            add_result({'operation': 'fact', 'args': f'{args}',
-                        'result': repr(list(map(lambda x: math.factorial(x), args))).encode()})
+            add_result(
+                {'id': operation_id, 'success': True, 'result': repr(list(map(lambda x: math.factorial(x), args)))})
         except ValueError:
-            response.status = 400
-            add_result({'operation': 'fact', 'args': f'{args}',
-                        'result': "Пресечена попытка расчета факториала для отрицательного числа!".encode()})
+            add_result({'id': operation_id, 'success': False,
+                        'result': "An attempt to calculate the factorial for a negative number has been stopped!"})
 
 
-def slow_sqrt(args):
-    if not check_results('sqrt', args):
+def slow_sqrt(operation_id, args):
+    if not check_results(operation_id):
         sleep(len(args) * 2)
-        add_result(
-            {'operation': 'sqrt', 'args': f'{args}', 'result': repr(list(map(lambda x: x ** 0.5, args))).encode()})
+        add_result({'id': operation_id, 'success': True, 'result': repr(list(map(lambda x: x ** 0.5, args)))})
 
 
 @post('/login')
@@ -107,7 +102,7 @@ def login():
     else:
         response.status = 404
         response.content_type = 'application/json'
-        yield json.dumps({'success': False, 'message': "User with these credentials doesn't exist"})
+        yield json.dumps({'success': False, 'message': 'User with these credentials doesn\'t exist'})
 
 
 def check_username(username):
@@ -125,13 +120,12 @@ def add_user(username, password):
 def register():
     username = request.query.username
     password = request.query.password
+    response.content_type = 'application/json'
     if not check_username(username):
         add_user(username, password)
-        response.content_type = 'application/json'
         yield json.dumps({'success': True, 'message': 'Successful registration'})
     else:
         response.status = 403
-        response.content_type = 'application/json'
         yield json.dumps({'success': False, 'message': 'Username already used'})
 
 
