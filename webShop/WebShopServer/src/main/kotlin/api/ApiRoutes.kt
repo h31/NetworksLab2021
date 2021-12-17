@@ -77,15 +77,6 @@ fun Route.itemRouting(db: ItemsCollection) {
                     message = "Amount of item: \"${item.name}\" was changed " +
                             "from \"${item.amount}\" to \"${newAmount}\"")
             }
-            delete("{name}") {
-                val name = call.parameters["name"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
-                if (db.delete(Item::name eq name)) return@delete call.respond(
-                    status = HttpStatusCode.BadRequest,
-                    message = "Item was deleted")
-                return@delete call.respond(
-                    status = HttpStatusCode.BadRequest,
-                    message = "Such item not found")
-            }
         }
     }
 }
