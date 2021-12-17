@@ -33,7 +33,7 @@ def fast_operation(operation):
             yield repr([reduce(operator.truediv, ast.literal_eval(request.query.args))]).encode()
         except ZeroDivisionError:
             response.status = 400
-            yield json.dumps({'message': 'An attempt to divide by zero has been stopped!'})
+            yield json.dumps({"message": "An attempt to divide by zero has been stopped!"})
 
 
 @get('/result')
@@ -43,9 +43,9 @@ def get_result():
     response.content_type = 'application/json'
     for result in results:
         if operation_id == result['id']:
-            response.status = 400 if result['success'] else 200
-            return json.dumps({'result': results.pop(results.index(result))['result']})
-    return json.dumps({'message': 'Not ready yet'})
+            response.status = 200 if result['success'] else 400
+            return json.dumps({"result": results.pop(results.index(result))['result']})
+    return json.dumps({"result": "Not ready yet"})
 
 
 def check_results(operation_id):
@@ -69,7 +69,7 @@ def slow_operation(operation):
         threading.Thread(target=slow_sqrt, args=(operation_id, ast.literal_eval(request.query.args))).start()
     elif operation == 'fact':
         threading.Thread(target=slow_fact, args=(operation_id, ast.literal_eval(request.query.args))).start()
-    yield json.dumps({'id': operation_id, 'message': 'Accepted for processing'})
+    yield json.dumps({"id": operation_id, "message": "Accepted for processing"})
 
 
 def slow_fact(operation_id, args):
@@ -77,16 +77,16 @@ def slow_fact(operation_id, args):
         sleep(len(args) * 2)
         try:
             add_result(
-                {'id': operation_id, 'success': True, 'result': repr(list(map(lambda x: math.factorial(x), args)))})
+                {"id": operation_id, "success": True, "result": repr(list(map(lambda x: math.factorial(x), args)))})
         except ValueError:
-            add_result({'id': operation_id, 'success': False,
-                        'result': "An attempt to calculate the factorial for a negative number has been stopped!"})
+            add_result({"id": operation_id, "success": False,
+                        "result": "An attempt to calculate the factorial for an unsuitable operand has been stopped!"})
 
 
 def slow_sqrt(operation_id, args):
     if not check_results(operation_id):
         sleep(len(args) * 2)
-        add_result({'id': operation_id, 'success': True, 'result': repr(list(map(lambda x: x ** 0.5, args)))})
+        add_result({"id": operation_id, "success": True, "result": repr(list(map(lambda x: x ** 0.5, args)))})
 
 
 @post('/login')
@@ -95,14 +95,14 @@ def login():
     if credentials is None:
         response.status = 401
         response.content_type = 'application/json'
-        yield json.dumps({'success': False, 'message': 'Enter authentication data!'})
+        yield json.dumps({"success": False, "message": "Enter authentication data!"})
     elif check(*credentials):
         response.content_type = 'application/json'
-        yield json.dumps({'success': True, 'message': f'Hello, {credentials[0]}!'})
+        yield json.dumps({"success": True, "message": f"Hello, {credentials[0]}!"})
     else:
         response.status = 404
         response.content_type = 'application/json'
-        yield json.dumps({'success': False, 'message': 'User with these credentials doesn\'t exist'})
+        yield json.dumps({"success": False, "message": "User with these credentials doesn't exist"})
 
 
 def check_username(username):
@@ -123,10 +123,10 @@ def register():
     response.content_type = 'application/json'
     if not check_username(username):
         add_user(username, password)
-        yield json.dumps({'success': True, 'message': 'Successful registration'})
+        yield json.dumps({"success": True, "message": "Successful registration"})
     else:
         response.status = 403
-        yield json.dumps({'success': False, 'message': 'Username already used'})
+        yield json.dumps({"success": False, "message": "Username already used"})
 
 
 if __name__ == '__main__':

@@ -125,7 +125,7 @@
 
 ```json
 {
-  "message": "Not ready yet"
+  "result": "Not ready yet"
 }
 ```
 
@@ -150,7 +150,7 @@
 
 ```json
 {
-  "result": "An attempt to calculate the factorial for a negative number has been stopped!"
+  "result": "An attempt to calculate the factorial for an unsuitable operand has been stopped!"
 }
 ```
 
