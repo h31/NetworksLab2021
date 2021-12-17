@@ -15,12 +15,14 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class Server constructor(private val host: String, private val port: Int) {
     private val selector = ActorSelectorManager(Dispatchers.IO)
     private val clientSockets = mutableMapOf<String, CustomSocket>()
     private lateinit var publicSocket : ServerSocket
-
+    var log = Logger.getLogger(Server::class.java.name)
     fun run() = runBlocking {
         publicSocket = aSocket(selector).tcp().bind(InetSocketAddress(host, port))
         println("This is your port, let the clients connect to it: $port")
@@ -40,30 +42,25 @@ class Server constructor(private val host: String, private val port: Int) {
         val nickname = reader.readUTF8Line()!!
         val timeStr = Instant.now().truncatedTo(ChronoUnit.SECONDS).toString()
         val customMessage = CustomMessage(timeStr, "Server")
-        when {
-            clientSockets.containsKey(nickname) -> {
-                customMessage.msg = "Sorry, this nickname ($nickname) is already taken. Choose another one."
-                writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
-                closeAll(writer, customSocket.aSocket)
-            }
-            !nickname.matches(nicknameRegex) -> {
-                customMessage.msg = "Sorry, this nickname is incorrect. " +
-                        "It can consist only of any combination of letters and digits."
-                writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
-                closeAll(writer, customSocket.aSocket)
-            }
-            nickname.lowercase(Locale.getDefault()) == "server" -> {
-                customMessage.msg = "Sorry, any 'Server' nickname can not be taken. Choose another one."
-                writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
-                closeAll(writer, customSocket.aSocket)
-            }
-            else -> {
-                customMessage.msg = "Hello, $nickname, you are connected!"
-                writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
-                clientSockets[nickname] = customSocket
-                println("$nickname connected")
-                clientSocketListener(nickname, customSocket)
-            }
+
+        val isNicknameTaken = clientSockets.containsKey(nickname)
+        val isNicknameIncorrect = !nickname.matches(nicknameRegex)
+        val isNicknameServer = nickname.lowercase(Locale.getDefault()) == "server"
+
+        customMessage.msg = when {
+            isNicknameTaken -> "Sorry, this nickname ($nickname) is already taken. Choose another one."
+            isNicknameIncorrect -> "Sorry, this nickname is incorrect. " +
+                    "It can consist only of any combination of letters and digits."
+            isNicknameServer -> "Sorry, any 'Server' nickname can not be taken. Choose another one."
+            else -> "Hello, $nickname, you are connected!"
+        }
+        writer.writeFully(ByteBuffer.wrap(customMessage.toString().toByteArray()))
+        if (isNicknameTaken || isNicknameIncorrect || isNicknameServer) {
+            closeAll(writer, customSocket.aSocket)
+        } else {
+            clientSockets[nickname] = customSocket
+            log.log(Level.FINE, "$nickname connected")
+            clientSocketListener(nickname, customSocket)
         }
     }
 
@@ -86,6 +83,7 @@ class Server constructor(private val host: String, private val port: Int) {
                 when (ex) {
                     is SocketException, is NullPointerException -> {
                         clientSockets.remove(nickname)
+
                         println("$nickname disconnected; ${clientSockets.keys.size} remains connected.")
                         return
                     }
@@ -122,6 +120,6 @@ class Server constructor(private val host: String, private val port: Int) {
         val customSocket = clientSockets[nickname]!!
         closeAll(customSocket.writer, customSocket.aSocket)
         clientSockets.remove(nickname) //...and remove socket from list of active clients
-        println("User $nickname disconnected; ${clientSockets.keys.size} remains connected.")
+        log.log(Level.FINE, "User $nickname disconnected; ${clientSockets.keys.size} remains connected.")
     }
 }
