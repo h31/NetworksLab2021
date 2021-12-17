@@ -4,7 +4,6 @@ import com.monkeys.controller.AuthController
 import com.monkeys.models.AuthModel
 import com.monkeys.models.OkAuth
 import io.ktor.application.*
-import io.ktor.auth.*
 import io.ktor.http.*
 import io.ktor.http.HttpStatusCode.Companion.Forbidden
 import io.ktor.request.*

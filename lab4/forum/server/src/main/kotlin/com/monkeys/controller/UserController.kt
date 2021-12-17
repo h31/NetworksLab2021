@@ -6,7 +6,7 @@ import com.monkeys.models.AuthModel
 import com.monkeys.models.Message
 import com.monkeys.models.MessageModel
 import com.monkeys.models.ThemeModel
-import java.sql.CallableStatement
+import java.sql.SQLException
 import java.sql.Statement
 import java.util.*
 import kotlin.collections.ArrayList
@@ -14,36 +14,43 @@ import kotlin.collections.HashMap
 
 class UserController {
 
-    fun getHierarchy(): Map<String,List<String>> {
+    fun getHierarchy(name: String): Pair<Map<String,List<String>>, String> {
         DBConnection().getConnection().use { connection ->
             return try {
                 val res = TreeMap<String,List<String>>()
                 val statement = connection!!.createStatement()
-                val set = statement.executeQuery(
-                    //getting merged tables of main_themes and sub_themes sorted alphabetically
-                    "SELECT main_theme.theme_name, st.theme_name FROM main_theme " +
-                            "INNER JOIN sub_theme st on main_theme.id = st.main_theme_id " +
-                            "ORDER BY main_theme.theme_name, st.theme_name;")
-                set.next()
-                var main = set.getString(1)
-                var sub = ArrayList<String>()
-                sub.add(set.getString(2))
-                while (set.next()) {
-                    if (set.getString(1) == main) {
-                        sub.add(set.getString(2))
-                    } else {
-                        res[main] = sub
-                        sub = ArrayList<String>()
-                        main = set.getString(1)
-                        sub.add(set.getString(2))
+                updateInactiveUsers(statement)
+                if (checkActive(statement, name)) {
+                    val set = statement.executeQuery(
+                        //getting merged tables of main_themes and sub_themes sorted alphabetically
+                        "SELECT main_theme.theme_name, st.theme_name FROM main_theme " +
+                                "INNER JOIN sub_theme st on main_theme.id = st.main_theme_id " +
+                                "ORDER BY main_theme.theme_name, st.theme_name;"
+                    )
+                    set.next()
+                    var main = set.getString(1)
+                    var sub = ArrayList<String>()
+                    sub.add(set.getString(2))
+                    while (set.next()) {
+                        if (set.getString(1) == main) {
+                            sub.add(set.getString(2))
+                        } else {
+                            res[main] = sub
+                            sub = ArrayList()
+                            main = set.getString(1)
+                            sub.add(set.getString(2))
+                        }
                     }
+                    res[main] = sub
+                    return Pair(res, "OK")
+                } else {
+                    Pair(HashMap(), "You have been inactive for 1 hour. Login again")
                 }
-                res[main] = sub
-                return res
-            } catch (e: Exception) {
-                println("Some")
-                HashMap()
+            } catch (e: SQLException) {
+                e.printStackTrace()
+                Pair(HashMap(), "Something went wrong, please try again")
             }
+
         }
     }
 
@@ -59,8 +66,8 @@ class UserController {
                     res.add(set.getString(1))
                 }
                 return res
-            } catch (e: Exception) {
-                println("Some")
+            } catch (e: SQLException) {
+                e.printStackTrace()
                 ArrayList()
             }
         }
@@ -70,6 +77,7 @@ class UserController {
         DBConnection().getConnection().use { connection ->
             return try {
                 val statement = connection!!.createStatement()
+                updateInactiveUsers(statement)
                 val set = statement.executeQuery(
                     "SELECT theme_name FROM sub_theme WHERE theme_name = '${msg.subTheme}';")
                 while (set.next()) {
@@ -77,8 +85,8 @@ class UserController {
                     return true
                 }
                 return false
-            } catch (e: Exception) {
-                println("Some")
+            } catch (e: SQLException) {
+                e.printStackTrace()
                 false
             }
         }
@@ -89,6 +97,7 @@ class UserController {
             return try {
                 val res = ArrayList<Message>()
                 val statement = connection!!.createStatement()
+                updateInactiveUsers(statement)
                 var set = statement.executeQuery(
                     "SELECT theme_name FROM sub_theme WHERE theme_name = '${msg.subTheme}';")
                 while (set.next()) {
@@ -102,8 +111,8 @@ class UserController {
                     return res
                 }
                 return ArrayList()
-            } catch (e: Exception) {
-                println("Some")
+            } catch (e: SQLException) {
+                e.printStackTrace()
                 ArrayList()
             }
         }
@@ -113,11 +122,12 @@ class UserController {
         DBConnection().getConnection().use { connection ->
             return try {
                 val statement = connection!!.createStatement()
+                updateInactiveUsers(statement)
                 statement.executeUpdate(
                     "UPDATE \"user\" SET active = 'false' WHERE name = '${name}'")
                 true
-            } catch (e: Exception) {
-                println("Some")
+            } catch (e: SQLException) {
+                e.printStackTrace()
                 false
             }
         }
@@ -126,7 +136,12 @@ class UserController {
     private fun updateInactiveUsers(statement: Statement) {
         statement.executeUpdate(
             "UPDATE \"user\" SET active = 'false' WHERE last_time_of_activity < now() - '1 hour'::interval;")
-        TODO("добавить принудительное удаление юзера")
+    }
 
+    private fun checkActive(statement: Statement, name: String): Boolean {
+        val set = statement.executeQuery("SELECT active FROM \"user\" WHERE name = '$name';")
+        set.next()
+        val ac = set.getBoolean(1)
+        return ac
     }
 }

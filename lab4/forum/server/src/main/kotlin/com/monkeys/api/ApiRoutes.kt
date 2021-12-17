@@ -17,11 +17,25 @@ fun Route.api(controller: UserController) {
                 get("/hierarchy") {
                     val principal = call.authentication.principal<AuthModel>()
                     if (principal != null) {
-                        val res = controller.getHierarchy()
-                        call.respond(
-                            status = HttpStatusCode.OK,
-                            message = OkHierarchy(res)
-                        )
+                        val res = controller.getHierarchy(principal.login)
+                        if (res.second == "OK") {
+                            call.respond(
+                                status = HttpStatusCode.OK,
+                                message = OkHierarchy(res.first)
+                            )
+                        } else {
+                            if (res.second == "You have been inactive for 1 hour. Login again") {
+                                call.respond(
+                                    status = HttpStatusCode.Unauthorized,
+                                    message = OkHierarchy(res.first)
+                                )
+                            } else {
+                                call.respond(
+                                    status = HttpStatusCode.BadRequest,
+                                    message = OkHierarchy(res.first)
+                                )
+                            }
+                        }
                     } else {
                         call.respond(
                             status = HttpStatusCode.Forbidden,
