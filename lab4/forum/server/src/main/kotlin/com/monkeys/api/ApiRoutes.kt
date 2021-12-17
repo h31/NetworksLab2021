@@ -24,7 +24,7 @@ fun Route.api(controller: UserController) {
                                 message = OkHierarchy(res.first)
                             )
                         } else {
-                            enterErrors(call, res.second)
+                            sendErrors(call, res.second)
                         }
                     } else {
                         enterJWTError(call)
@@ -42,7 +42,7 @@ fun Route.api(controller: UserController) {
                                 message = OKActivityUsers(res.first)
                             )
                         } else {
-                            enterErrors(call, res.second)
+                            sendErrors(call, res.second)
                         }
                     } else {
                         enterJWTError(call)
@@ -60,7 +60,7 @@ fun Route.api(controller: UserController) {
                                 message = "Success"
                             )
                         } else {
-                            enterErrors(call, res.second)
+                            sendErrors(call, res.second)
                         }
                     } else {
                         enterJWTError(call)
@@ -78,7 +78,7 @@ fun Route.api(controller: UserController) {
                                 message = OkListOfMessage(res.first)
                             )
                         } else {
-                            enterErrors(call, res.second)
+                            sendErrors(call, res.second)
                         }
                     } else {
                         enterJWTError(call)
@@ -89,16 +89,13 @@ fun Route.api(controller: UserController) {
                     val principal = call.authentication.principal<AuthModel>()
                     if (principal != null) {
                         val res = controller.logout(principal.login)
-                        if (res) {
+                        if (res.first) {
                             call.respond(
                                 status = HttpStatusCode.OK,
                                 message = "You have successfully logged out"
                             )
                         } else {
-                            call.respond(
-                                status = HttpStatusCode.BadRequest,
-                                message = "Something went wrong. Try again"
-                            )
+                            sendErrors(call, res.second)
                         }
                     } else {
                         enterJWTError(call)
@@ -109,8 +106,9 @@ fun Route.api(controller: UserController) {
     }
 }
 
-suspend fun enterErrors(call: ApplicationCall, msg: String) {
-    if (msg == "You have been inactive for 1 hour. Login again") {
+suspend fun sendErrors(call: ApplicationCall, msg: String) {
+    if (msg == "You have been inactive for 1 hour. Login again" ||
+            msg == "You have been inactive for 1 hour. You have already been logged out") {
         call.respond(
             status = HttpStatusCode.Unauthorized,
             message = msg

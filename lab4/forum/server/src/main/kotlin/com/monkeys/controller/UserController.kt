@@ -132,17 +132,22 @@ class UserController {
         }
     }
 
-    fun logout(name: String): Boolean {
+    fun logout(name: String): Pair<Boolean,String> {
         DBConnection().getConnection().use { connection ->
             return try {
                 val statement = connection!!.createStatement()
                 updateInactiveUsers(statement)
-                statement.executeUpdate(
-                    "UPDATE \"user\" SET active = 'false' WHERE name = '${name}'")
-                true
+                if (checkActive(statement, name)) {
+                    statement.executeUpdate(
+                        "UPDATE \"user\" SET active = 'false' WHERE name = '${name}'"
+                    )
+                    Pair(true, "OK")
+                } else {
+                    Pair(false, "You have been inactive for 1 hour. You have already been logged out")
+                }
             } catch (e: SQLException) {
                 e.printStackTrace()
-                false
+                Pair(false, "Something went wrong, please try again")
             }
         }
     }
