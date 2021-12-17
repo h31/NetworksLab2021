@@ -45,6 +45,7 @@ def get_result():
         if operation_id == result['id']:
             response.status = 200 if result['success'] else 400
             return json.dumps({"result": results.pop(results.index(result))['result']})
+    response.status = 425
     return json.dumps({"result": "Not ready yet"})
 
 
