@@ -4,6 +4,7 @@ import json
 import math
 import operator
 import sqlite3
+import threading
 from functools import reduce
 
 from bottle import request, response, auth_basic, get, post, run
@@ -37,29 +38,60 @@ def fast_operation(operation):
             yield "Пресечена попытка деления на ноль!".encode()
 
 
+@get('/result')
+@auth_basic(check)
+def get_result():
+    operation = request.query.operation
+    args = request.query.args
+    for result in results:
+        if operation == result['operation'] and args == result['args']:
+            response.content_type = 'application/json'
+            return result['result']
+    return "Еще не готово".encode()
+
+
+def check_results(operation, args):
+    for result in results:
+        if operation == result['operation'] and args == result['args']:
+            return True
+    return False
+
+
+def add_result(result):
+    if result not in results:
+        results.append(result)
+
+
 @get('/slow/<operation>')
 @auth_basic(check)
 def slow_operation(operation):
     if operation == 'sqrt':
+        threading.Thread(target=slow_sqrt, args=(ast.literal_eval(request.query.args),)).start()
         response.content_type = 'application/json'
-        yield slow_sqrt(ast.literal_eval(request.query.args))
+        yield "Принято в обработку".encode()
     elif operation == 'fact':
-        yield slow_fact(ast.literal_eval(request.query.args))
+        threading.Thread(target=slow_fact, args=(ast.literal_eval(request.query.args),)).start()
+        response.content_type = 'application/json'
+        yield "Принято в обработку".encode()
 
 
 def slow_fact(args):
-    sleep(len(args) * 2)
-    try:
-        response.content_type = 'application/json'
-        return repr(list(map(lambda x: math.factorial(x), args))).encode()
-    except ValueError:
-        response.status = 400
-        return "Пресечена попытка расчета факториала для отрицательного числа!".encode()
+    if not check_results('fact', args):
+        sleep(len(args) * 2)
+        try:
+            add_result({'operation': 'fact', 'args': f'{args}',
+                        'result': repr(list(map(lambda x: math.factorial(x), args))).encode()})
+        except ValueError:
+            response.status = 400
+            add_result({'operation': 'fact', 'args': f'{args}',
+                        'result': "Пресечена попытка расчета факториала для отрицательного числа!".encode()})
 
 
 def slow_sqrt(args):
-    sleep(len(args) * 2)
-    return repr(list(map(lambda x: x ** 0.5, args))).encode()
+    if not check_results('sqrt', args):
+        sleep(len(args) * 2)
+        add_result(
+            {'operation': 'sqrt', 'args': f'{args}', 'result': repr(list(map(lambda x: x ** 0.5, args))).encode()})
 
 
 @post('/login')
@@ -107,6 +139,7 @@ if __name__ == '__main__':
     monkey.patch_all()
     conn = sqlite3.connect('users.sqlite')
     cursor = conn.cursor()
+    results = []
     cursor.execute("CREATE TABLE IF NOT EXISTS users (username TEXT, token TEXT);")
     run(host='localhost', port=8080, server='gevent')
     conn.close()
