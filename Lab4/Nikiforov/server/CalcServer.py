@@ -33,7 +33,7 @@ def fast_operation(operation):
             yield repr([reduce(operator.truediv, ast.literal_eval(request.query.args))]).encode()
         except ZeroDivisionError:
             response.status = 400
-            yield json.dumps({"message": "An attempt to divide by zero has been stopped!"})
+            yield json.dumps(["An attempt to divide by zero has been stopped!"])
 
 
 @get('/result')
@@ -45,7 +45,6 @@ def get_result():
         if operation_id == result['id']:
             response.status = 200 if result['success'] else 400
             return json.dumps({"result": results.pop(results.index(result))['result']})
-    response.status = 425
     return json.dumps({"result": "Not ready yet"})
 
 
