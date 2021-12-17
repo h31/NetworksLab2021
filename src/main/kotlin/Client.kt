@@ -51,14 +51,9 @@ class Client constructor(private val hostAddress: String,
                         "att" -> customMsg.att = pair.second
                     }
                 }
-            } catch (ex: Exception) {
-                when(ex) {
-                    is SocketException, is NullPointerException -> {
-                        println("Server closed connection. Disconnected.")
-                        exitProcess(0)
-                    }
-                    else -> throw ex
-                }
+            } catch (ex: SocketException) {
+                println("Server closed connection. Disconnected.")
+                exitProcess(0)
             }
             //now customMsg have all the attributes. So we are...
             //dealing with attachment if any exists...
@@ -126,8 +121,7 @@ class Client constructor(private val hostAddress: String,
         val p = Pattern.compile(ATTACHMENT_STRING)
         val matcher = p.matcher(msg)
         if (matcher.find()) { //if we found "att|...|" ...
-            var pathStr = matcher.group(0)
-            pathStr = pathStr.substring(4, pathStr.length - 1) //try to get the insides...
+            val pathStr = matcher.group(1)
             val file = File(pathStr) //and check if it is a correct path to file
             //if path is correct...
             if (file.isFile) {

@@ -8,7 +8,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.util.*
 
-const val ATTACHMENT_STRING = """att\|[^|]*\|"""
+const val ATTACHMENT_STRING = """att\|([^|]*)\|"""
 const val DEFAULT_HOST = "localhost"
 const val DEFAULT_PORT = 5000
 val nicknameRegex = Regex("""[а-яА-Я\w\d]+""")
@@ -30,7 +30,7 @@ fun isValidIP(ip: String): Boolean {
 
 fun getMessage(reader: ByteReadChannel, fieldsAmount: Int): Flow<Pair<String, String>> = flow { // flow builder
     for (i in 0 until fieldsAmount) {
-        val msg = reader.readUTF8Line()!!
+        val msg = reader.readUTF8Line() ?: ""
         val split = msg.split(colonAndSpaceRegex, 2)
         val type = split.first().toString()
         val value = split.last().toString()

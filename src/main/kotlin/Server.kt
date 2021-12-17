@@ -79,18 +79,10 @@ class Server constructor(private val host: String, private val port: Int) {
                         "att" -> customMsg.att = pair.second
                     }
                 }
-            } catch (ex: Exception) {
-                when (ex) {
-                    is SocketException, is NullPointerException -> {
-                        clientSockets.remove(nickname)
-
-                        println("$nickname disconnected; ${clientSockets.keys.size} remains connected.")
-                        return
-                    }
-                    else -> {
-                        ex.printStackTrace()
-                    }
-                }
+            } catch (ex: SocketException) {
+                clientSockets.remove(nickname)
+                println("$nickname disconnected; ${clientSockets.keys.size} remains connected.")
+                return
             }
             //quit case - break out of loop, then close the stuff...
             if (customMsg.msg.lowercase(Locale.getDefault()) == "quit")
