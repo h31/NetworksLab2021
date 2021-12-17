@@ -84,10 +84,7 @@ class UserController {
                 val statement = connection!!.createStatement()
                 updateInactiveUsers(statement)
                 if (checkActive(statement, name)) {
-                    val set = statement.executeQuery(
-                        "SELECT theme_name FROM sub_theme WHERE theme_name = '${msg.subTheme}';"
-                    )
-                    while (set.next()) {
+                    if (checkIsAThemeExists(statement, msg.subTheme)) {
                         statement.execute("INSERT INTO message (text, user_name, time, sub_theme) VALUES ('${msg.msg}', '${name}', '${getCurrTimestamp()}', '${msg.subTheme}');")
                         return Pair(true, "OK")
                     }
@@ -102,28 +99,35 @@ class UserController {
         }
     }
 
-    fun getMessages(msg: ThemeModel): List<Message> {
+    fun getMessages(msg: ThemeModel, name: String): Pair<List<Message>,String> {
         DBConnection().getConnection().use { connection ->
             return try {
                 val res = ArrayList<Message>()
                 val statement = connection!!.createStatement()
                 updateInactiveUsers(statement)
-                var set = statement.executeQuery(
-                    "SELECT theme_name FROM sub_theme WHERE theme_name = '${msg.subTheme}';")
-                while (set.next()) {
-                    set = statement.executeQuery(
-                        "SELECT time, user_name, text FROM message WHERE sub_theme = '${msg.subTheme}';")
-                    while (set.next()) {
-                        res.add(Message(set.getString(1),
-                            set.getString(2),
-                            set.getString(3)))
+                if (checkActive(statement, name)) {
+                    if (checkIsAThemeExists(statement, msg.subTheme)) {
+                        val set = statement.executeQuery(
+                            "SELECT time, user_name, text FROM message WHERE sub_theme = '${msg.subTheme}';"
+                        )
+                        while (set.next()) {
+                            res.add(
+                                Message(
+                                    set.getString(1),
+                                    set.getString(2),
+                                    set.getString(3)
+                                )
+                            )
+                        }
+                        return Pair(res, "OK")
                     }
-                    return res
+                    return Pair(ArrayList(), "No such sub theme found")
+                } else {
+                    return Pair(ArrayList(), "You have been inactive for 1 hour. Login again")
                 }
-                return ArrayList()
             } catch (e: SQLException) {
                 e.printStackTrace()
-                ArrayList()
+                Pair(ArrayList(), "Something went wrong, please try again")
             }
         }
     }
@@ -148,10 +152,15 @@ class UserController {
             "UPDATE \"user\" SET active = 'false' WHERE last_time_of_activity < now() - '1 hour'::interval;")
     }
 
+    private fun checkIsAThemeExists(statement: Statement, theme: String): Boolean {
+        val set = statement.executeQuery(
+            "SELECT theme_name FROM sub_theme WHERE theme_name = '${theme}';")
+        return set.next()
+    }
+
     private fun checkActive(statement: Statement, name: String): Boolean {
         val set = statement.executeQuery("SELECT active FROM \"user\" WHERE name = '$name';")
         set.next()
-        val ac = set.getBoolean(1)
-        return ac
+        return set.getBoolean(1)
     }
 }

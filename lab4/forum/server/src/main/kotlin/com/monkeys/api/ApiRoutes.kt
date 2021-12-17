@@ -60,7 +60,7 @@ fun Route.api(controller: UserController) {
                                 message = "Success"
                             )
                         } else {
-                            enterErrors(call, principal.login)
+                            enterErrors(call, res.second)
                         }
                     } else {
                         enterJWTError(call)
@@ -71,11 +71,15 @@ fun Route.api(controller: UserController) {
                     val principal = call.authentication.principal<AuthModel>()
                     if (principal != null) {
                         val subTheme = call.receive<ThemeModel>()
-                        val res = controller.getMessages(subTheme)
-                        call.respond(
-                            status = HttpStatusCode.OK,
-                            message = OkListOfMessage(res)
-                        )
+                        val res = controller.getMessages(subTheme, principal.login)
+                        if (res.second == "OK") {
+                            call.respond(
+                                status = HttpStatusCode.OK,
+                                message = OkListOfMessage(res.first)
+                            )
+                        } else {
+                            enterErrors(call, res.second)
+                        }
                     } else {
                         enterJWTError(call)
                     }
