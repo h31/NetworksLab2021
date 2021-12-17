@@ -6,7 +6,8 @@ import datetime as dt
 
 
 HEADER = 10
-IP = '185.183.98.98'
+IP = 'localhost'
+#IP = '185.183.98.98'
 PORT = 6121
 ENCODING = 'utf-8'
 FILE_NAME_TEMPLATE = r'^[a-zA-Z0-9_.+-]+.\w*%$'
@@ -39,8 +40,13 @@ def receive_message(sock):
             if not len(message_header):
                 return False
             message_length = int(message_header.decode(ENCODING))
+            read_length = message_length
+            data = sock.recv(read_length)
+            while len(data) < message_length:
+                read_length -= len(data)
+                data += sock.recv(read_length)
             return {'header': message_header,
-                    'data': sock.recv(message_length)}
+                    'data': data}
         except Exception:
             return
 
