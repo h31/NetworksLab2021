@@ -23,23 +23,23 @@ def user_loader(login):
 	user.id = login
 	return user
 
-@socketio.on('login')
+@socketio.on('user_login')
 def login(data):
-	user_login = data["login"]
-	if user_login in users:
-		if data["password"] == users[user_login]:
-			if user_login not in logged_in_users:
-				logged_in_users.append(user_login)
+	login = data["login"]
+	if login in users:
+		if data["password"] == users[login]:
+			if login not in logged_in_users:
+				logged_in_users.append(login)
 			user = UserMixin()
-			user.id = user_login
+			user.id = login
 			login_user(user)
 			
 	if current_user.is_authenticated:
-		return {"status":"success", "user_login":current_user.get_id()}, 200
+		return {"status":"success", "login":current_user.get_id()}, 200
 	else:
 		return {"status":"failed"}, 401
 
-@socketio.on("logout")
+@socketio.on("user_logout")
 def logout():
 	if current_user.is_authenticated:
 		logged_in_users.remove(current_user.get_id())
