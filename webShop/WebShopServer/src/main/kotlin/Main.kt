@@ -14,7 +14,6 @@ import io.ktor.server.tomcat.*
 import model.AuthData
 import org.slf4j.LoggerFactory
 
-
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
@@ -42,6 +41,3 @@ fun Application.module() {
         authRouting(UserCollection())
     }
 }
-
-
-

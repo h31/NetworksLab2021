@@ -23,21 +23,21 @@ fun Route.itemRouting(db: ItemsCollection) {
             post {
                 val item = call.receive<Item>()
                 when {
+                    item.name.isBlank() -> call.respond(
+                        status = HttpStatusCode.BadRequest,
+                        message = "Item name is blank.")
                     item.amount < 0 -> call.respond(
                         status = HttpStatusCode.BadRequest,
                         message = "Amount must be equal or greater then zero", )
                     item.price <= 0 -> call.respond(
                         status = HttpStatusCode.BadRequest,
                         message = "Price must be greater then zero")
-                    else ->
-                        if (db.add(item))
-                            call.respond(
-                                status = HttpStatusCode.OK,
-                                message = "Item added")
-                        else
-                            call.respond(
-                                status = HttpStatusCode.BadRequest,
-                                message = "Something went wrong! Maybe this product already exist")
+                    db.add(item) -> call.respond(
+                        status = HttpStatusCode.OK,
+                        message = "Item added")
+                    else -> call.respond(
+                        status = HttpStatusCode.BadRequest,
+                        message = "Something went wrong! Maybe this product already exist")
                 }
             }
             put("buy") {
