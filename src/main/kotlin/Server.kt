@@ -22,7 +22,7 @@ class Server constructor(private val host: String, private val port: Int) {
     private val selector = ActorSelectorManager(Dispatchers.IO)
     private val clientSockets = mutableMapOf<String, CustomSocket>()
     private lateinit var publicSocket : ServerSocket
-    var log = Logger.getLogger(Server::class.java.name)
+    private var log = Logger.getLogger(Server::class.java.name)
     fun run() = runBlocking {
         publicSocket = aSocket(selector).tcp().bind(InetSocketAddress(host, port))
         println("This is your port, let the clients connect to it: $port")
