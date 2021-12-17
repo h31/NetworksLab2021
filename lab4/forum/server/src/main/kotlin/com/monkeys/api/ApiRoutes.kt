@@ -16,89 +16,68 @@ fun Route.api(controller: UserController) {
 
                 get("/hierarchy") {
                     val principal = call.authentication.principal<AuthModel>()
-                    if (principal != null) {
-                        val res = controller.getHierarchy(principal.login)
-                        if (res.second == "OK") {
-                            call.respond(
-                                status = HttpStatusCode.OK,
-                                message = OkHierarchy(res.first)
-                            )
-                        } else {
-                            sendErrors(call, res.second)
-                        }
+                    val res = controller.getHierarchy(principal!!.login)
+                    if (res.second == "OK") {
+                        call.respond(
+                            status = HttpStatusCode.OK,
+                            message = OkHierarchy(res.first)
+                        )
                     } else {
-                        sendModelError(call)
+                        sendErrors(call, res.second)
                     }
-
                 }
 
                 get("/active-users") {
                     val principal = call.authentication.principal<AuthModel>()
-                    if (principal != null) {
-                        val res = controller.getActiveUsers(principal.login)
-                        if (res.second == "OK") {
-                            call.respond(
-                                status = HttpStatusCode.OK,
-                                message = OKActivityUsers(res.first)
-                            )
-                        } else {
-                            sendErrors(call, res.second)
-                        }
+                    val res = controller.getActiveUsers(principal!!.login)
+                    if (res.second == "OK") {
+                        call.respond(
+                            status = HttpStatusCode.OK,
+                            message = OKActivityUsers(res.first)
+                        )
                     } else {
-                        sendModelError(call)
+                        sendErrors(call, res.second)
                     }
                 }
 
                 get("/message") {
                     val principal = call.authentication.principal<AuthModel>()
                     val msg = call.receive<MessageModel>()
-                    if (principal != null) {
-                        val res = controller.putNewMessage(principal.login, msg)
-                        if (res.first) {
-                            call.respond(
-                                status = HttpStatusCode.OK,
-                                message = "Success"
-                            )
-                        } else {
-                            sendErrors(call, res.second)
-                        }
+                    val res = controller.putNewMessage(principal!!.login, msg)
+                    if (res.first) {
+                        call.respond(
+                            status = HttpStatusCode.OK,
+                            message = "Success"
+                        )
                     } else {
-                        sendModelError(call)
+                        sendErrors(call, res.second)
                     }
                 }
 
                 get("/message-list") {
                     val principal = call.authentication.principal<AuthModel>()
-                    if (principal != null) {
-                        val subTheme = call.receive<ThemeModel>()
-                        val res = controller.getMessages(subTheme, principal.login)
-                        if (res.second == "OK") {
-                            call.respond(
-                                status = HttpStatusCode.OK,
-                                message = OkListOfMessage(res.first)
-                            )
-                        } else {
-                            sendErrors(call, res.second)
-                        }
+                    val subTheme = call.receive<ThemeModel>()
+                    val res = controller.getMessages(subTheme, principal!!.login)
+                    if (res.second == "OK") {
+                        call.respond(
+                            status = HttpStatusCode.OK,
+                            message = OkListOfMessage(res.first)
+                        )
                     } else {
-                        sendModelError(call)
+                        sendErrors(call, res.second)
                     }
                 }
 
                 delete("/logout") {
                     val principal = call.authentication.principal<AuthModel>()
-                    if (principal != null) {
-                        val res = controller.logout(principal.login)
-                        if (res.first) {
-                            call.respond(
-                                status = HttpStatusCode.OK,
-                                message = "You have successfully logged out"
-                            )
-                        } else {
-                            sendErrors(call, res.second)
-                        }
+                    val res = controller.logout(principal!!.login)
+                    if (res.first) {
+                        call.respond(
+                            status = HttpStatusCode.OK,
+                            message = "You have successfully logged out"
+                        )
                     } else {
-                        sendModelError(call)
+                        sendErrors(call, res.second)
                     }
                 }
             }
@@ -108,7 +87,8 @@ fun Route.api(controller: UserController) {
 
 suspend fun sendErrors(call: ApplicationCall, msg: String) {
     if (msg == "You have been inactive for 1 hour. Login again" ||
-            msg == "You have been inactive for 1 hour. You have already been logged out") {
+        msg == "You have been inactive for 1 hour. You have already been logged out"
+    ) {
         call.respond(
             status = HttpStatusCode.Unauthorized,
             message = msg
@@ -127,13 +107,3 @@ suspend fun sendErrors(call: ApplicationCall, msg: String) {
         }
     }
 }
-
-suspend fun sendModelError(call: ApplicationCall) {
-    call.respond(
-        status = HttpStatusCode.Forbidden,
-        message = "User data not found"
-    )
-}
-
-
-
