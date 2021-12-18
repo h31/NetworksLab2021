@@ -37,10 +37,8 @@ fun Route.routedAuth() {
             val authData = call.receive<AuthData>()
             if (auth.register(authData.login, authData.pwdHash)) {
                 call.respond(status = HttpStatusCode.Created,"Registration successful. Now you can log in using your credentials at auth/login.")
-                println("${authData.login} registered successfully.")
             }
             else {
-                println("${authData.login} failed to register.")
                 call.respond(status = HttpStatusCode.BadRequest, "Something went wrong. Maybe, this username is already taken?")
             }
 
