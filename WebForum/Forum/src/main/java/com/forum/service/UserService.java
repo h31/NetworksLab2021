@@ -66,8 +66,4 @@ public class UserService {
     public List<ActiveUserModel> getActiveUsers() {
         return userRepository.getAllActive();
     }
-
-    public PasswordEncoder passwordEncoder() {
-        return userRepository.passwordEncoder();
-    }
 }

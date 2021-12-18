@@ -5,20 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.forum.client.model.*
 import com.forum.client.util.*
 import okhttp3.*
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.net.URL
 import java.time.LocalDateTime
 
 class ForumService(val userName: String, private val password: String) {
 
-    private val domainName = "$PREFIX$HOST$DOUBLE_DOT$PORT"
-
-    companion object {
-        private var lastSeenTime = mutableMapOf<String, MutableMap<String, LocalDateTime>>()
-        private val jsonType = JSON_TYPE.toMediaTypeOrNull()
-    }
+    private val lastSeenTime = mutableMapOf<String, MutableMap<String, LocalDateTime>>()
+    private val jsonType = JSON_TYPE.toMediaTypeOrNull()
+    private val objectMapper = ObjectMapper()
 
     private val client = OkHttpClient.Builder().authenticator { _: Route?, response: Response ->
         val cred = Credentials.basic(userName, password)
@@ -26,20 +21,29 @@ class ForumService(val userName: String, private val password: String) {
         else response.request.newBuilder().header(AUTHORIZATION, cred).build()
     }.build()
 
-    private val objectMapper = ObjectMapper()
-
-    private fun <T> createAbstractPostRequest(value: T, url: URL): Request {
+    private fun <T> createAbstractPostRequest(value: T, url: HttpUrl): Request {
         val serializeDTO = objectMapper.writeValueAsString(value)
         val requestBody = serializeDTO.toRequestBody(jsonType)
         return Request.Builder().url(url).post(requestBody).build()
     }
 
+    private fun buildDomainURL(baseURL: String, endPoint: String): HttpUrl {
+        return HttpUrl.Builder()
+            .scheme(PREFIX)
+            .host(HOST)
+            .port(PORT)
+            .addPathSegment(baseURL)
+            .addPathSegment(endPoint)
+            .build()
+    }
+
     //GET
     fun getAllMessageByTheme(packetMessageDTO: PacketMessageDTO): List<MessageModel>? {
-        val url = URL(
-            "$domainName$BASE_URL_FORUM$ALL_MESSAGES" + "$PATH_SEP${packetMessageDTO.mainTheme}" +
-                    "$PATH_SEP${packetMessageDTO.subTheme}"
-        )
+        val url = buildDomainURL(BASE_URL_FORUM, ALL_MESSAGES)
+            .newBuilder()
+            .addPathSegment(packetMessageDTO.mainTheme)
+            .addPathSegment(packetMessageDTO.subTheme)
+            .build()
         val request = Request.Builder().url(url).get().build()
         client.newCall(request).execute().use { response ->
             val bytes = response.body!!.bytes()
@@ -49,7 +53,7 @@ class ForumService(val userName: String, private val password: String) {
 
     //POST
     fun sendMessage(messageModelForTransfer: MessageModelDTO): MessageModel? {
-        val url = URL("$domainName$BASE_URL_USER$SEND_MESSAGE")
+        val url = buildDomainURL(BASE_URL_USER, SEND_MESSAGE)
         val request = createAbstractPostRequest(messageModelForTransfer, url)
         client.newCall(request).execute().use { response ->
             val bytes = response.body!!.bytes()
@@ -61,14 +65,10 @@ class ForumService(val userName: String, private val password: String) {
     fun getNewMessageByTheme(packetMessageDTO: PacketMessageDTO): List<MessageModel>? {
         val lastSeenTimeLocal: LocalDateTime? = getActualLastSeenDateTime(packetMessageDTO)
         packetMessageDTO.lastSeenTime = lastSeenTimeLocal?.toString() ?: LocalDateTime.MIN.toString()
-        val stringURL = URL(
-            "$domainName$BASE_URL_FORUM$NEW_MESSAGE" +
-                    "$PATH_SEP${packetMessageDTO.mainTheme}" +
-                    "$PATH_SEP${packetMessageDTO.subTheme}"
-        )
-        val url = stringURL
-            .toHttpUrlOrNull()!!
+        val url = buildDomainURL(BASE_URL_FORUM, NEW_MESSAGE)
             .newBuilder()
+            .addPathSegment(packetMessageDTO.mainTheme)
+            .addPathSegment(packetMessageDTO.subTheme)
             .addQueryParameter("time", packetMessageDTO.lastSeenTime)
             .build()
         val request = Request.Builder().url(url).get().build()
@@ -80,7 +80,8 @@ class ForumService(val userName: String, private val password: String) {
 
     //GET
     fun getAllThemes(): StructureForumModel {
-        val request = Request.Builder().url(URL("$domainName$BASE_URL_FORUM$ALL_THEMES")).build()
+        val url = buildDomainURL(BASE_URL_FORUM, ALL_THEMES)
+        val request = Request.Builder().url(url).build()
         client.newCall(request).execute().use { response ->
             val bytes = response.body!!.bytes()
             return StructureForumModel(objectMapper.readValue(bytes, object : TypeReference<List<MainTheme>>() {}))
@@ -89,7 +90,8 @@ class ForumService(val userName: String, private val password: String) {
 
     //GET
     fun getActiveUser(): List<ActiveUsers> {
-        val request = Request.Builder().url(URL("$domainName$BASE_URL_FORUM$ACTIVE_USERS")).build()
+        val url = buildDomainURL(BASE_URL_FORUM, ACTIVE_USERS)
+        val request = Request.Builder().url(url).build()
         client.newCall(request).execute().use { response ->
             val bytes = response.body!!.bytes()
             return objectMapper.readValue(bytes, object : TypeReference<List<ActiveUsers>>() {})
@@ -98,7 +100,8 @@ class ForumService(val userName: String, private val password: String) {
 
     //GET
     fun checkConnection(): Boolean {
-        val request = Request.Builder().url(URL("$domainName$BASE_URL_FORUM$ALL_USERS")).build()
+        val url = buildDomainURL(BASE_URL_FORUM, ALL_USERS)
+        val request = Request.Builder().url(url).build()
         client.newCall(request).execute().use { return it.code == 200 }
     }
 

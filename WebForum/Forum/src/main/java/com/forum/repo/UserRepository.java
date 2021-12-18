@@ -64,15 +64,6 @@ public class UserRepository {
         return active;
     }
 
-    private boolean isUserExists(String username) {
-        for (UserModel user : users) {
-            if(user.getUserName().equals(username)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

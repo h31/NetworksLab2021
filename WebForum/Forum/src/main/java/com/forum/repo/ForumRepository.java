@@ -71,19 +71,14 @@ public class ForumRepository {
         Random random = new Random();
         int targetStringLength = random.nextInt(30) + 5;
 
-        String generatedString = random.ints(leftLimit, rightLimit + 1)
+        return random.ints(leftLimit, rightLimit + 1)
                 .limit(targetStringLength)
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
                 .toString();
-        return generatedString;
     }
 
     public List<MainTheme> getAllThemes() {
         return forum.getMainThemeList();
-    }
-
-    public MainTheme getMainThemeByName(String name) {
-        return findMainByName(name);
     }
 
     public SubTheme getSubThemeByName(String mainThemeName, String subThemeName) {

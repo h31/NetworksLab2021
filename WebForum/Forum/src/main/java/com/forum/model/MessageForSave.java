@@ -2,8 +2,6 @@ package com.forum.model;
 
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
 @Data
 public class MessageForSave {
 
