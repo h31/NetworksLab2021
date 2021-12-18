@@ -35,14 +35,12 @@ fun Route.authRouting(db: UserCollection) {
             if (isValidLogin(authData.login)) return@post call.respond(
                 status = HttpStatusCode.BadRequest,
                 message = "Login length lesser then 5.")
-            if (db.add(User(authData.login, authData.pwdHash)))
-                call.respond(
-                    status = HttpStatusCode.Created,
-                    message = "Registration successful. Now you can log in using your credentials at auth/login.")
-            else
-                call.respond(
-                    status = HttpStatusCode.BadRequest,
-                    message = "Something went wrong. Maybe, this username is already taken?")
+            if (db.add(User(authData.login, authData.pwdHash))) return@post call.respond(
+                status = HttpStatusCode.Created,
+                message = "Registration successful. Now you can log in using your credentials at auth/login.")
+            call.respond(
+                status = HttpStatusCode.BadRequest,
+                message = "Something went wrong. Maybe, this username is already taken?")
         }
     }
 }

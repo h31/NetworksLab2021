@@ -38,12 +38,12 @@ class StartTest(private val httpClient: HttpClient,
             echo(question.getQuestion(), false)
             while (true) {
                 val answer = scanner.nextLine()
-                if (!validateAnswer(answer, question.answersList.size))  {
+                if (!validateAnswer(answer, question.answersList.size)) {
                     echo("Incorrect answer format!!! Number in range 1..${question.answersList.size} excepted.")
-                } else {
-                    answers.add(answer.toInt())
-                    break
+                    continue
                 }
+                answers.add(answer.toInt())
+                break
             }
         }
         val response = httpClient.post<HttpResponse>(Routes.getUrl(Routes.RESULT)) {

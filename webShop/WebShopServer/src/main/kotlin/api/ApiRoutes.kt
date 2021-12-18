@@ -15,30 +15,28 @@ fun Route.itemRouting(db: ItemsCollection) {
         route("/item") {
             get {
                 val items = db.getAll()
-                if (items.isNotEmpty()) call.respond(items)
-                else call.respond(
+                if (items.isNotEmpty()) return@get call.respond(items)
+                call.respond(
                     status = HttpStatusCode.NoContent,
                     message = "No items found")
             }
             post {
                 val item = call.receive<Item>()
-                when {
-                    item.name.isBlank() -> call.respond(
-                        status = HttpStatusCode.BadRequest,
-                        message = "Item name is blank.")
-                    item.amount < 0 -> call.respond(
-                        status = HttpStatusCode.BadRequest,
-                        message = "Amount must be equal or greater then zero", )
-                    item.price <= 0 -> call.respond(
-                        status = HttpStatusCode.BadRequest,
-                        message = "Price must be greater then zero")
-                    db.add(item) -> call.respond(
-                        status = HttpStatusCode.OK,
-                        message = "Item added")
-                    else -> call.respond(
-                        status = HttpStatusCode.BadRequest,
-                        message = "Something went wrong! Maybe this product already exist")
-                }
+                if (item.name.isBlank()) return@post call.respond(
+                    status = HttpStatusCode.BadRequest,
+                    message = "Item name is blank.")
+                if (item.amount < 0) return@post call.respond(
+                    status = HttpStatusCode.BadRequest,
+                    message = "Amount must be equal or greater then zero", )
+                if (item.price <= 0) return@post call.respond(
+                    status = HttpStatusCode.BadRequest,
+                    message = "Price must be greater then zero")
+                if (db.add(item)) return@post call.respond(
+                    status = HttpStatusCode.OK,
+                    message = "Item added")
+                call.respond(
+                    status = HttpStatusCode.BadRequest,
+                    message = "Something went wrong! Maybe this product already exist")
             }
             put("buy") {
                 val parameters = call.receiveParameters()

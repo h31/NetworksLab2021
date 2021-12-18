@@ -56,26 +56,18 @@ class AuthService {
                 echo("Unrecognized command, use \"/help\" for more info\n")
                 continue
             }
-            if (inputList.size == command.argsSize) {
-                when (command) {
-                    AuthCommands.REGISTER -> {
-                        Register(httpClient, inputList[1], inputList[2], inputList[3]).execute()
-                    }
-                    AuthCommands.HELP -> {
-                        Help(helpAuthMsg).execute()
-                    }
-                    AuthCommands.LOGIN -> {
-                        if (Login(httpClient, inputList[1], inputList[2]).execute())
-                            break
-                    }
-                    AuthCommands.QUIT -> {
-                        Quit(httpClient).execute()
-                        break
-                    }
-                }
-            }
-            else {
+            if (inputList.size != command.argsSize) {
                 echo("Incorrect format for command \"${inputList[0]}\", use \"/help\" for more info\n")
+                continue
+            }
+            when (command) {
+                AuthCommands.REGISTER -> Register(httpClient, inputList[1], inputList[2], inputList[3]).execute()
+                AuthCommands.HELP -> Help(helpAuthMsg).execute()
+                AuthCommands.LOGIN -> if (Login(httpClient, inputList[1], inputList[2]).execute()) break
+                AuthCommands.QUIT -> {
+                    Quit(httpClient).execute()
+                    break
+                }
             }
         }
     }

@@ -32,38 +32,32 @@ class QuizService(private val username: String, private val httpClient: HttpClie
                 echo("Unrecognized command, use \"/help\" for more info\n")
                 continue
             }
-            if (inputList.size == command.argsSize) {
-                when (command) {
-                    TestCommands.TEST_INFO -> {
-                        val id = inputList[1].toIntOrNull()
-                        if (id != null) GetTestInfo(httpClient, id).execute()
-                        else echo("ID: \"${inputList[1]}\" - not a number")
-                    }
-                    TestCommands.START_TEST -> {
-                        val id = inputList[1].toIntOrNull()
-                        if (id != null) StartTest(httpClient, inputList[1], username).execute()
-                        else echo("ID: \"${inputList[1]}\" - not a number")
-                    }
-                    TestCommands.GET_TESTS -> {
-                        GetTests(httpClient).execute()
-                    }
-                    TestCommands.PROFILE -> {
-                        GetProfile(httpClient, username).execute()
-                    }
-                    TestCommands.HELP -> {
-                        Help(helpQuizMsg).execute()
-                    }
-                    TestCommands.QUIT -> {
-                        Quit(httpClient).execute()
-                        break
-                    }
-                    TestCommands.LOGOUT -> {
-                        Logout(httpClient).execute()
-                        break
-                    }
-                }
-            } else {
+            if (inputList.size != command.argsSize) {
                 echo("Incorrect format for command \"${inputList[0]}\", use \"/help\" for more info")
+                continue
+            }
+            when (command) {
+                TestCommands.TEST_INFO -> {
+                    val id = inputList[1].toIntOrNull()
+                    if (id != null) GetTestInfo(httpClient, id).execute()
+                    else echo("ID: \"${inputList[1]}\" - not a number")
+                }
+                TestCommands.START_TEST -> {
+                    val id = inputList[1].toIntOrNull()
+                    if (id != null) StartTest(httpClient, inputList[1], username).execute()
+                    else echo("ID: \"${inputList[1]}\" - not a number")
+                }
+                TestCommands.GET_TESTS -> GetTests(httpClient).execute()
+                TestCommands.PROFILE -> GetProfile(httpClient, username).execute()
+                TestCommands.HELP -> Help(helpQuizMsg).execute()
+                TestCommands.QUIT -> {
+                    Quit(httpClient).execute()
+                    break
+                }
+                TestCommands.LOGOUT -> {
+                    Logout(httpClient).execute()
+                    break
+                }
             }
         }
     }
