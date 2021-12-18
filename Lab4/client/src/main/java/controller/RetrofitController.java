@@ -81,6 +81,8 @@ public class RetrofitController {
             } else {
                 System.out.println("Something goes wrong, try again");
             }
+        } else {
+            System.out.println("An attempt to divide by zero has been stopped!");
         }
     }
 
