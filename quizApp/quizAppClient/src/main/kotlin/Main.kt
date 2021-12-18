@@ -1,3 +1,5 @@
+import commands.StartupCommands
+
 fun main(args: Array<String>) {
-    Commands().main(args)
+    StartupCommands().main(args)
 }

@@ -1,6 +1,7 @@
 package quiz
 
 import com.github.ajalt.clikt.output.TermUi.echo
+import commands.Help
 import commands.Quit
 import commands.quiz.*
 import io.ktor.client.*
