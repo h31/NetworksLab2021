@@ -38,9 +38,8 @@ class StartTest(private val httpClient: HttpClient,
             echo(question.getQuestion(), false)
             while (true) {
                 val answer = scanner.nextLine()
-                //TODO(variable number of answers)
-                if (!validateAnswer(answer, 4))  {
-                    echo("Incorrect answer format!!! Number in range 1..4 excepted.")
+                if (!validateAnswer(answer, question.answersList.size))  {
+                    echo("Incorrect answer format!!! Number in range 1..${question.answersList.size} excepted.")
                 } else {
                     answers.add(answer.toInt())
                     break
