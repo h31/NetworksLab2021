@@ -15,6 +15,7 @@ repositories {
 }
 
 dependencies {
+    implementation("mysql:mysql-connector-java:8.0.21")
     implementation(kotlin("stdlib"))
     testImplementation(kotlin("test"))
     implementation("org.ktorm:ktorm-core:3.3.0")

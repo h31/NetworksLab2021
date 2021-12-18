@@ -51,7 +51,7 @@ fun Route.routedAPI() {
         route("/tests") {
             get {
                 val tests = mutableListOf<Test>()
-                for (entry in connect().from(TestTable).select()) {
+                for (entry in connect()!!.from(TestTable).select()) {
                     tests.add(getTestFromEntry(entry))
                 }
                 return@get call.respond(status = HttpStatusCode.OK, TestsList(tests))
@@ -62,7 +62,7 @@ fun Route.routedAPI() {
                     status = HttpStatusCode.BadRequest
                 )
 
-                val query = connect()
+                val query = connect()!!
                     .from(TestTable)
                     .select()
                     .where { (TestTable.id eq reqId) }
@@ -82,8 +82,8 @@ fun Route.routedAPI() {
                 //getting the correct answers and their values
                 val correctAnswers = mutableListOf<Int>()
                 val values = mutableListOf<Int>()
-                connect()
-                    .from(TestTable)
+                connect()!!
+                    .from(QuestionTable)
                     .select()
                     .where { QuestionTable.testId eq answers.testId }
                     .orderBy(QuestionTable.id.asc())
@@ -107,7 +107,7 @@ fun Route.routedAPI() {
 
                 //updating the user stats
                 val login = answers.username
-                connect()
+                connect()!!
                     .update(UserTable) {
                         set(it.lastTestId, answers.testId)
                         set(it.lastResult, resultSum)
@@ -123,7 +123,7 @@ fun Route.routedAPI() {
                     "Missing or malformed id",
                     status = HttpStatusCode.BadRequest
                 )
-                val query = connect()
+                val query = connect()!!
                     .from(QuestionTable)
                     .select()
                     .where { QuestionTable.testId eq testIdIn }
@@ -143,7 +143,7 @@ fun Route.routedAPI() {
                     status = HttpStatusCode.BadRequest
                 )
 
-                val query = connect()
+                val query = connect()!!
                     .from(UserTable)
                     .select()
                     .where { UserTable.login eq reqLogin }

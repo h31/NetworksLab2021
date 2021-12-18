@@ -1,3 +1,4 @@
+import ch.qos.logback.classic.db.names.TableName
 import models.Question
 import models.Test
 import models.User
@@ -10,13 +11,14 @@ import org.ktorm.schema.varchar
 import java.sql.SQLException
 import kotlin.system.exitProcess
 
-fun connect(): Database {
-    try {
-        return Database.connect("jdbc:postgresql://localhost:5432/postgres", "intellijIdea", "1234")
+fun connect(): Database? {
+    return try {
+        Database.connect("jdbc:postgresql://localhost:5432/postgres", user = "intellijIdea", password = "1234")
     }
     catch (e: SQLException) {
         println("can not connect to DB. Exiting...")
-        exitProcess(1)
+        e.printStackTrace()
+        null
     }
 }
 
@@ -49,13 +51,13 @@ fun getUserFromEntry(entry: QueryRowSet): User {
     return User(id, login, lastTestId, lastResult)
 }
 
-object TestTable: Table<Nothing>("testapp.tests") {
+object TestTable: Table<Nothing>(schema = "testapp", tableName = "tests") {
     val id = int("id").primaryKey()
     val name = varchar("name")
     val description = varchar("description")
 }
 
-object QuestionTable: Table<Nothing>("testapp.questions") {
+object QuestionTable: Table<Nothing>(schema = "testapp", tableName = "questions") {
     val id = int("id").primaryKey()
     val testId = int("testid")
     val value = int("value")
@@ -67,7 +69,7 @@ object QuestionTable: Table<Nothing>("testapp.questions") {
     val answer = int("answer")
 }
 
-object UserTable: Table<Nothing>("testapp.users") {
+object UserTable: Table<Nothing>(schema = "testapp", tableName = "users") {
     val id = int("id").primaryKey()
     val login = varchar("login")
     val passwordHash = varchar("passwordhash")
