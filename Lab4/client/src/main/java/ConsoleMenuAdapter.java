@@ -8,7 +8,7 @@ import java.util.Scanner;
 public class ConsoleMenuAdapter {
 
     private static final Scanner scanner = new Scanner(System.in);
-    private static final RetrofitController controller = new RetrofitController();
+    public static final RetrofitController controller = new RetrofitController();
 
 
     public static void registration() throws IOException {
@@ -19,9 +19,6 @@ public class ConsoleMenuAdapter {
             System.out.println("Enter your password");
             String password = scanner.next();
             isRegistrationSuccessful = controller.registration(username, password);
-            if (!isRegistrationSuccessful) {
-                System.out.println(" Something goes wrong, try again ");
-            }
         }
     }
 
@@ -34,9 +31,6 @@ public class ConsoleMenuAdapter {
             System.out.println("Enter your password");
             String password = scanner.next();
             isLoginSuccessful = controller.authentication(username, password);
-            if (!isLoginSuccessful) {
-                System.out.println("Something goes wrong, try again");
-            }
         }
     }
 
@@ -74,7 +68,7 @@ public class ConsoleMenuAdapter {
         List<Double> list = new ArrayList<>();
         String inputString;
         double bufferDouble;
-        System.out.println("Enter a number");
+        System.out.println("Enter a number, if you want to quit enter \"quit\"");
         while (!(inputString = scanner.next()).equals("quit")) {
             System.out.println("Enter a number");
             try {

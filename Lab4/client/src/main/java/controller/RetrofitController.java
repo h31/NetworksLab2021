@@ -7,7 +7,6 @@ import util.ControllerUtil;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
-import java.util.List;
 
 public class RetrofitController {
 
@@ -40,10 +39,7 @@ public class RetrofitController {
             }
             return true;
         } else {
-            if (jsonObject != null) {
-                System.out.println(jsonObject.toString());
-                System.out.println(jsonObject.get("message"));
-            }
+            System.out.println(response.message());
             return false;
         }
     }
@@ -51,38 +47,39 @@ public class RetrofitController {
 
     public void getSum(String numbers) throws IOException {
         ServiceAPI api = ControllerUtil.getAPI();
-        Call<List<String>> call = api.getSum(numbers);
+        Call<JsonObject> call = api.getSum(numbers);
         getFast(call, "sum");
     }
 
     public void getSub(String numbers) throws IOException {
         ServiceAPI api = ControllerUtil.getAPI();
-        Call<List<String>> call = api.getSub(numbers);
+        Call<JsonObject> call = api.getSub(numbers);
         getFast(call, "sub");
     }
 
     public void getMul(String numbers) throws IOException {
         ServiceAPI api = ControllerUtil.getAPI();
-        Call<List<String>> call = api.getMul(numbers);
+        Call<JsonObject> call = api.getMul(numbers);
         getFast(call, "mul");
     }
 
     public void getDiv(String numbers) throws IOException {
         ServiceAPI api = ControllerUtil.getAPI();
-        Call<List<String>> call = api.getDiv(numbers);
+        Call<JsonObject> call = api.getDiv(numbers);
         getFast(call, "div");
     }
 
-    private void getFast(Call<List<String>> call, String opType) throws IOException {
-        Response<List<String>> response = call.execute();
+    private void getFast(Call<JsonObject> call, String opType) throws IOException {
+        Response<JsonObject> response = call.execute();
         if (response.code() == 200) {
             if (response.body() != null) {
-                System.out.println("The result of " + opType + " operation a set of numbers = " + response.body());
+                System.out.println("The result of " + opType + " operation a set of numbers = "
+                        + response.body().get("result"));
             } else {
                 System.out.println("Something goes wrong, try again");
             }
         } else {
-            System.out.println("An attempt to divide by zero has been stopped!");
+            System.out.println(response.message());
         }
     }
 
@@ -118,20 +115,21 @@ public class RetrofitController {
             while (!isOpDone) {
                 call = api.getResult(opID);
                 response = call.execute();
-                if (response.code() == 200) {
+                if (response.code() == 425) {
+                    System.out.println("Waiting...");
+                    Thread.sleep(1500);
+                }
+                if (response.code() == 200) { // ready
                     if (response.body() != null) {
-                        if (response.body().get("result").getAsString().equals("Not ready yet")) { // in processing
-                            System.out.println("Waiting...");
-                            Thread.sleep(1500);
-                        } else { // if done
-                            isOpDone = true;
-                            System.out.println("The result of "
-                                    + "sqrt operation a set of numbers = " +
-                                    response.body().get("result").getAsString());
-                        }
+                        isOpDone = true;
+                        System.out.println("The result of "
+                                + "sqrt operation a set of numbers = " +
+                                response.body().get("result"));
                     }
-                } else { // another response code
+                }
+                if (response.code() != 200 && response.code() != 425) {
                     System.out.println(response.message());
+                    return;
                 }
             }
         }

@@ -1,14 +1,7 @@
-import controller.RetrofitController;
-
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 public class Main {
-
-    private static final RetrofitController controller = new RetrofitController();
-
 
     public static void main(String[] args) {
         int authUserChoice = ConsoleMenuAdapter.authChoice();
@@ -58,7 +51,7 @@ public class Main {
     private static void sum() {
         List<Double> list = ConsoleMenuAdapter.createQueryList();
         try {
-            controller.getSum(list.toString());
+            ConsoleMenuAdapter.controller.getSum(list.toString());
         } catch (IOException e) {
             System.out.println("Something goes wrong, try again");
         }
@@ -67,7 +60,7 @@ public class Main {
     private static void sub() {
         List<Double> list = ConsoleMenuAdapter.createQueryList();
         try {
-            controller.getSub(list.toString());
+            ConsoleMenuAdapter.controller.getSub(list.toString());
         } catch (IOException e) {
             System.out.println("Something goes wrong, try again");
         }
@@ -76,7 +69,7 @@ public class Main {
     private static void mul() {
         List<Double> list = ConsoleMenuAdapter.createQueryList();
         try {
-            controller.getMul(list.toString());
+            ConsoleMenuAdapter.controller.getMul(list.toString());
         } catch (IOException e) {
             System.out.println("Something goes wrong, try again");
         }
@@ -85,7 +78,7 @@ public class Main {
     private static void div() {
         List<Double> list = ConsoleMenuAdapter.createQueryList();
         try {
-            controller.getDiv(list.toString());
+            ConsoleMenuAdapter.controller.getDiv(list.toString());
         } catch (IOException e) {
             System.out.println("Something goes wrong, try again");
         }
@@ -94,7 +87,7 @@ public class Main {
     private static void sqrt() {
         List<Double> list = ConsoleMenuAdapter.createQueryList();
         try {
-            controller.getSqrt(list.toString());
+            ConsoleMenuAdapter.controller.getSqrt(list.toString());
         } catch (IOException | InterruptedException e) {
             System.out.println("Something goes wrong, try again");
         }
@@ -103,7 +96,7 @@ public class Main {
     private static void fact() {
         List<Double> list = ConsoleMenuAdapter.createQueryList();
         try {
-            controller.getFact(list.toString());
+            ConsoleMenuAdapter.controller.getFact(list.toString());
         } catch (IOException | InterruptedException e) {
             System.out.println("Something goes wrong, try again");
         }
