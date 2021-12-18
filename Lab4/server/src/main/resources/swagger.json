@@ -1,0 +1,389 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "Документация для сервиса доставки",
+    "version": "1.0",
+    "title": "Swagger2 documentation for TKS Delivery Service API",
+    "contact": {
+      "name": "Roman Vassilyev",
+      "url": "http://github.com/killawetz",
+      "email": "vasiliev2.rv@edu.spbstu.ru"
+    }
+  },
+  "host": "localhost:8080",
+  "basePath": "/",
+  "tags": [
+    {
+      "name": "auth-controller",
+      "description": "Auth Controller"
+    },
+    {
+      "name": "manage-controller",
+      "description": "Manage Controller"
+    },
+    {
+      "name": "market-controller",
+      "description": "Market Controller"
+    },
+    {
+      "name": "order-controller",
+      "description": "Order Controller"
+    }
+  ],
+  "paths": {
+    "/login": {
+      "get": {
+        "tags": [
+          "auth-controller"
+        ],
+        "summary": "Валидация пользователя",
+        "description": "Метод для получения клиента информации о правах текущего пользователяВозвращает boolean переменную. true = если у пользователя права ROLE_SELLER, false если права обычного пользователя",
+        "operationId": "loginUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/manage/add/market": {
+      "post": {
+        "tags": [
+          "manage-controller"
+        ],
+        "summary": "Добавить новый магазин",
+        "description": "Добавление нового магазина с указанием его зоны и продуктами в наличии",
+        "operationId": "addNewMarketUsingPOST",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "json",
+            "description": "json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/markets": {
+      "get": {
+        "tags": [
+          "market-controller"
+        ],
+        "summary": "Получить список магазинов",
+        "description": "Возвращает JSON со списком всех магазинов с идентификатором, названием и зоной",
+        "operationId": "listUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/MarketPublicView"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/markets/{market_id}": {
+      "get": {
+        "tags": [
+          "market-controller"
+        ],
+        "summary": "Информация о магазине",
+        "description": "Возвращает JSON со списком с подробной информацией по указанному магазину",
+        "operationId": "chosenMarketUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "market_id",
+            "in": "path",
+            "description": "Идентификатор магазине",
+            "required": true,
+            "type": "string",
+            "x-example": "12"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/MarketExtendedModelView"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/order": {
+      "get": {
+        "tags": [
+          "order-controller"
+        ],
+        "summary": "Оформить заказ",
+        "description": "Возвращает JSON с двумя полями: сумма заказа и сумма доставки",
+        "operationId": "orderUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "json",
+            "description": "json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/OrderPriceDTO"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/register": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "summary": "Регистрация пользователя",
+        "description": "Позволяет зарегистрировать пользователя",
+        "operationId": "registerUsingPOST",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "password",
+            "in": "query",
+            "description": "Пароль",
+            "required": true,
+            "type": "string",
+            "x-example": "3530901"
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "description": "Имя пользователя",
+            "required": true,
+            "type": "string",
+            "x-example": "vasya"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "GoodsExtendedModelView": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "title": "GoodsExtendedModelView"
+    },
+    "GoodsPriceDTO": {
+      "type": "object",
+      "properties": {
+        "goodsName": {
+          "type": "string"
+        },
+        "goodsPrice": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "GoodsPriceDTO"
+    },
+    "MarketDTO": {
+      "type": "object",
+      "properties": {
+        "goodsPriceList": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GoodsPriceDTO"
+          }
+        },
+        "marketArea": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "marketName": {
+          "type": "string"
+        }
+      },
+      "title": "MarketDTO"
+    },
+    "MarketExtendedModelView": {
+      "type": "object",
+      "properties": {
+        "geoArea": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "marketGoods": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/MarketGoodsExtendedModelView"
+          }
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "title": "MarketExtendedModelView"
+    },
+    "MarketGoodsExtendedModelView": {
+      "type": "object",
+      "properties": {
+        "goods": {
+          "$ref": "#/definitions/GoodsExtendedModelView"
+        },
+        "price": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "MarketGoodsExtendedModelView"
+    },
+    "MarketPublicView": {
+      "type": "object",
+      "properties": {
+        "geoArea": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "title": "MarketPublicView"
+    },
+    "OrderPriceDTO": {
+      "type": "object",
+      "properties": {
+        "deliveryPrice": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "orderPrice": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "OrderPriceDTO"
+    }
+  }
+}
