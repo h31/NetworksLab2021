@@ -44,6 +44,7 @@ suspend fun authorize(client: HttpClient): String {
                 }
             }
             catch (e: ResponseException) { e.response }
+            catch (e: ConnectTimeoutException) { println("Server is not responding. Try again later.") }
         }
 
         //mode == "l"
@@ -66,6 +67,7 @@ suspend fun authorize(client: HttpClient): String {
                 continue
             }
             catch (e: ResponseException) { e.response }
+            catch (e: ConnectTimeoutException) { println("Server is not responding. Try again later.") }
         }
     }
 }

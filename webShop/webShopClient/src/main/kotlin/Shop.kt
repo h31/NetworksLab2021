@@ -22,6 +22,7 @@ suspend fun interact(client: HttpClient, token: String) {
                     }
                 }
                 catch (e: ResponseException) { e.response }
+                catch (e: ConnectTimeoutException) { println("Server is not responding. Try again later.") }
             }
             "addPos" -> {
                 try {
@@ -40,6 +41,7 @@ suspend fun interact(client: HttpClient, token: String) {
                     continue
                 }
                 catch (e: ResponseException) { e.response }
+                catch (e: ConnectTimeoutException) { println("Server is not responding. Try again later.") }
             }
             "buy" -> {
                 try {
@@ -78,6 +80,7 @@ suspend fun interact(client: HttpClient, token: String) {
                     continue
                 }
                 catch (e: ResponseException) { e.response }
+                catch (e: ConnectTimeoutException) { println("Server is not responding. Try again later.") }
             }
             "help" -> { printHelpMsg() }
             "exit" -> {
