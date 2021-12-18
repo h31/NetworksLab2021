@@ -1,6 +1,6 @@
 import struct
 
-# âûäåëåíèå èç ìàññèâà áàéò (data) ïîëåé ïàêåòà (opcode, file_name è ò.ä.)
+# Ð²Ñ‹Ð´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð¸Ð· Ð¼Ð°ÑÑÐ¸Ð²Ð° Ð±Ð°Ð¹Ñ‚ (data) Ð¿Ð¾Ð»ÐµÐ¹ Ð¿Ð°ÐºÐµÑ‚Ð° (opcode, file_name Ð¸ Ñ‚.Ð´.)
 def get_package(data):
 	package = {}
 	package["opcode"] = int.from_bytes(bytes = data[:2], byteorder = "big")
@@ -17,7 +17,7 @@ def get_package(data):
 			package["err_message"] = data[4:-1].decode()
 	return package
 
-# ñîçäàíèå ïàêåòà ñ çàïðîñîì
+# ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð¿Ð°ÐºÐµÑ‚Ð° Ñ Ð·Ð°Ð¿Ñ€Ð¾ÑÐ¾Ð¼
 def create_request_package(direction_value, filename):
 	package = struct.pack(">h", direction_value)
 	package += filename.encode()
@@ -26,20 +26,20 @@ def create_request_package(direction_value, filename):
 	package += struct.pack(">c", b'\x00')
 	return package
 
-# ñîçäàíèå ïàêåòà ñ äàííûìè
+# ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð¿Ð°ÐºÐµÑ‚Ð° Ñ Ð´Ð°Ð½Ð½Ñ‹Ð¼Ð¸
 def create_data_package(current_block, data):
 	package = struct.pack(">h", 3)
 	package += struct.pack(">h", current_block)
 	package += data
 	return package
 
-# ñîçäàíèå ïàêåòà ïîäòâåðæäåíèÿ
+# ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð¿Ð°ÐºÐµÑ‚Ð° Ð¿Ð¾Ð´Ñ‚Ð²ÐµÑ€Ð¶Ð´ÐµÐ½Ð¸Ñ
 def create_ack_package(current_block):
 	package = struct.pack(">h", 4)
 	package += struct.pack(">h", current_block)
 	return package
 
-# ñîçäàíèå ïàêåòà ñ èíôîðìàöèåé îá îøèáêå
+# ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð¿Ð°ÐºÐµÑ‚Ð° Ñ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸ÐµÐ¹ Ð¾Ð± Ð¾ÑˆÐ¸Ð±ÐºÐµ
 def create_err_package(err_code, err_message):
 	package = struct.pack(">h", 5)
 	package += struct.pack(">h", err_code)
