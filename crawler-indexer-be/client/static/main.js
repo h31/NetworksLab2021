@@ -56,10 +56,10 @@ async function performRequest() {
       const results = await response.json();
       resHolder.append(...results.map(makeCard));
     } else {
-      resHolder.innerHTML = `<h1>${response.status}: ${response.statusText}</h1>`;
+      resHolder.innerHTML = `<h4>${response.status}: ${response.statusText}</h4>`;
     }
   } catch (e) {
-    resHolder.innerHTML = `<h1>${e.message}</h1>`;
+    resHolder.innerHTML = `<h4>${e.message}</h4>`;
   } finally {
     searching.remove();
     interactive.forEach(node => node.removeAttribute('disabled'));
