@@ -45,17 +45,22 @@ def fast_operation(operation):
 @auth_basic(check)
 def get_result():
     operation_id = request.query.id
-    response.content_type = 'application/json'
+    res = None
     for result in results:
-        if operation_id == result['id']:
-            if result['success']:
-                yield json.dumps({"result": results.pop(results.index(result))['result']})  # TODO: fix this
-            else:
-                response.status = "400 An attempt to calculate the factorial for an unsuitable operand has been stopped"
-                results.remove(result)  # TODO: and this
-                yield
-    response.status = "425 Not ready yet"
-    yield
+        if result['id'] == operation_id:
+            res = result
+            break
+    results.remove(res)
+    if res:
+        if res['success']:
+            response.content_type = 'application/json'
+            yield json.dumps({"result": res['result']})
+        else:
+            response.status = "400 An attempt to calculate the factorial for an unsuitable operand has been stopped"
+            yield
+    else:
+        response.status = "425 Not ready yet"
+        yield
 
 
 @get('/slow/<operation>')
@@ -82,10 +87,8 @@ def slow_fact(operation_id, args):
 def slow_sqrt(operation_id, args):
     sleep(len(args) * 2)
     res = list(map(lambda x: x ** 0.5, args))
-    true_res = []
-    for k in res:
-        true_res.append(str(k) if type(k) == complex else k)
-    results.append({"id": operation_id, "success": True, "result": true_res})
+    results.append(
+        {"id": operation_id, "success": True, "result": list(map(lambda x: str(x) if type(x) == complex else x, res))})
 
 
 @post('/login')
@@ -117,9 +120,9 @@ def add_user(username, password):
 def register():
     username = request.query.username
     password = request.query.password
-    response.content_type = 'application/json'
     if not check_username(username):
         add_user(username, password)
+        response.content_type = 'application/json'
         yield json.dumps({"message": "Successful registration"})
     else:
         response.status = "403 Username already used"
