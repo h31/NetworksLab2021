@@ -14,7 +14,7 @@ from gevent import monkey, sleep
 
 def check(username, password):
     token = base64.b64encode(bytes('%s:%s' % (username, password), 'utf-8')).decode('ascii')
-    cursor.execute(f"SELECT COUNT(*) FROM users WHERE users.username = '{username}' AND users.token = '{token}';")
+    cursor.execute("SELECT COUNT(*) FROM users WHERE users.username = ? AND users.token = ?", (username, token))
     return cursor.fetchone()[0]
 
 
@@ -22,97 +22,94 @@ def check(username, password):
 @auth_basic(check)
 def fast_operation(operation):
     response.content_type = 'application/json'
-    if operation == 'sum':
-        yield repr([reduce(operator.add, ast.literal_eval(request.query.args))]).encode()
-    elif operation == 'mul':
-        yield repr([reduce(operator.mul, ast.literal_eval(request.query.args))]).encode()
-    elif operation == 'sub':
-        yield repr([reduce(operator.sub, ast.literal_eval(request.query.args))]).encode()
-    elif operation == 'div':
-        try:
-            yield repr([reduce(operator.truediv, ast.literal_eval(request.query.args))]).encode()
-        except ZeroDivisionError:
-            response.status = 400
-            yield json.dumps(["An attempt to divide by zero has been stopped!"])
+    try:
+        args = map(float, ast.literal_eval(request.query.args))
+        if operation == 'sum':
+            yield json.dumps({'result': [reduce(operator.add, args)]})
+        elif operation == 'mul':
+            yield json.dumps({'result': [reduce(operator.mul, args)]})
+        elif operation == 'sub':
+            yield json.dumps({'result': [reduce(operator.sub, args)]})
+        elif operation == 'div':
+            try:
+                yield json.dumps({'result': [reduce(operator.truediv, args)]})
+            except ZeroDivisionError:
+                response.status = "400 An attempt to divide by zero has been stopped"
+                yield
+    except ValueError:
+        response.status = "400 Incorrect operand data"
+        yield
 
 
-@get('/result')
+@post('/result')
 @auth_basic(check)
 def get_result():
     operation_id = request.query.id
     response.content_type = 'application/json'
     for result in results:
         if operation_id == result['id']:
-            response.status = 200 if result['success'] else 400
-            return json.dumps({"result": results.pop(results.index(result))['result']})
-    return json.dumps({"result": "Not ready yet"})
-
-
-def check_results(operation_id):
-    for result in results:
-        if operation_id == result['id']:
-            return True
-    return False
-
-
-def add_result(result):
-    if result not in results:
-        results.append(result)
+            if result['success']:
+                yield json.dumps({"result": results.pop(results.index(result))['result']})  # TODO: fix this
+            else:
+                response.status = "400 An attempt to calculate the factorial for an unsuitable operand has been stopped"
+                results.remove(result)  # TODO: and this
+                yield
+    response.status = "425 Not ready yet"
+    yield
 
 
 @get('/slow/<operation>')
 @auth_basic(check)
 def slow_operation(operation):
     operation_id = str(uuid.uuid4())
-    response.content_type = 'application/json'
     if operation == 'sqrt':
         threading.Thread(target=slow_sqrt, args=(operation_id, ast.literal_eval(request.query.args))).start()
     elif operation == 'fact':
         threading.Thread(target=slow_fact, args=(operation_id, ast.literal_eval(request.query.args))).start()
+    response.content_type = 'application/json'
     yield json.dumps({"id": operation_id, "message": "Accepted for processing"})
 
 
 def slow_fact(operation_id, args):
-    if not check_results(operation_id):
-        sleep(len(args) * 2)
-        try:
-            add_result(
-                {"id": operation_id, "success": True, "result": repr(list(map(lambda x: math.factorial(x), args)))})
-        except ValueError:
-            add_result({"id": operation_id, "success": False,
-                        "result": "An attempt to calculate the factorial for an unsuitable operand has been stopped!"})
+    sleep(len(args) * 2)
+    try:
+        results.append(
+            {"id": operation_id, "success": True, "result": list(map(lambda x: math.factorial(x), args))})
+    except ValueError:
+        results.append({"id": operation_id, "success": False, "result": []})
 
 
 def slow_sqrt(operation_id, args):
-    if not check_results(operation_id):
-        sleep(len(args) * 2)
-        add_result({"id": operation_id, "success": True, "result": repr(list(map(lambda x: x ** 0.5, args)))})
+    sleep(len(args) * 2)
+    res = list(map(lambda x: x ** 0.5, args))
+    true_res = []
+    for k in res:
+        true_res.append(str(k) if type(k) == complex else k)
+    results.append({"id": operation_id, "success": True, "result": true_res})
 
 
 @post('/login')
 def login():
     credentials = request.auth
     if credentials is None:
-        response.status = 401
-        response.content_type = 'application/json'
-        yield json.dumps({"success": False, "message": "Enter authentication data!"})
+        response.status = "401 Enter authentication data"
+        yield
     elif check(*credentials):
         response.content_type = 'application/json'
-        yield json.dumps({"success": True, "message": f"Hello, {credentials[0]}!"})
+        yield json.dumps({"message": f"Hello, {credentials[0]}!"})
     else:
-        response.status = 404
-        response.content_type = 'application/json'
-        yield json.dumps({"success": False, "message": "User with these credentials doesn't exist"})
+        response.status = "404 User with these credentials doesn't exist"
+        yield
 
 
 def check_username(username):
-    cursor.execute(f"SELECT COUNT(*) FROM users WHERE users.username = '{username}';")
+    cursor.execute("SELECT COUNT(*) FROM users WHERE users.username = ?", (username,))
     return cursor.fetchone()[0]
 
 
 def add_user(username, password):
     token = base64.b64encode(bytes('%s:%s' % (username, password), 'utf-8')).decode('ascii')
-    cursor.execute(f"INSERT INTO users VALUES ('{username}', '{token}');")
+    cursor.execute("INSERT INTO users VALUES (?, ?)", (username, token))
     conn.commit()
 
 
@@ -123,10 +120,10 @@ def register():
     response.content_type = 'application/json'
     if not check_username(username):
         add_user(username, password)
-        yield json.dumps({"success": True, "message": "Successful registration"})
+        yield json.dumps({"message": "Successful registration"})
     else:
-        response.status = 403
-        yield json.dumps({"success": False, "message": "Username already used"})
+        response.status = "403 Username already used"
+        yield
 
 
 if __name__ == '__main__':
@@ -134,6 +131,6 @@ if __name__ == '__main__':
     conn = sqlite3.connect('users.sqlite')
     cursor = conn.cursor()
     results = []
-    cursor.execute("CREATE TABLE IF NOT EXISTS users (username TEXT, token TEXT);")
+    cursor.execute("CREATE TABLE IF NOT EXISTS users (username TEXT, token TEXT)")
     run(host='localhost', port=8080, server='gevent')
     conn.close()
