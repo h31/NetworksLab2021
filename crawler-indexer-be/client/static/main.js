@@ -32,13 +32,19 @@ function makeCard(res) {
       card.querySelectorAll('.preview-block').forEach(el => el.classList.toggle('no-display'));
     };
     card.appendChild(openPreviewBtn);
+    const previewBlocks = new Set();
 
     res.preview.forEach(blockText => {
-      const block = document.createElement('p');
-      block.textContent = `...${blockText.replace(/\n/g, ' > ').trim()}...`;
-      block.classList.add('preview-block', 'no-display')
-      card.appendChild(block);
+      const formattedText = `...${blockText.replace(/\n/g, ' > ').trim()}...`;
+      previewBlocks.add(formattedText);
     });
+
+    card.append(...Array.from(previewBlocks).map(blockText => {
+      const block = document.createElement('p');
+      block.textContent = blockText;
+      block.classList.add('preview-block', 'no-display');
+      return block;
+    }));
   }
 
   return card;
