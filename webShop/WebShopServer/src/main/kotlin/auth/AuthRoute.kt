@@ -16,6 +16,9 @@ fun Route.authRouting(db: UserCollection) {
     route("/auth") {
         post("/login") {
             val authData = call.receive<AuthData>()
+            if (authData.pwdHash.isBlank() || authData.login.isBlank()) return@post call.respond(
+                status = HttpStatusCode.BadRequest,
+                message = "Password or login is blank.")
             db.getOne(User::login eq authData.login, User::password eq authData.pwdHash) ?: return@post call.respond(
                 status = HttpStatusCode.NotFound,
                 message = "There is no such username with these login/password.")
@@ -26,6 +29,12 @@ fun Route.authRouting(db: UserCollection) {
         }
         post ("/register") {
             val authData = call.receive<AuthData>()
+            if (authData.pwdHash.isBlank() || authData.login.isBlank()) return@post call.respond(
+                status = HttpStatusCode.BadRequest,
+                message = "Password or login is blank.")
+            if (isValidLogin(authData.login)) return@post call.respond(
+                status = HttpStatusCode.BadRequest,
+                message = "Login length lesser then 5.")
             if (db.add(User(authData.login, authData.pwdHash)))
                 call.respond(
                     status = HttpStatusCode.Created,
@@ -37,3 +46,5 @@ fun Route.authRouting(db: UserCollection) {
         }
     }
 }
+
+private fun isValidLogin(login: String): Boolean = login.length < 5

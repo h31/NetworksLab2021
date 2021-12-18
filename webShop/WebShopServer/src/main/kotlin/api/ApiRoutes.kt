@@ -23,21 +23,21 @@ fun Route.itemRouting(db: ItemsCollection) {
             post {
                 val item = call.receive<Item>()
                 when {
+                    item.name.isBlank() -> call.respond(
+                        status = HttpStatusCode.BadRequest,
+                        message = "Item name is blank.")
                     item.amount < 0 -> call.respond(
                         status = HttpStatusCode.BadRequest,
                         message = "Amount must be equal or greater then zero", )
                     item.price <= 0 -> call.respond(
                         status = HttpStatusCode.BadRequest,
                         message = "Price must be greater then zero")
-                    else ->
-                        if (db.add(item))
-                            call.respond(
-                                status = HttpStatusCode.OK,
-                                message = "Item added")
-                        else
-                            call.respond(
-                                status = HttpStatusCode.BadRequest,
-                                message = "Something went wrong! Maybe this product already exist")
+                    db.add(item) -> call.respond(
+                        status = HttpStatusCode.OK,
+                        message = "Item added")
+                    else -> call.respond(
+                        status = HttpStatusCode.BadRequest,
+                        message = "Something went wrong! Maybe this product already exist")
                 }
             }
             put("buy") {
@@ -76,15 +76,6 @@ fun Route.itemRouting(db: ItemsCollection) {
                     status = HttpStatusCode.OK,
                     message = "Amount of item: \"${item.name}\" was changed " +
                             "from \"${item.amount}\" to \"${newAmount}\"")
-            }
-            delete("{name}") {
-                val name = call.parameters["name"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
-                if (db.delete(Item::name eq name)) return@delete call.respond(
-                    status = HttpStatusCode.BadRequest,
-                    message = "Item was deleted")
-                return@delete call.respond(
-                    status = HttpStatusCode.BadRequest,
-                    message = "Such item not found")
             }
         }
     }

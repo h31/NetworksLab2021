@@ -85,12 +85,6 @@ fun Route.routedAPI() {
                 )
                 call.respond(test)
             }
-            post {
-                val test = call.receive<Test>()
-                conn.createStatement()
-                    .execute("insert into testapp.tests(name, desc) values('${test.name}', '${test.desc}');")
-                call.respondText("Test added correctly", status = HttpStatusCode.Created)
-            }
             post("/sendAnswers"){
                 //getting the user answers
                 val answers = call.receive<Answers>()
@@ -152,20 +146,6 @@ fun Route.routedAPI() {
                 }
                 val questionsList = QuestionsList(questions)
                 call.respond(status = HttpStatusCode.OK, questionsList)
-            }
-            post {
-                val q = call.receive<Question>()
-                val res = conn.createStatement()
-                    .execute(
-                        "insert into testapp.tests(testId, value, var1, var2, var3, var4, answer) " +
-                                "values('${q.testId}', '${q.value}', '${q.var1}', '${q.var2}', '${q.var3}', '${q.var4}', '${q.answer}')"
-                    )
-                if (res) {
-                    call.respondText("Question added correctly", status = HttpStatusCode.Created)
-                }
-                else {
-                    call.respondText("Error while adding the question", status = HttpStatusCode.BadRequest)
-                }
             }
         }
 
