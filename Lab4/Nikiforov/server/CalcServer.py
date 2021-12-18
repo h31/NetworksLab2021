@@ -50,8 +50,8 @@ def get_result():
         if result['id'] == operation_id:
             res = result
             break
-    results.remove(res)
     if res:
+        results.remove(res)
         if res['success']:
             response.content_type = 'application/json'
             yield json.dumps({"result": res['result']})
