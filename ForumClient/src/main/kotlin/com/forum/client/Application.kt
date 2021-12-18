@@ -5,6 +5,7 @@ import com.forum.client.model.PacketMessageDTO
 import com.forum.client.model.StructureForumModel
 import com.forum.client.service.ForumService
 import com.forum.client.util.DOT
+import com.forum.client.util.VOID
 import java.util.*
 import kotlin.system.exitProcess
 
@@ -58,7 +59,7 @@ class Application {
         conditionLevelSecond = true
         while (conditionLevelSecond) {
             val input = scanner.nextLine()
-            val packetMessageDTO = checkCorrectThemesAndSubThemes(input, structureForumModel)
+            val packetMessageDTO = getPacketMessageOrNull(input, structureForumModel)
             if (input == "back") {
                 conditionLevelSecond = false
                 println("[1] - Check forum tree [2] - Check active users [3] - Exit")
@@ -127,12 +128,13 @@ class Application {
         }
     }
 
-    private fun checkCorrectThemesAndSubThemes(
+    private fun getPacketMessageOrNull(
         input: String,
         structureForumModel: StructureForumModel
     ): PacketMessageDTO? {
         val parts = input.trim().split(DOT)
         if (parts.size != 2) return null
+        if (parts[0] == VOID || parts[1] == VOID) return null
         val newList = parts.map { it.toInt() - 1 }
         if (!checkInterval(structureForumModel.mainThemeList, newList[0])) return null
         val mainTheme = structureForumModel.mainThemeList[newList[0]]
@@ -141,6 +143,6 @@ class Application {
     }
 
     private fun <T> checkInterval(list: List<T>, number: Int): Boolean {
-        return number in 0..list.size
+        return number in list.indices
     }
 }
