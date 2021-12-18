@@ -2,7 +2,7 @@ package commands.quiz
 
 import Routes
 import com.github.ajalt.clikt.output.TermUi.echo
-import commands.Command
+import commands.ACommand
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.features.*
@@ -16,22 +16,18 @@ import java.util.*
 
 class StartTest(private val httpClient: HttpClient,
                 private val id: String,
-                private val username: String) : Command {
+                private val username: String) : ACommand() {
 
     private val scanner = Scanner(System.`in`)
 
-    override suspend fun execute(): Boolean {
+    override suspend fun safeExecute(): Boolean {
         val testId = id.toIntOrNull() ?: throw IllegalArgumentException()
-        try {
-            val response = httpClient.get<HttpResponse>(Routes.getUrl(Routes.QUESTIONS) + testId)
-            if (response.status != HttpStatusCode.OK) {
-                echo("${response.receive<String>()}\n")
-            }
-            else {
-                showTest(response.receive(), testId)
-            }
-        } catch (cause: ResponseException) {
-            cause.response
+        val response = httpClient.get<HttpResponse>(Routes.getUrl(Routes.QUESTIONS) + testId)
+        if (response.status != HttpStatusCode.OK) {
+            echo("${response.receive<String>()}\n")
+        }
+        else {
+            showTest(response.receive(), testId)
         }
         return false
     }
@@ -51,15 +47,12 @@ class StartTest(private val httpClient: HttpClient,
                 }
             }
         }
-        try {
-            val response = httpClient.post<HttpResponse>(Routes.getUrl(Routes.RESULT)) {
-                body = Answers(answers.toList(), id, username)
-            }
-            val result = response.receive<AnswersResult>()
-            echo("Yours result: ${result.resultSum}\n")
-        } catch (cause: ResponseException) {
-            cause.response
+        val response = httpClient.post<HttpResponse>(Routes.getUrl(Routes.RESULT)) {
+            body = Answers(answers.toList(), id, username)
         }
+        val result = response.receive<AnswersResult>()
+        echo("Yours result: ${result.resultSum}\n")
+
     }
 
     private fun validateAnswer(answer: String, answersQuantity: Int): Boolean {

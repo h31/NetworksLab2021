@@ -1,11 +1,11 @@
 package commands.quiz
 
 import auth.AuthService
-import commands.Command
+import commands.ACommand
 import io.ktor.client.*
 
-class Logout(private val httpClient: HttpClient): Command {
-    override suspend fun execute(): Boolean {
+class Logout(private val httpClient: HttpClient): ACommand() {
+    override suspend fun safeExecute(): Boolean {
         httpClient.close()
         AuthService().start()
         return true

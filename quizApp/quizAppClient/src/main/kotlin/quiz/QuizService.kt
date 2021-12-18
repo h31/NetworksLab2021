@@ -1,13 +1,8 @@
 package quiz
 
 import com.github.ajalt.clikt.output.TermUi.echo
-import commands.quiz.Logout
 import commands.Quit
-import commands.quiz.TestCommands
-import commands.quiz.GetProfile
-import commands.quiz.GetTestInfo
-import commands.quiz.GetTests
-import commands.quiz.StartTest
+import commands.quiz.*
 import io.ktor.client.*
 import java.util.*
 
@@ -55,7 +50,7 @@ class QuizService(private val username: String, private val httpClient: HttpClie
                         GetProfile(httpClient, username).execute()
                     }
                     TestCommands.HELP -> {
-                        echo(helpQuizMsg)
+                        Help(helpQuizMsg).execute()
                     }
                     TestCommands.QUIT -> {
                         Quit(httpClient).execute()

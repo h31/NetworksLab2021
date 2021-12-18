@@ -1,17 +1,17 @@
 package auth
 
+import com.github.ajalt.clikt.output.TermUi.echo
+import commands.Quit
 import commands.auth.AuthCommands
 import commands.auth.Login
 import commands.auth.Register
-import com.github.ajalt.clikt.output.TermUi.echo
-import commands.Quit
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.features.*
 import io.ktor.client.features.json.*
 import io.ktor.client.features.json.serializer.*
-import io.ktor.client.statement.*
 import io.ktor.http.*
+import java.net.ConnectException
 import java.util.*
 
 class AuthService {
@@ -33,13 +33,13 @@ class AuthService {
         }
         HttpResponseValidator {
             handleResponseException { exception ->
-                if (exception !is ClientRequestException) return@handleResponseException
-                val exceptionResponse = exception.response
-                when (exceptionResponse.status) {
-                    HttpStatusCode.BadRequest -> echo(exceptionResponse.readText())
-                    HttpStatusCode.NotFound -> echo(exceptionResponse.readText())
-                    else -> echo("Error code:${exceptionResponse.status.value}\n" +
-                            "Description:${exceptionResponse.status.description}")
+                if (exception is ConnectException) {
+                    echo("No connection to server\n")
+                }
+                else if (exception is ResponseException) {
+                    val exceptionResponse = exception.response
+                    echo("Error code: ${exceptionResponse.status.value}\n" +
+                            "Description: ${exceptionResponse.status.description}")
                 }
             }
         }
@@ -61,7 +61,7 @@ class AuthService {
                         Register(httpClient, inputList[1], inputList[2], inputList[3]).execute()
                     }
                     AuthCommands.HELP -> {
-                        echo(helpAuthMsg)
+                        Help(helpAuthMsg).execute()
                     }
                     AuthCommands.LOGIN -> {
                         if (Login(httpClient, inputList[1], inputList[2]).execute())

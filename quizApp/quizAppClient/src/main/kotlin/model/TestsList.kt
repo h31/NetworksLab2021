@@ -8,9 +8,9 @@ data class TestsList(val testsList: List<Test>) {
         appendLine("-----------TESTS-----------")
         for (i in testsList.indices) {
             if (i != testsList.size - 1) {
-                appendLine(testsList[i].toString())
+                appendLine("${testsList[i]}\n")
             }
-            else append(testsList[i].toString())
+            else appendLine(testsList[i].toString())
         }
         if (testsList.isEmpty())
             appendLine("No test for this time")

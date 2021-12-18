@@ -1,6 +1,8 @@
 package commands.auth
 
+import Routes
 import com.github.ajalt.clikt.output.TermUi.echo
+import commands.ACommand
 import commands.Command
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -13,18 +15,14 @@ import model.AuthData
 class Register(private val httpClient: HttpClient,
                private val username: String,
                private val password: String,
-               private val password2: String) : Command {
-    override suspend fun execute(): Boolean {
+               private val password2: String) : ACommand() {
+    override suspend fun safeExecute(): Boolean {
         if (validatePwd(password, password2)) {
-            try {
-                val response = httpClient.post<HttpResponse>(Routes.getUrl(Routes.REGISTER)) {
-                    contentType(ContentType.Application.Json)
-                    body = AuthData(username, password)
-                }
-                echo("${response.receive<String>()}\n")
-            } catch (cause: ResponseException) {
-                cause.response
+            val response = httpClient.post<HttpResponse>(Routes.getUrl(Routes.REGISTER)) {
+                contentType(ContentType.Application.Json)
+                body = AuthData(username, password.hashCode().toString(radix = 16))
             }
+            echo("${response.receive<String>()}\n")
         }
         return false
     }

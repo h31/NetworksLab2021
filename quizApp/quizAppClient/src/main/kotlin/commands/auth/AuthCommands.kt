@@ -1,6 +1,5 @@
 package commands.auth
 
-
 enum class AuthCommands(private val commandStr: String, val argsSize: Int) {
     REGISTER("/register", 4),
     LOGIN("/login", 3),
