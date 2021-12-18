@@ -15,19 +15,14 @@ class PackageHandler:
         self.current_block = 0
 
     def get_nonexistent_file_name(self):
-        parts = self.file_name.split(".")
-        if len(parts) == 1:  # имя файла не содержит "."
-            name = self.file_name
-            extension = ""
-        else:
-            name = ".".join(parts[:-1])  # имя файла может содержать несколько "."
-            extension = "." + parts[-1]
+        parts = self.file_name.partition(".")
+        name = parts[0]
         while True:
-            if os.path.isfile(os.getcwd() + os.sep + name + extension):
+            if os.path.isfile(os.getcwd() + os.sep + name + parts[1] + parts[2]):
                 name += "_new"
             else:
                 break
-        return name + extension
+        return name + parts[1] + parts[2]
 
     def send(self, data, wait_next_package=True):
         self.package = None
