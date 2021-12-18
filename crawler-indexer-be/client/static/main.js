@@ -3,12 +3,14 @@ const resHolder = document.getElementById('res-holder');
 const settingsInputs = document.getElementById('settings-inputs');
 const hostInput = document.getElementById('host-input');
 const portInput = document.getElementById('port-input');
+const searchBtn = document.getElementById('search-btn');
 
 
 const interactive = [
   searchInput,
   hostInput,
-  portInput
+  portInput,
+  searchBtn
 ];
 
 function makeCard(res) {
@@ -53,11 +55,10 @@ async function performRequest() {
       const results = await response.json();
       resHolder.append(...results.map(makeCard));
     } else {
-      console.log(response.status, response.statusText);
+      resHolder.innerHTML = `<h1>${response.status}: ${response.statusText}</h1>`;
     }
   } catch (e) {
-    console.log(e);
-    resHolder.innerHTML = e.message;
+    resHolder.innerHTML = `<h1>${e.message}</h1>`;
   } finally {
     searching.remove();
     interactive.forEach(node => node.removeAttribute('disabled'));
