@@ -145,10 +145,7 @@ def logout():
     if flask_login.current_user.is_croupier:
         croupier = None
 
-    try:
-        logged_in_users.pop(flask_login.current_user.id)
-    except:
-        return "something broken", 420
+    logged_in_users.pop(flask_login.current_user.id)
 
     flask_login.logout_user()
     return 'Logged out'
