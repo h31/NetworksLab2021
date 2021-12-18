@@ -4,13 +4,10 @@ import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.net.InetSocketAddress
-import java.net.SocketException
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -79,9 +76,10 @@ class Server constructor(private val host: String, private val port: Int) {
                         "att" -> customMsg.att = pair.second
                     }
                 }
-            } catch (ex: SocketException) {
-                clientSockets.remove(nickname)
+            } catch (ex: Throwable) {
+                log.log(Level.INFO, ex.localizedMessage)
                 println("$nickname disconnected; ${clientSockets.keys.size} remains connected.")
+                clientSockets.remove(nickname)
                 return
             }
             //quit case - break out of loop, then close the stuff...

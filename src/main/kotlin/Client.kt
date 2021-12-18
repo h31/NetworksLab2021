@@ -2,9 +2,7 @@ import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -16,6 +14,7 @@ import java.net.URLConnection
 import java.nio.ByteBuffer
 import java.nio.file.Paths
 import java.util.*
+import java.util.logging.Level
 import java.util.regex.Pattern
 import kotlin.system.exitProcess
 
@@ -51,7 +50,7 @@ class Client constructor(private val hostAddress: String,
                         "att" -> customMsg.att = pair.second
                     }
                 }
-            } catch (ex: SocketException) {
+            } catch (ex: Throwable) {
                 println("Server closed connection. Disconnected.")
                 exitProcess(0)
             }
@@ -72,7 +71,7 @@ class Client constructor(private val hostAddress: String,
             //quit scenario with "quit" command
             if (text.lowercase(Locale.getDefault()) == "quit") {
                 println("See you later. Bye!")
-                exitProcess(0)
+                break
             }
             //check if message has any attachments - try to attach them if they exist, if not - send the msg itself
             handleSentAtt(msg)
