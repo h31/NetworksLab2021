@@ -12,7 +12,9 @@ import com.example.delservice.repository.MarketGoodsRepository;
 import com.example.delservice.repository.MarketRepository;
 import com.example.delservice.service.MarketService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
@@ -36,7 +38,8 @@ public class MarketServiceImpl implements MarketService {
         if (marketContainer.isPresent()) {
             market = marketContainer.get();
         } else {
-            return null;
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Incorrect data. Market already exist.");
         }
 
         int price = 0;
@@ -44,7 +47,8 @@ public class MarketServiceImpl implements MarketService {
         for (Long good_id : orderDTO.getGoodsIdArray()) {
             marketGoods = marketGoodsRepository.findByMarketIdAndGoodsId(market.getId(), good_id);
             if (marketGoods == null) {
-                return null;
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Incorrect data. No such product in the store.");
             }
             price += marketGoods.getPrice();
         }

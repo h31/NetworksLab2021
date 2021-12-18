@@ -1,13 +1,13 @@
 package com.example.delservice.controller;
 
 import com.example.delservice.dto.MarketDTO;
-import com.example.delservice.dto.OrderDTO;
 import com.example.delservice.repository.MarketRepository;
 import com.example.delservice.service.MarketService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +18,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 public class ManageController {
+
+    private static final Logger logger = LogManager.getLogger(ManageController.class);
 
     @Autowired
     private MarketService marketService;
@@ -39,7 +41,8 @@ public class ManageController {
         try {
             marketDTO = objectMapper.readValue(json, MarketDTO.class);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            logger.error("Threw a JsonProcessingException in ManageController::addNewMarket," +
+                    " full stack trace follows:", e);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Incorrect data");
         }
 

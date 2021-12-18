@@ -3,7 +3,6 @@ package com.example.delservice.controller;
 import com.example.delservice.config.View;
 import com.example.delservice.dto.MarketDTO;
 import com.example.delservice.model.Market;
-import com.example.delservice.repository.MarketGoodsRepository;
 import com.example.delservice.repository.MarketRepository;
 import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.annotations.*;
@@ -12,7 +11,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.awt.*;
 import java.util.List;
 import java.util.Optional;
 
