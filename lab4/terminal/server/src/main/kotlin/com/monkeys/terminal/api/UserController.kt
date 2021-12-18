@@ -1,64 +1,66 @@
 package com.monkeys.terminal.api
 
-import com.monkeys.terminal.executeBashProcessWithResult
-import com.monkeys.terminal.models.AuthModel
-import com.monkeys.terminal.models.CdRequest
+import com.monkeys.terminal.getActiveUsers
+import com.monkeys.terminal.killUser
 import com.monkeys.terminal.models.KillRequest
-import com.monkeys.terminal.separateListByElements
-import java.util.*
+import java.io.File
 
 class UserController() {
-    private val clients = Collections.synchronizedMap(
-        mutableMapOf<String, String>()
-    )
 
-    fun addUser(model: AuthModel): String {
-        val location = clients[model.login]
-        return if (location != null) {
-            location
+    fun ls(baseLocation: String, locationToLs: String): List<String>? {
+        val path = File(baseLocation, locationToLs)
+        return if (path.isDirectory) {
+            val res = getCorrectListOfFiles(path)
+            res?.sorted()
         } else {
-            clients[model.login] = "/home/"
-            "/home/"
-        }
-    }
-
-    fun ls(userName: String, request: String): List<String>? {
-        val clientLocation = clients[userName]
-        return if (clientLocation != null) {
-            val location = clientLocation + request.trim()
-            val bashResult = executeBashProcessWithResult("ls $location") ?: emptyList()
-            separateListByElements(bashResult)
-        } else null
-    }
-
-    fun cd(userName: String, request: CdRequest): String? {
-        val clientLocation = clients[userName]
-        return if (clientLocation != null) {
-            val res = executeBashProcessWithResult("cd $clientLocation; cd ${request.location}; pwd")
-            if (res != null && res.isNotEmpty()) {
-                if (res[0] == clientLocation) {
-                    "Error"
-                } else {
-                    clients[userName] = res[0] + "/"
-                    res[0] + "/"
-                }
+            val newPath = File(locationToLs)
+            return if (newPath.isDirectory) {
+                val res = getCorrectListOfFiles(newPath)
+                res?.sorted()
             } else {
-                "Error"
+                null
             }
-        } else {
-            null
         }
     }
 
-    fun who(): List<Pair<String, String>> {
-        return clients.entries.map { it.key to it.value }
+    fun cd(baseLocation: String, locationToCd: String): String? {
+        val path = File(baseLocation, locationToCd)
+        return if (path.isDirectory) {
+            path.absolutePath
+        } else {
+            val newPath = File(locationToCd)
+            return if (newPath.isDirectory) {
+                newPath.absolutePath
+            } else {
+                null
+            }
+        }
     }
+
+    fun who(): List<String> = getActiveUsers()
+
 
     fun kill(killRequest: KillRequest) {
-        clients.remove(killRequest.userToKill)
+        killUser(killRequest.userToKill)
     }
 
     fun logout(userName: String) {
-        clients.remove(userName)
+        killUser(userName)
+    }
+
+    private fun getCorrectListOfFiles(dir : File) : List<String>? {
+        val list = dir.listFiles()
+        val res = mutableListOf<String>()
+        if (list != null) {
+            res.addAll(list.toList().map {
+                if (it.isFile) {
+                    "[F]" + it.name
+                } else {
+                    "[D]" + it.name
+
+                }
+            })
+        } else return null
+        return res
     }
 }

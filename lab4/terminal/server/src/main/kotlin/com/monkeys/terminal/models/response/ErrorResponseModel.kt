@@ -5,9 +5,7 @@ import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ErrorResponseModel (
+data class ErrorResponseModel<T> (
     override val status: String = "Error",
-    override val message: OkModel,
-    @Contextual
-    override val code: HttpStatusCode
-) : ResponseModel
+    override val message: T,
+) : ResponseModel<T>

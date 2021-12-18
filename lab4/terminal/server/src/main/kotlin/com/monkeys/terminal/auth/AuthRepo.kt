@@ -1,21 +1,22 @@
 package com.monkeys.terminal.auth
 
 import com.monkeys.terminal.DbConnection
+import com.monkeys.terminal.models.AuthModel
 import com.monkeys.terminal.models.Roles
 
 class AuthRepo {
 
-    fun signIn(login: String, password: String, role: String): Boolean {
+    fun signIn(login: String, password: String): AuthModel? {
         DbConnection().getConnection().use { connection ->
             val statement = connection!!.createStatement()
-            val roleAccept = Roles.values().find { userRole -> role.lowercase() == userRole.name.lowercase() }
-            return if (roleAccept != null) {
-                val resSet =
-                    statement.executeQuery("SELECT * FROM users WHERE (LOGIN='$login' AND PASSWORD='$password' AND ROLE='$role');")
-                resSet.next()
-            } else {
-                false
-            }
+            val resSet =
+                statement.executeQuery("SELECT * FROM users WHERE (LOGIN='$login' AND PASSWORD='$password');")
+            return if (resSet.next()) {
+                val role = resSet.getString("role")
+                AuthModel(login, "", role)
+            } else
+                null
+
         }
     }
 
