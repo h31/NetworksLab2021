@@ -1,13 +1,13 @@
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.application.*
+import io.ktor.auth.*
 import io.ktor.http.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import models.*
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
-import io.ktor.auth.*
-import io.ktor.auth.jwt.*
+import org.ktorm.dsl.*
 
 fun Application.registerRoutes() {
     routing {
@@ -27,19 +27,19 @@ fun Route.routedAuth() {
                     .withClaim("pwdHash", authData.pwdHash)
                     .withSubject("Authentication")
                     .sign(Algorithm.HMAC256("Here is the secret"))
-                call.respond(status = HttpStatusCode.OK, AuthSuccess(jwtToken))
+                return@post call.respond(status = HttpStatusCode.OK, AuthSuccess(jwtToken))
             }
             else {
-                call.respond(status = HttpStatusCode.NotFound, "There is no such username with these login/password.")
+                return@post call.respond(status = HttpStatusCode.NotFound, "There is no such username with these login/password.")
             }
         }
         post("/register") {
             val authData = call.receive<AuthData>()
             if (auth.register(authData.login, authData.pwdHash)) {
-                call.respond(status = HttpStatusCode.Created,"Registration successful. Now you can log in using your credentials at auth/login.")
+                return@post call.respond(status = HttpStatusCode.Created,"Registration successful. Now you can log in using your credentials at auth/login.")
             }
             else {
-                call.respond(status = HttpStatusCode.BadRequest, "Something went wrong. Maybe, this username is already taken?")
+                return@post call.respond(status = HttpStatusCode.BadRequest, "Something went wrong. Maybe, this username is already taken?")
             }
 
         }
@@ -47,45 +47,33 @@ fun Route.routedAuth() {
 }
 
 fun Route.routedAPI() {
-    val conn = DB.connect()!!
-
     authenticate("auth-jws") {
         route("/tests") {
             get {
-                val resSet = conn
-                    .preparedStatement("select * from testapp.tests;")
-                    .executeQuery()
                 val tests = mutableListOf<Test>()
-                while (resSet.next()) {
-                    val id = resSet.getInt(1)
-                    val name = resSet.getString(2)
-                    val desc = resSet.getString(3)
-                    tests.add(Test(id, name, desc))
+                for (entry in connect().from(TestTable).select()) {
+                    tests.add(getTestFromEntry(entry))
                 }
-                call.respond(status = HttpStatusCode.OK, TestsList(tests))
+                return@get call.respond(status = HttpStatusCode.OK, TestsList(tests))
             }
             get("{id}") {
-                val reqIdStr = call.parameters["id"] ?: return@get call.respondText(
+                val reqId = call.parameters["id"]?.toInt() ?: return@get call.respondText(
                     "Missing or malformed id",
                     status = HttpStatusCode.BadRequest
                 )
-                val reqId = reqIdStr.toInt()
-                val resSet = conn
-                    .preparedStatement("select * from testapp.tests where id='$reqId';")
-                    .executeQuery()
 
-                val tests = mutableListOf<Test>()
-                while (resSet.next()) {
-                    val id = resSet.getInt(1)
-                    val name = resSet.getString(2)
-                    val desc = resSet.getString(3)
-                    tests.add(Test(id, name, desc))
+                val query = connect()
+                    .from(TestTable)
+                    .select()
+                    .where { (TestTable.id eq reqId) }
+
+                if (query.totalRecords == 0) {
+                    return@get call.respondText("No test with id: $reqId", status = HttpStatusCode.NotFound)
                 }
-                val test = tests.find { it.id == reqId } ?: return@get call.respondText(
-                    "No test with id: $reqId",
-                    status = HttpStatusCode.NotFound
-                )
-                call.respond(test)
+                //there will be ONLY ONE entry
+                for (entry in query) {
+                    return@get call.respond(getTestFromEntry(entry))
+                }
             }
             post("/sendAnswers"){
                 //getting the user answers
@@ -94,63 +82,57 @@ fun Route.routedAPI() {
                 //getting the correct answers and their values
                 val correctAnswers = mutableListOf<Int>()
                 val values = mutableListOf<Int>()
-                val questionsSet = conn
-                    .preparedStatement("select * from testapp.questions where testId='${answers.testId}' order by id;")
-                    .executeQuery()
-                while (questionsSet.next()) {
-                    correctAnswers.add(questionsSet.getInt(9))
-                    values.add(questionsSet.getInt(3))
-                }
+                connect()
+                    .from(TestTable)
+                    .select()
+                    .where { QuestionTable.testId eq answers.testId }
+                    .orderBy(QuestionTable.id.asc())
+                    .forEach {
+                        correctAnswers.add(it.getInt("answer"))
+                        values.add(it.getInt("value"))
+                    }
+
 
                 //check if incoming answers are ok
                 if (correctAnswers.size != answers.answers.size) {
-                    call.respondText("Incorrect amount of answers", status = HttpStatusCode.BadRequest)
+                    return@post call.respondText("Incorrect amount of answers", status = HttpStatusCode.BadRequest)
                 }
-                else {
-                    //comparing and calculating the sum of values
-                    var resultSum = 0
-                    for (i in 0 until answers.answers.size) {
-                        if (correctAnswers[i] == answers.answers[i]) {
-                            resultSum += values[i]
-                        }
+                //comparing and calculating the sum of values
+                var resultSum = 0
+                for (i in 0 until answers.answers.size) {
+                    if (correctAnswers[i] == answers.answers[i]) {
+                        resultSum += values[i]
                     }
-
-                    //updating the user stats
-                    val login = answers.username
-                    conn
-                        .preparedStatement("update testapp.users set lastTestId='${answers.testId}', lastResult='$resultSum' where login='$login';")
-                        .execute()
-                    call.respond(status = HttpStatusCode.OK, AnswersResult(resultSum))
                 }
+
+                //updating the user stats
+                val login = answers.username
+                connect()
+                    .update(UserTable) {
+                        set(it.lastTestId, answers.testId)
+                        set(it.lastResult, resultSum)
+                        where { it.login eq login }
+                    }
+                return@post call.respond(status = HttpStatusCode.OK, AnswersResult(resultSum))
             }
         }
 
         route("/questions") {
             get("{testId}") {
-                val testIdInStr = call.parameters["testId"] ?: return@get call.respondText(
+                val testIdIn = call.parameters["testId"]?.toInt() ?: return@get call.respondText(
                     "Missing or malformed id",
                     status = HttpStatusCode.BadRequest
                 )
-                val testIdIn = testIdInStr.toInt()
-                val resSet = conn
-                    .preparedStatement("select * from testapp.questions where testId='$testIdIn' order by id;")
-                    .executeQuery()
+                val query = connect()
+                    .from(QuestionTable)
+                    .select()
+                    .where { QuestionTable.testId eq testIdIn }
+                    .orderBy(QuestionTable.id.asc())
                 val questions = mutableListOf<Question>()
-                while (resSet.next()) {
-                    val id = resSet.getInt(1)
-                    val testId = resSet.getInt(2)
-                    val value = resSet.getInt(3)
-                    val questionText = resSet.getString(4)
-                    val var1 = resSet.getString(5)
-                    val var2 = resSet.getString(6)
-                    val var3 = resSet.getString(7)
-                    val var4 = resSet.getString(8)
-                    val answer = resSet.getInt(9)
-                    val question = Question(id, testId, value, questionText, var1, var2, var3, var4, answer)
-                    questions.add(question)
+                for (entry in query) {
+                    questions.add(getQuestionFromEntry(entry))
                 }
-                val questionsList = QuestionsList(questions)
-                call.respond(status = HttpStatusCode.OK, questionsList)
+                return@get call.respond(status = HttpStatusCode.OK, QuestionsList(questions))
             }
         }
 
@@ -160,23 +142,19 @@ fun Route.routedAPI() {
                     "Missing or malformed login",
                     status = HttpStatusCode.BadRequest
                 )
-                val resSet = conn
-                    .preparedStatement("select * from testapp.users where login='$reqLogin';")
-                    .executeQuery()
 
-                val users = mutableListOf<User>()
-                while (resSet.next()) {
-                    val id = resSet.getInt(1)
-                    val login = resSet.getString(2)
-                    val lastTestId = resSet.getInt(4)
-                    val lastResult = resSet.getInt(5)
-                    users.add(User(id, login, lastTestId, lastResult))
+                val query = connect()
+                    .from(UserTable)
+                    .select()
+                    .where { UserTable.login eq reqLogin }
+
+                if (query.totalRecords == 0) {
+                    return@get call.respondText("No user with login: $reqLogin", status = HttpStatusCode.NotFound)
                 }
-                val user = users.find { it.login == reqLogin } ?: return@get call.respondText(
-                    "No user with login: $reqLogin",
-                    status = HttpStatusCode.NotFound
-                )
-                call.respond(status = HttpStatusCode.OK, user)
+                //there will be ONLY ONE entry
+                for (entry in query) {
+                    return@get call.respond(getUserFromEntry(entry))
+                }
 
             }
         }

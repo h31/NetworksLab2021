@@ -4,6 +4,7 @@ plugins {
     kotlin("jvm") version "1.5.31"
     kotlin("plugin.serialization") version "1.6.10"
     application
+
 }
 
 group = "me.alexey"
@@ -16,6 +17,7 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     testImplementation(kotlin("test"))
+    implementation("org.ktorm:ktorm-core:3.3.0")
     implementation("io.ktor:ktor-server-core:1.6.7")
     implementation("io.ktor:ktor-server-netty:1.6.7")
     implementation("ch.qos.logback:logback-classic:1.2.5")
@@ -24,7 +26,10 @@ dependencies {
     implementation("io.ktor:ktor-serialization:1.6.7")
     testImplementation("io.ktor:ktor-server-test-host:1.6.7")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
+
 }
+
+
 
 tasks.test {
     useJUnitPlatform()

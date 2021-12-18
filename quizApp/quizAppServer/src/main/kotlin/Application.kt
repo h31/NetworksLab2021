@@ -20,6 +20,7 @@ fun Application.module() {
             validate { jwtCredential ->
                 val login = jwtCredential.payload.getClaim("login").asString()
                 val pwdHash = jwtCredential.payload.getClaim("pwdHash").asString()
+
                 AuthData(login, pwdHash)
             }
         }
