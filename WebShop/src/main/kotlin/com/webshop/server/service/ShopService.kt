@@ -2,6 +2,7 @@ package com.webshop.server.service
 
 import com.webshop.server.model.GoodsModel
 import com.webshop.server.repository.ShopRepository
+import com.webshop.server.util.REPO_NOT_FOUND
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -12,12 +13,12 @@ class ShopService {
     private val repository: ShopRepository? = null
 
     fun getAllGoods(): List<GoodsModel> {
-        if (repository == null) throw ClassNotFoundException("Repository was not found")
+        requireNotNull(repository) { REPO_NOT_FOUND }
         return repository.findAll()
     }
 
     fun buyGoods(id: Int, count: Int): Boolean {
-        if (null == repository) throw ClassNotFoundException("Repository was not found")
+        requireNotNull(repository) { REPO_NOT_FOUND }
         return if (repository.findById(id).get().count!! - count >= 0) {
             repository.buyGoods(id, count)
             true
@@ -25,7 +26,7 @@ class ShopService {
     }
 
     fun addGoods(goodsModel: GoodsModel) {
-        if (repository == null) throw ClassNotFoundException("Repository was not found")
+        requireNotNull(repository) { REPO_NOT_FOUND }
         repository.save(goodsModel)
     }
 }

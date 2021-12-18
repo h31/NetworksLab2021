@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
 
 @Repository
-interface ShopRepository: JpaRepository<GoodsModel, Int> {
+interface ShopRepository : JpaRepository<GoodsModel, Int> {
 
     @Modifying
     @Transactional

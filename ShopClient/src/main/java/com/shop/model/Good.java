@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.jetbrains.annotations.Nullable;
 
 @Data
 @Builder
@@ -12,7 +11,6 @@ import org.jetbrains.annotations.Nullable;
 @AllArgsConstructor
 public class Good {
 
-    @Nullable
     private int id;
     private String name;
     private int count;

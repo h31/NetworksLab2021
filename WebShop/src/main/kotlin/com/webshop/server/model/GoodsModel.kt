@@ -11,7 +11,8 @@ data class GoodsModel(
     @Id
     val id: Int? = null,
     val name: String? = null,
-    val count: Int? = null) {
+    val count: Int? = null
+) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -60,8 +60,8 @@ public class ConsoleInterface implements Runnable{
                 }
                 if(command.contains("add")) {
                     String[] commandParts = command.split(" ");
-                    Integer id = Integer.parseInt(commandParts[1]);
-                    Integer count = Integer.parseInt(commandParts[2]);
+                    int id = Integer.parseInt(commandParts[1]);
+                    int count = Integer.parseInt(commandParts[2]);
                     try {
                         if(restService.addGood(Good.builder()
                                 .id(id)
@@ -85,7 +85,7 @@ public class ConsoleInterface implements Runnable{
             goods = restService.getAllGoods();
             return true;
         } catch (IOException e) {
-            System.out.println(ANSI_RED + "Connection is not established\nMaybe wrong credentials???" + ANSI_RESET);;
+            System.out.println(ANSI_RED + "Connection is not established\nMaybe wrong credentials???" + ANSI_RESET);
         }
         return false;
     }
