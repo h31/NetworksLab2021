@@ -14,7 +14,12 @@ function nearestAfter(pattern, str, startIdx) {
   return idx;
 }
 
+function between(patterns, str, startIdx, size) {
+  const start = nearestBefore(patterns[0], str, startIdx);
+  const end = nearestAfter(patterns[1], str, start + size);
+  return str.substring(start, end);
+}
+
 module.exports = {
-  nearestBefore,
-  nearestAfter
+  between
 };

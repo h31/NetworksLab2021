@@ -2,7 +2,7 @@ const http = require('http');
 const { DocumentIndex, WordStatistics } = require('../database/models');
 const { detectLang, selectNaturalTools } = require('../ling-utils');
 const { startUsingDb, endUsingDb } = require('../database');
-const { nearestBefore, nearestAfter } = require('./util');
+const { between } = require('./util');
 
 
 const STATUS_CODES = {
@@ -76,15 +76,19 @@ function runServer({ address, port }) {
           const entries = inverseFile.get(word);
 
           entries.forEach(entryOffset => {
-            const start = nearestBefore(/\s/, text, entryOffset);
-            const end = nearestAfter(/\s/, text, start + PREVIEW_SIZE);
-            const previewBlock = text.substring(start, end);
+            const previewBlock = between([/\s/, /\s/], text, entryOffset, PREVIEW_SIZE);
             if (previewBlock.includes(word)) {
               // in case smth went wrong when indexing
               preview.push(previewBlock);
             }
           });
         });
+
+        // in case smth went REALLY wrong when indexing
+        if (!preview.length) {
+          preview.push(between([/\s/, /\s/], text, title.length + 2, PREVIEW_SIZE));
+        }
+
         return { url, title, preview };
       });
 
