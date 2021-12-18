@@ -1,0 +1,124 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  overflow: hidden;
+  background: #cfe7e2;
+}
+
+.container {
+  max-width: 600px;
+  width: 70vw;
+  height: 100vh;
+  margin: auto;
+  display: flex;
+  flex-direction: column;;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.main-block {
+  overflow: auto;
+  width: 100%;
+}
+
+#settings-block {
+  position: absolute;
+  right: 32px;
+  top: 32px;
+}
+
+#settings-inputs {
+  display: block;
+  margin-top: 4px;
+}
+#settings-inputs * {
+  display: block;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+.no-display {
+  display: none;
+}
+
+#res-holder {
+  padding: 12px;
+  width: 100%;
+}
+
+button {
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+input {
+  padding: 4px 8px;
+  outline: none !important;
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+input:focus {
+  border-color: #2e8a72;
+}
+
+.card {
+  background: #ffffff;
+  box-shadow: 0 0 5px 0 rgba(159, 168, 165, 0.6);
+  border-radius: 4px;
+  padding: 12px 16px;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.card button {
+  display: block;
+  background: none;
+  border: none;
+  outline: none !important;
+  color: #49576b;
+}
+
+.card button:hover {
+  color: #3b3f57;
+}
+
+.card:not(:last-child) {
+  margin-bottom: 8px;
+}
+
+.card a {
+  text-decoration: none !important;
+  font-weight: bold;
+  font-size: 1.2rem
+}
+
+.preview-block {
+  color: #777777;
+}
+
+.main-search-wrapper {
+  padding: 12px;
+  display: flex;
+  column-gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.main-search-wrapper input {
+  flex: 1;
+}

@@ -19,20 +19,26 @@ const crawlArgs = yargs(hideBin(process.argv))
     },
     'max-depth': {
       type: 'number',
-      alias: 'd',
+      alias: 'm',
       default: 50,
       desc: 'Maximum depth of hrefs'
     },
-    'max-pages': {
+    'total-pages': {
       type: 'number',
-      alias: 'p',
+      alias: 't',
       desc: 'Maximum total pages to crawl; no limit if not specified'
+    },
+    'deep-first': {
+      type: 'boolean',
+      alias: 'd',
+      desc: 'Perform deep-first search (broad-first by default)',
+      default: false
     }
   })
   .check(argv => {
-    const { maxDepth, entryPoint, maxPages } = argv;
+    const { maxDepth, entryPoint, totalPages } = argv;
     validatePosInt(maxDepth, 'maxDepth')
-    validatePosInt(maxPages, 'maxPages');
+    validatePosInt(totalPages, 'totalPages');
 
     const url = new URL(entryPoint);
     if (!['http:', 'https:'].includes(url.protocol)) {

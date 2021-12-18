@@ -1,14 +1,15 @@
-const { fetch, normalize, resolve, RESPONSE_TYPE } = require('./requests');
+const { normalize } = require('./util');
 const { startUsingDb, endUsingDb } = require('../database');
 const { DocumentIndex, WordStatistics } = require('../database/models');
 const robotsParser = require('robots-txt-parser');
 const DocumentProcessor = require('./document-processor');
 
 
-async function crawl({ entryPoint: rawEntryPoint, maxDepth, maxPages }) {
+async function crawl({ entryPoint: rawEntryPoint, maxDepth, totalPages, deepFirst }) {
   await startUsingDb();
+  console.log('Connected to Database');
 
-  const robots = robotsParser({ userAgent: 'GreenBeaverBot' });
+  const robots = robotsParser({ userAgent: 'GoogleBot' });
 
   const storedDocuments = await DocumentIndex.find({}).exec();
   const storedUrls = storedDocuments.map(doc => doc.url);
@@ -16,13 +17,14 @@ async function crawl({ entryPoint: rawEntryPoint, maxDepth, maxPages }) {
   const storedStatistics = await WordStatistics.find({}).exec();
 
   const documentProcessor = new DocumentProcessor(storedDocuments, storedStatistics);
+  await documentProcessor.launch();
 
   const entryPoint = normalize(rawEntryPoint);
   const toCrawl = [{ href: entryPoint, depth: 0 }];
 
   let idx = 0;
   let exploredPages = 0;
-  while (idx < toCrawl.length && (maxPages == null || exploredPages <= maxPages)) {
+  while (idx < toCrawl.length && (totalPages == null || exploredPages < totalPages)) {
     const { href: currentHref, depth: currentDepth } = toCrawl[idx++];
     let canCrawl = false;
     try {
@@ -37,41 +39,24 @@ async function crawl({ entryPoint: rawEntryPoint, maxDepth, maxPages }) {
     }
     if (currentDepth <= maxDepth) {
       try {
-        const fetchResult = await fetch(currentHref);
+        const hrefs = await documentProcessor.addDocument(currentHref, () => exploredPages++);
 
-        let hrefs = [];
-        console.log(`${currentHref} --> code: ${fetchResult.code}, type: ${fetchResult.type}`);
-        switch (fetchResult.type) {
-          case RESPONSE_TYPE.OK:
-            hrefs = documentProcessor.addDocument(fetchResult.content, currentHref);
-            exploredPages++;
-            break;
-          case RESPONSE_TYPE.REDIRECT:
-            hrefs = [fetchResult.location];
-            break;
+        const uniqueHrefs = Array.from(new Set(hrefs));
+        const unusedHrefs = uniqueHrefs.filter(href => !toCrawl.find(c => c.href === href) && !storedUrls.includes(href));
+
+        const toCrawlUpd = unusedHrefs.map(href => ({ href, depth: currentDepth + 1 }));
+        if (deepFirst) {
+          toCrawl.splice(idx, 0, ...toCrawlUpd);
+        } else {
+          toCrawl.push(...toCrawlUpd);
         }
-
-        const accurateHrefs = hrefs.map(href => {
-          try {
-            return normalize(resolve(currentHref, href))
-          } catch (e) {
-            console.log(`Could not normalize ${href}:`, e);
-            return null;
-          }
-        }).filter(Boolean);
-        const uniqueHrefs = Array.from(new Set(accurateHrefs));
-        const unusedHrefs = uniqueHrefs.filter(
-          href => !toCrawl.find(c => c.href === href) && !storedUrls.includes(href)
-        );
-        toCrawl.splice(idx, 0, ...unusedHrefs.map(href => ({ href, depth: currentDepth + 1 })));
-
       } catch (e) {
         console.log(`Error while fetching ${currentHref}:`, e);
       }
     }
   }
 
-  const { wordStatistics, documents } = documentProcessor.getResult();
+  const { wordStatistics, documents } = await documentProcessor.getResult();
   console.log(`Crawling done, ${exploredPages} pages explored, saving data...`);
   await DocumentIndex.create(documents);
   console.log('Saved documents');

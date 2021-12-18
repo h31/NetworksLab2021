@@ -1,6 +1,6 @@
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
-const runServer = require('./main');
+const runServer = require('./dev-server');
 
 const serverArgs = yargs(hideBin(process.argv)).options({
   address: {
