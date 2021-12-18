@@ -52,8 +52,9 @@ fun Route.routedAPI() {
     authenticate("auth-jws") {
         route("/tests") {
             get {
-                val resSet = conn.createStatement()
-                    .executeQuery("select * from testapp.tests;")
+                val resSet = conn
+                    .preparedStatement("select * from testapp.tests;")
+                    .executeQuery()
                 val tests = mutableListOf<Test>()
                 while (resSet.next()) {
                     val id = resSet.getInt(1)
@@ -69,8 +70,9 @@ fun Route.routedAPI() {
                     status = HttpStatusCode.BadRequest
                 )
                 val reqId = reqIdStr.toInt()
-                val resSet = conn.createStatement()
-                    .executeQuery("select * from testapp.tests where id='$reqId';")
+                val resSet = conn
+                    .preparedStatement("select * from testapp.tests where id='$reqId';")
+                    .executeQuery()
 
                 val tests = mutableListOf<Test>()
                 while (resSet.next()) {
@@ -92,8 +94,9 @@ fun Route.routedAPI() {
                 //getting the correct answers and their values
                 val correctAnswers = mutableListOf<Int>()
                 val values = mutableListOf<Int>()
-                val questionsSet = conn.createStatement()
-                    .executeQuery("select * from testapp.questions where testId='${answers.testId}' order by id;")
+                val questionsSet = conn
+                    .preparedStatement("select * from testapp.questions where testId='${answers.testId}' order by id;")
+                    .executeQuery()
                 while (questionsSet.next()) {
                     correctAnswers.add(questionsSet.getInt(9))
                     values.add(questionsSet.getInt(3))
@@ -114,8 +117,9 @@ fun Route.routedAPI() {
 
                     //updating the user stats
                     val login = answers.username
-                    conn.createStatement()
-                        .execute("update testapp.users set lastTestId='${answers.testId}', lastResult='$resultSum' where login='$login';")
+                    conn
+                        .preparedStatement("update testapp.users set lastTestId='${answers.testId}', lastResult='$resultSum' where login='$login';")
+                        .execute()
                     call.respond(status = HttpStatusCode.OK, AnswersResult(resultSum))
                 }
             }
@@ -128,8 +132,9 @@ fun Route.routedAPI() {
                     status = HttpStatusCode.BadRequest
                 )
                 val testIdIn = testIdInStr.toInt()
-                val resSet = conn.createStatement()
-                    .executeQuery("select * from testapp.questions where testId='$testIdIn' order by id;")
+                val resSet = conn
+                    .preparedStatement("select * from testapp.questions where testId='$testIdIn' order by id;")
+                    .executeQuery()
                 val questions = mutableListOf<Question>()
                 while (resSet.next()) {
                     val id = resSet.getInt(1)
@@ -155,8 +160,9 @@ fun Route.routedAPI() {
                     "Missing or malformed login",
                     status = HttpStatusCode.BadRequest
                 )
-                val resSet = conn.createStatement()
-                    .executeQuery("select * from testapp.users where login='$reqLogin';")
+                val resSet = conn
+                    .preparedStatement("select * from testapp.users where login='$reqLogin';")
+                    .executeQuery()
 
                 val users = mutableListOf<User>()
                 while (resSet.next()) {
