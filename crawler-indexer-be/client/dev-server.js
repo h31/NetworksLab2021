@@ -13,13 +13,13 @@ function runServer({ address, port }) {
     const { url } = request;
 
     try {
-      const fileName = url === '/' ? './static/index.html' : `./static${url}`;
+      const fileName = path.join(__dirname, 'static', url === '/' ? 'index.html' : url);
 
       const ext = path.extname(fileName);
       const fileContent = await fs.promises.readFile(fileName);
       response.writeHead(200, { 'Content-Type': TYPE_BY_EXT[ext] });
       response.end(fileContent);
-    } catch {
+    } catch (e) {
       response.writeHead(404);
       response.end('<h1>404 not found</h1>')
     }

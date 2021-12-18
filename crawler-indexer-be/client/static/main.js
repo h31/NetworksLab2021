@@ -26,6 +26,7 @@ function makeCard(res) {
 
   if (res.preview.length) {
     const openPreviewBtn = document.createElement('button');
+    openPreviewBtn.classList.add('button-text');
     openPreviewBtn.textContent = 'Preview';
     openPreviewBtn.onclick = () => {
       card.querySelectorAll('.preview-block').forEach(el => el.classList.toggle('no-display'));

@@ -19,6 +19,7 @@ const PREVIEW_SIZE = 45;
 function runServer({ address, port }) {
   const server = http.createServer(async (request, response) => {
     const { method, url } = request;
+    console.log(`${method} ${url}`);
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
     response.setHeader('Access-Control-Max-Age', 2592000); // 30 days

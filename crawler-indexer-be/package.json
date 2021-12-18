@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "runserver": "node server/index.js"
+    "runserver": "node server/index.js",
+    "runserver:dev": "nodemon server/index.js",
+    "servestatic:dev": "nodemon client/index.js -p 3000"
   },
   "keywords": [],
   "author": "GreenBeaver",
