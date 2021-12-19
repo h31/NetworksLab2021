@@ -90,6 +90,6 @@ ERROR 445 - insufficient number of coins
     - Code: 200
       - JSON:{"number": Int, "users": list<String>,"types": list<Int>,"amounts": list<Int>, "result": list<String>}
 
-## About Sessios
+## About Sessions
 Session in Java: https://docs.oracle.com/javaee/6/api/javax/servlet/http/HttpSession.html  
 if you use only requests, then you need to specify the current cookies in the request
