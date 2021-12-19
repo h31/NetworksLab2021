@@ -46,7 +46,7 @@ def redirect():
 
 
 @app.route('/login', methods=['GET', 'POST'])
-def loginProcess():
+def login():
     match flask.request.method:
         case 'GET':
             if flask_login.current_user.is_authenticated:

@@ -83,7 +83,7 @@ ERROR 445 - insufficient number of coins
   - Ответы:
     - Code: 200
       - html/text
-- GET /result/all
+- GET /result/json
   - Ответы:
     - Code: 204
       - No results yet
