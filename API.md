@@ -17,7 +17,7 @@ ERROR 445 - insufficient number of coins
       - Incorrect login or password
     - Code: 435:
       - The croupier already exists
-    - Code: 302:
+    - Code: 302 | 200:
       - Login successful
 - GET /login
   - Ответы:
