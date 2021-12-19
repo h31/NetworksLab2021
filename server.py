@@ -35,7 +35,7 @@ def request_loader(request):
     user_login = request.form.get('login')
     if user_login not in logged_in_users:
         return
-    return logged_in_users[loginProcess]
+    return logged_in_users[user_login]
 
 
 @app.route('/')
