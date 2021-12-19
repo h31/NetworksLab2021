@@ -91,7 +91,7 @@ def get_info():
 
 
 addr = input("Server (example: http://192.168.0.100:5000/): ")
-addr = "http://192.168.0.101:5000/" # TMP
+# addr = "http://192.168.0.101:5000/"
 login = input("Login: ")
 password = input("Password: ")
 match input("Login as croupier? [yes/no]: "):
