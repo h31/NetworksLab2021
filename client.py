@@ -6,8 +6,8 @@ import datetime as dt
 
 
 HEADER = 10
-IP = 'localhost'
-#IP = '185.183.98.98'
+#IP = 'localhost'
+IP = '185.183.98.98'
 PORT = 6121
 ENCODING = 'utf-8'
 FILE_NAME_TEMPLATE = r'^[a-zA-Z0-9_.+-]+.\w*%$'
