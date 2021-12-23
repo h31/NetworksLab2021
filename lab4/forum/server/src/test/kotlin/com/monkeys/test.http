@@ -26,7 +26,7 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJBdXRoZW50a
 
 ### active-users
 
-GET http://0.0.0.0:8080/forum/request/active-users
+POST http://0.0.0.0:8080/forum/request/active-users
 Content-Type: application/json
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsInBzdyI6IjEyMzQiLCJpc3MiOiJ5YW5hIiwibG9naW4iOiJ5YW5hIn0.hx0WNc-_Sx7Eu2CijBhni-KMEaMVQ9fntS_UHzNxx74
 
@@ -54,13 +54,9 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJBdXRoZW50a
 
 ###
 
-GET http://0.0.0.0:8080/forum/request/message-list
+GET http://0.0.0.0:8080/forum/request/message-list/qerv
 Content-Type: application/json
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsInBzdyI6IjEyMzQiLCJpc3MiOiJ5YW5hIiwibG9naW4iOiJ5YW5hIn0.hx0WNc-_Sx7Eu2CijBhni-KMEaMVQ9fntS_UHzNxx74
-
-{
-  "subTheme": "qerv"
-}
 
 ###
 

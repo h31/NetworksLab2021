@@ -27,7 +27,7 @@ fun Route.api(controller: UserController) {
                     }
                 }
 
-                get("/active-users") {
+                post("/active-users") {
                     val principal = call.authentication.principal<AuthModel>()
                     val res = controller.getActiveUsers(principal!!.login)
                     if (res.second == "OK") {
@@ -40,7 +40,7 @@ fun Route.api(controller: UserController) {
                     }
                 }
 
-                get("/message") {
+                post("/message") {
                     val principal = call.authentication.principal<AuthModel>()
                     val msg = call.receive<MessageModel>()
                     val res = controller.putNewMessage(principal!!.login, msg)
@@ -54,10 +54,12 @@ fun Route.api(controller: UserController) {
                     }
                 }
 
-                get("/message-list") {
+                get("/message-list/{sub-theme}") {
                     val principal = call.authentication.principal<AuthModel>()
-                    val subTheme = call.receive<ThemeModel>()
-                    val res = controller.getMessages(subTheme, principal!!.login)
+                    val subTheme = call.parameters["sub-theme"] ?:
+                        call.respond(status = HttpStatusCode.BadRequest,
+                            message = "No parameters")
+                    val res = controller.getMessages(subTheme.toString(), principal!!.login)
                     if (res.second == "OK") {
                         call.respond(
                             status = HttpStatusCode.OK,

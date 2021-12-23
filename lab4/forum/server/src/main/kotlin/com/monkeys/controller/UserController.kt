@@ -2,10 +2,8 @@ package com.monkeys.controller
 
 import com.monkeys.DBConnection
 import com.monkeys.getCurrTimestamp
-import com.monkeys.models.AuthModel
 import com.monkeys.models.Message
 import com.monkeys.models.MessageModel
-import com.monkeys.models.ThemeModel
 import java.sql.SQLException
 import java.sql.Statement
 import java.util.*
@@ -99,16 +97,16 @@ class UserController {
         }
     }
 
-    fun getMessages(msg: ThemeModel, name: String): Pair<List<Message>,String> {
+    fun getMessages(msg: String, name: String): Pair<List<Message>,String> {
         DBConnection().getConnection().use { connection ->
             return try {
                 val res = ArrayList<Message>()
                 val statement = connection!!.createStatement()
                 updateInactiveUsers(statement)
                 if (checkActive(statement, name)) {
-                    if (checkIsAThemeExists(statement, msg.subTheme)) {
+                    if (checkIsAThemeExists(statement, msg)) {
                         val set = statement.executeQuery(
-                            "SELECT time, user_name, text FROM message WHERE sub_theme = '${msg.subTheme}';"
+                            "SELECT time, user_name, text FROM message WHERE sub_theme = '${msg}';"
                         )
                         while (set.next()) {
                             res.add(
