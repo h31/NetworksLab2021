@@ -23,7 +23,7 @@ initialValue = 1000
 adminPassword = '12345'
 
 
-@route('/getValue', method='GET')
+@route('/value', method='GET')
 def getValue():
     id = request.auth[0]
     password = request.auth[1]
@@ -38,7 +38,7 @@ def getValue():
         return 'Аккаунт с таким ID не существует или был удалён'
 
 
-@route('/createAccount', method='POST')
+@route('/client', method='POST')
 def createAccount():
     accountInfo = json.loads(request.body.getvalue().decode('utf-8'))
     name = accountInfo['name']
@@ -56,7 +56,13 @@ def createAccount():
         'value': initialValue
     }
     accountsPublic[id] = name
-    history.append('Аккаунт ' + id + ' создан')
+    historyObj = {
+        'code': 1,
+        'initiator': None,
+        'objectOfOperation': id,
+        'value': initialValue
+    }
+    history.append(historyObj)
     return id
 
 
@@ -82,7 +88,13 @@ def sendMoney():
             if accounts[sender]['value'] >= sum:
                 accounts[sender]['value'] = accounts[sender]['value'] - sum
                 accounts[receiver]['value'] = accounts[receiver]['value'] + sum
-                history.append('Перевод от ' + sender + ' для ' + receiver + ' на ' + str(sum))
+                historyObj = {
+                    'code': 3,
+                    'initiator': sender,
+                    'objectOfOperation': receiver,
+                    'value': sum
+                }
+                history.append(historyObj)
             else:
                 response.status = 400
                 return 'На вашем счете недостаточно средств'
@@ -95,7 +107,7 @@ def sendMoney():
         return 'Невозможно перевести деньги, проверьте реквизиты'
 
 
-@route('/deleteAccount', method='DELETE')
+@route('/client', method='DELETE')
 def deleteAccount():
     id = request.auth[0]
     password = request.auth[1]
@@ -103,7 +115,13 @@ def deleteAccount():
         if password == accounts[id]['password']:
             del accounts[id]
             del accountsPublic[id]
-            history.append('Аккаунт ' + id + ' удалён владельцем')
+            historyObj = {
+                'code': 2,
+                'initiator': id,
+                'objectOfOperation': id,
+                'value': None
+            }
+            history.append(historyObj)
         else:
             response.status = 401
             return 'Неверный пароль'
@@ -112,18 +130,21 @@ def deleteAccount():
         return 'Аккаунт с таким ID не существует или был удалён'
 
 
-@route('/getClientList', method='GET')
+@route('/client/list', method='GET')
 def getClientList():
     return json.dumps(accountsPublic)
 
 
-@route('/addMoney', method='POST')
+@route('/setMoney', method='POST')
 def setMoney():
     accountInfo = json.loads(request.body.getvalue().decode('utf-8'))
+    if not accountInfo['id'] or not accountInfo['sum']:
+        response.status = 400
+        return 'Переданы не все аргументы'
     id = accountInfo['id']
     try:
         sum = int(accountInfo['sum'])
-    except:
+    except ValueError:
         response.status = 400
         return 'Сумма должна быть числом'
     login = request.auth[0]
@@ -131,7 +152,13 @@ def setMoney():
     if id in accounts.keys():
         if password == adminPassword or login != 'ADMIN':
             accounts[id]['value'] = accounts[id]['value'] + sum
-            history.append('Аккаунту ' + id + ' изменён баланс администратором на ' + str(sum))
+            historyObj = {
+                'code': 3,
+                'initiator': 'ADMIN',
+                'objectOfOperation': id,
+                'value': sum
+            }
+            history.append(historyObj)
         else:
             response.status = 401
             return 'Неверный пароль'
@@ -140,7 +167,7 @@ def setMoney():
         return 'Аккаунт с таким ID не существует или был удалён'
 
 
-@route('/getHistory', method='GET')
+@route('/history', method='GET')
 def getHistory():
     login = request.auth[0]
     password = request.auth[1]

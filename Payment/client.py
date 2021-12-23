@@ -1,10 +1,9 @@
 import json
-
 import requests
+import sys
 
-HOST = 'http://localhost:10000'
+HOST = 'http://localhost:10000' if len(sys.argv) == 1 else sys.argv[1]
 myId = None
-
 def main():
     global myId
     help()
@@ -57,7 +56,7 @@ def createAccount():
         'name': name,
         'password': password
     }
-    response = requests.post(HOST + '/createAccount', data=json.dumps(data))
+    response = requests.post(HOST + '/client', data=json.dumps(data))
     if response.status_code == 200:
         myId = response.text
         print('Аккаунт успешно создан, ваш ID: ' + myId)
@@ -68,7 +67,7 @@ def deleteAccount():
     global myId
     if myId:
         password = input('Введите пароль от аккаунта:')
-        response = requests.delete(HOST + '/deleteAccount', auth=(myId, password))
+        response = requests.delete(HOST + '/client', auth=(myId, password))
         if response.status_code == 200:
             myId = None
             print('Аккаунт успешно удалён')
@@ -81,7 +80,7 @@ def deleteAccount():
 def getValue():
     if myId:
         password = input('Введите пароль от аккаунта:')
-        response = requests.get(HOST + '/getValue', auth=(myId, password))
+        response = requests.get(HOST + '/value', auth=(myId, password))
         if response.status_code == 200:
             print('Баланс вашего аккаунта: ' + response.text)
         else:
@@ -90,7 +89,7 @@ def getValue():
         print('Создайте аккаунт!')
 
 def getClientList():
-    response = requests.get(HOST + '/getClientList')
+    response = requests.get(HOST + '/client/list')
     if response.status_code == 200:
         clientList = json.loads(response.text)
         for el in clientList.keys():
@@ -131,7 +130,7 @@ def setMoney():
         'id': id,
         'sum': sum
     }
-    response = requests.post(HOST + '/addMoney', data=json.dumps(data), auth=('ADMIN', password))
+    response = requests.post(HOST + '/setMoney', data=json.dumps(data), auth=('ADMIN', password))
     if response.status_code == 200:
         print('Операция успешно проведена')
     else:
@@ -139,11 +138,22 @@ def setMoney():
 
 def getHistory():
     password = input('Введите пароль администратора:')
-    response = requests.get(HOST + '/getHistory', auth=('ADMIN', password))
+    response = requests.get(HOST + '/history', auth=('ADMIN', password))
     if response.status_code == 200:
         history = json.loads(response.text)
         for el in history:
-            print(el)
+            code = el['code']
+            initiator = el['initiator']
+            objectOfOperation = el['objectOfOperation']
+            value = el['value']
+            if code == 1:
+                print('Создан аккаунт ' + objectOfOperation + '. Стартовый баланс: ' + str(value))
+            elif code == 2:
+                print('аккаунт ' + objectOfOperation + ' удалён')
+            elif code == 3:
+                print('Перевод от ' + initiator + ' для ' + objectOfOperation + ' на ' + str(value))
+            else:
+                print('Неизвестная операция')
     else:
         print(response.text)
 
