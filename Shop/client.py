@@ -50,7 +50,7 @@ def getHelp():
 
 def getProductList(needPrint=False):
     global productList
-    response = requests.get(HOST + '/getProductList')
+    response = requests.get(HOST + '/product/list')
     list = json.loads(response.text)
     if response.status_code == 200:
         productList = {}
@@ -75,7 +75,7 @@ def addProduct():
     data['price'] = price
     count = input('Введите количество товара:')
     data['count'] = count
-    response = requests.post(HOST + '/addProduct', data=json.dumps(data), auth=('ADMIN', password))
+    response = requests.post(HOST + '/product', data=json.dumps(data), auth=('ADMIN', password))
     if response.status_code == 200:
         print("Продукт успешно добавлен")
     else:
@@ -87,7 +87,7 @@ def deleteProduct():
     password = input('Введите пароль администратора:')
     id = input('Введите идентификатор продукта:')
     data['id'] = id
-    response = requests.delete(HOST + '/deleteProduct', data=json.dumps(data), auth=('ADMIN', password))
+    response = requests.delete(HOST + '/product', data=json.dumps(data), auth=('ADMIN', password))
     if response.status_code == 200:
         print("Продукт успешно удалён")
     else:

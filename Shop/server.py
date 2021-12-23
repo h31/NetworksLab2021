@@ -1,4 +1,5 @@
 import json
+import copy
 
 from bottle import route, run, request, response
 
@@ -26,20 +27,23 @@ productList = {
 }
 
 
-@route('/addProduct', method='POST')
+@route('/product', method='POST')
 def addProduct():
     posted = json.loads(request.body.getvalue().decode('utf-8'))
     try:
         password = request.auth[1]
+        if not posted['productName'] or not posted['price'] or not posted['count']:
+            response.status = 400
+            return 'Переданы не все аргументы'
         productName = posted['productName']
         try:
             price = int(posted['price'])
             count = int(posted['count'])
-        except:
+        except ValueError:
             response.status = 400
-            return 'Невозможно добавить продукт с указанными аргументами'
+            return 'Цена и число товара должны бить числом'
         if password == adminPassword:
-            if len(productName) == 0 or price < 0 or count < 0:
+            if price < 0 or count < 0:
                 response.status = 400
                 return 'Невозможно добавить продукт с указанными аргументами'
             else:
@@ -57,7 +61,7 @@ def addProduct():
         return 'Некорректные данные'
 
 
-@route('/deleteProduct', method='DELETE')
+@route('/product', method='DELETE')
 def deleteProduct():
     deleted = json.loads(request.body.getvalue().decode('utf-8'))
     password = request.auth[1]
@@ -73,7 +77,7 @@ def deleteProduct():
         return 'Неверный пароль'
 
 
-@route('/getProductList', method='GET')
+@route('/product/list', method='GET')
 def getProductList():
     response.status = 200
     return json.dumps(productList)
@@ -82,11 +86,11 @@ def getProductList():
 @route('/checkout', method='POST')
 def buy():
     global productList
-    result = json.loads(request.body.getvalue().decode('utf-8'))
+    data = json.loads(request.body.getvalue().decode('utf-8'))
     sum = 0
-    productListCopy = productList
-    for key in result:
-        item = result[key]
+    productListCopy = copy.deepcopy(productList)
+    for key in data:
+        item = data[key]
         count = item['count']
         product = item['product']
         if key in productList.keys():
@@ -102,7 +106,7 @@ def buy():
             response.status = 400
             answer = 'Товар с id = ' + key + ' не существует'
             return answer
-    productList = productListCopy
+    productList = copy.deepcopy(productListCopy)
     return str(sum)
 
 
