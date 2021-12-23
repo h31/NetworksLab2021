@@ -4,8 +4,8 @@ POST http://0.0.0.0:8080/auth/sign-in
 Content-Type: application/json
 
 {
-  "login": "yana8",
-  "psw": "123456"
+  "login": "yana",
+  "psw": "1234"
 }
 
 ### register
@@ -14,7 +14,7 @@ POST http://0.0.0.0:8080/auth/sign-up
 Content-Type: application/json
 
 {
-  "login": "yana4",
+  "login": "yana",
   "psw": "123456"
 }
 
