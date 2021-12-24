@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.monkeys.models.AuthModel
 import com.monkeys.repo.AuthRepo
+import java.sql.SQLException
 
 class AuthController (private val repo: AuthRepo) {
 
@@ -17,15 +18,13 @@ class AuthController (private val repo: AuthRepo) {
     }
 
     //register
-    fun signUp(model: AuthModel) : String {
-        val res = repo.signUp(model.login, model.psw)
-        return if (res.first)
+    fun signUp(model: AuthModel): String {
+        return try {
+            repo.signUp(model.login, model.psw)
             "Success signup"
-        else
-            if (res.second == "23505")
-                "User ${model.login} already exists. Try to register again"
-            else
-                "Something went wrong. Try to register again"
+        } catch (e: SQLException) {
+            e.message.toString()
+        }
     }
 
     private fun getGenerateToken(user: AuthModel): String {

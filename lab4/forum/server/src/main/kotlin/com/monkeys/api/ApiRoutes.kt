@@ -15,71 +15,72 @@ fun Route.api(controller: UserController) {
             route("/request") {
 
                 get("/hierarchy") {
-                    val principal = call.authentication.principal<AuthModel>()
-                    val res = controller.getHierarchy(principal!!.login)
-                    if (res.second == "OK") {
+                    try {
+                        val principal = call.authentication.principal<AuthModel>()
+                        val res = controller.getHierarchy(principal!!.login)
                         call.respond(
                             status = HttpStatusCode.OK,
-                            message = OkHierarchy(res.first)
+                            message = OkHierarchy(res)
                         )
-                    } else {
-                        sendErrors(call, res.second)
+                    } catch (e: Exception) {
+                        sendErrors(call, e.message!!)
                     }
                 }
 
                 post("/active-users") {
-                    val principal = call.authentication.principal<AuthModel>()
-                    val res = controller.getActiveUsers(principal!!.login)
-                    if (res.second == "OK") {
+                    try {
+                        val principal = call.authentication.principal<AuthModel>()
+                        val res = controller.getActiveUsers(principal!!.login)
                         call.respond(
                             status = HttpStatusCode.OK,
-                            message = OKActivityUsers(res.first)
+                            message = OKActivityUsers(res)
                         )
-                    } else {
-                        sendErrors(call, res.second)
+                    } catch (e: Exception) {
+                        sendErrors(call, e.message!!)
                     }
                 }
 
                 post("/message") {
-                    val principal = call.authentication.principal<AuthModel>()
-                    val msg = call.receive<MessageModel>()
-                    val res = controller.putNewMessage(principal!!.login, msg)
-                    if (res.first) {
+                    try {
+                        val principal = call.authentication.principal<AuthModel>()
+                        val msg = call.receive<MessageModel>()
+                        controller.putNewMessage(principal!!.login, msg)
                         call.respond(
                             status = HttpStatusCode.OK,
                             message = "Success"
                         )
-                    } else {
-                        sendErrors(call, res.second)
+                    } catch (e: Exception) {
+                        sendErrors(call, e.message!!)
                     }
                 }
 
                 get("/message-list/{sub-theme}") {
-                    val principal = call.authentication.principal<AuthModel>()
-                    val subTheme = call.parameters["sub-theme"] ?:
-                        call.respond(status = HttpStatusCode.BadRequest,
-                            message = "No parameters")
-                    val res = controller.getMessages(subTheme.toString(), principal!!.login)
-                    if (res.second == "OK") {
+                    try {
+                        val principal = call.authentication.principal<AuthModel>()
+                        val subTheme = call.parameters["sub-theme"] ?: call.respond(
+                            status = HttpStatusCode.BadRequest,
+                            message = "No parameters"
+                        )
+                        val res = controller.getMessages(subTheme.toString(), principal!!.login)
                         call.respond(
                             status = HttpStatusCode.OK,
-                            message = OkListOfMessage(res.first)
+                            message = OkListOfMessage(res)
                         )
-                    } else {
-                        sendErrors(call, res.second)
+                    } catch (e: Exception) {
+                        sendErrors(call, e.message!!)
                     }
                 }
 
                 delete("/logout") {
-                    val principal = call.authentication.principal<AuthModel>()
-                    val res = controller.logout(principal!!.login)
-                    if (res.first) {
+                    try {
+                        val principal = call.authentication.principal<AuthModel>()
+                        controller.logout(principal!!.login)
                         call.respond(
                             status = HttpStatusCode.OK,
                             message = "You have successfully logged out"
                         )
-                    } else {
-                        sendErrors(call, res.second)
+                    } catch (e: Exception) {
+                        sendErrors(call, e.message!!)
                     }
                 }
             }

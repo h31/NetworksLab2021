@@ -1,22 +1,12 @@
 package com.monkeys
 
-import com.monkeys.UserTable.primaryKey
 import org.ktorm.database.Database
 import org.ktorm.schema.*
 import java.sql.SQLException
-import java.sql.Timestamp
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 const val user = "postgres"
 const val password = "123456"
 const val url = "jdbc:postgresql://localhost:5432/forum"
-
-fun getCurrTimestamp(): Timestamp = Timestamp.valueOf(DateTimeFormatter
-    .ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")
-    .withZone(ZoneId.systemDefault())
-    .format(Instant.now()))
 
 fun getConnection(): Database? {
     try {

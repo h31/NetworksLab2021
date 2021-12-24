@@ -1,9 +1,8 @@
 package com.monkeys.repo
 
-import com.monkeys.DBConnection
 import com.monkeys.UserTable
 import com.monkeys.getConnection
-import com.monkeys.getCurrTimestamp
+import com.monkeys.password
 import org.ktorm.dsl.*
 import java.sql.SQLException
 import java.time.Instant
@@ -35,19 +34,13 @@ class AuthRepo {
     }
 
     //try to register new user
-    fun signUp(login: String, password: String): Pair<Boolean, String> {
-        return try {
-            getConnection()!!.insert(UserTable) {
-                set(it.name, login)
-                set(it.psw, password)
-                set(it.active, true)
-                set(it.lastTimeOfActivity, Instant.now())
-            }
-            Pair(true, "OK")
-        } catch (e: SQLException) {
-            e.printStackTrace()
-            println(e.message)
-            Pair(false, e.sqlState)
+    fun signUp(login: String, password: String): Boolean {
+        getConnection()!!.insert(UserTable) {
+            set(it.name, login)
+            set(it.psw, password)
+            set(it.active, true)
+            set(it.lastTimeOfActivity, Instant.now())
         }
+        return true
     }
 }
