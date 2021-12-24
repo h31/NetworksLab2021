@@ -49,15 +49,5 @@ class AuthRepo {
             println(e.message)
             Pair(false, e.sqlState)
         }
-        //        DBConnection().getConnection().use { connection ->
-//            return try {
-//                val statement = connection!!.createStatement()
-//                statement.execute("INSERT INTO \"user\"(name, psw, active, last_time_of_activity) VALUES ('$login', '$password', 'true', '${getCurrTimestamp()}');")
-//                Pair(true, "OK")
-//            } catch (e: SQLException) {
-//                println("Some problems with registration new user $login")
-//                Pair(false, e.sqlState)
-//            }
-//        }
     }
 }
