@@ -15,17 +15,12 @@ POST api/v1/auth/signin
 body = {
   "Login": "login"
   "Password": "password"
-  "Role": "admin\user"
 }
 Response: {
   "Status": "OK",
   "Message": {
     "JWT": "jwt-token",
     "Location": "your current location"
-  },
-  "Code": {
-    "Value": "200",
-    "Status": "OK"
   }
 } 
 ```
@@ -38,17 +33,12 @@ Response: {
 Request:
 POST api/v1/auth/signup
 body = {
-  "Login": "login"
+  "Login": "login",
   "Password": "password"
-  "Role": "admin\user"
 }
 Response: {
   "Status": "OK",
-  "Message": "Registration done",
-  "Code": {
-    "Value": "200",
-    "Status": "OK"
-  }
+  "Message": "Registration done"
 } 
 ```
 
@@ -58,46 +48,31 @@ Response: {
 {
   "Status": "Error",
   "Message": "Bad credentials",
-  "Code": {
-    "Value": "400",
-    "Status": "Bad Request"
-  }
-} 
-```
-
-```json
-{
-  "Status": "Error",
-  "Message": "There is no role like that, pls change it to user or admin",
-  "Code": {
-    "Value": "400",
-    "Status": "Bad Request"
-  }
 } 
 ```
 
 ## Терминал
 
-Авторизация добавляет пользователя в список ныне активных пользователей (он будет отображаться при who и сможет ходить
-по папкам)
-и выдает JWT-токен авторизации. Этот токен необходимо передавать с каждым запросом в этой секции в заголовке
+Авторизация выдает JWT-токен авторизации, а так же начальный location. 
+Этот токен необходимо передавать с каждым запросом в этой секции в заголовке.
+Location тоже необходимо хранить на клиенте и передавать на сервер в теле запроса.
 Authorization как Bearer токен.
 
 ls - посмотреть содержимое папки
 
 ```json
 Request:
-GET api/v1/terminal/ls/{location?}
+POST api/v1/terminal/ls
+body = {
+  "BasePath":"base path from where we watch",
+  "Location" : "location we shall ls"
+}
 Response: {
   "Status": "OK",
   "Message": {
     "response": [
       "examples", "of", "directory", "content"
     ]
-  },
-  "Code": {
-    "Value": "200",
-    "Status": "OK"
   }
 }
 
@@ -117,24 +92,17 @@ cd - поменять местоположение
 Request:
 POST api/v1/terminal/cd
 body = {
-  "Location": "/location/you/need/to/cd/to"
+  "BasePath":"base path from where we go",
+  "Location" : "location we shall cd to"
 }
 Response: {
   "Status": "OK",
   "Message": "/you/new/location/"
-  "Code" : {
-    "Value": "200",
-    "Status": "OK"
-  }
 }
 
 Error: {
   "Status": "Bad Request",
   "Message": "Wrong location to cd",
-  "Code": {
-    "Value": "400",
-    "Status": "Bad Request"
-  }
 }
 ```
 
@@ -146,24 +114,7 @@ GET api/v1/terminal/who
 Response: {
   "Status": "OK",
   "Message": {
-    "response": [
-      {
-        "First":"user1",
-        "Second":"location of user1"
-      },
-      {
-        "First":"user2",
-        "Second":"location of user2"
-      },
-      {
-        "First":"user3",
-        "Second":"location of user3"
-      },
-    ]
-  },
-  "Code": {
-    "Value": "200",
-    "Status": "OK"
+    "Response": ["user1", "user2", "userN"]
   }
 }
 ```
@@ -179,19 +130,11 @@ body = {
 Response: {
   "Status": "OK",
   "Message": "userName was killed"
-  "Code" : {
-    "Value": "200",
-    "Status": "OK"
-  }
 }
 
 Error: {
   "Status": "Error",
   "Message": "You have not enough rights",
-  "Code": {
-    "Value": "403",
-    "Status": "Forbidden"
-  }
 }
 ```
 
@@ -200,41 +143,26 @@ logout - завершить сессию
 ```json
 Request:
 GET api/v1/terminal/logout
-body = {
-  "UserToKill": "userName"
-}
 Response: {
   "Status": "OK",
   "Message": "You was killed (logout successful)"
-  "Code" : {
-    "Value": "200",
-    "Status": "OK"
-  }
 }
 ```
 
 Ошибки общие:
 
-Не был передан токен:
+Не был передан токен: HttpStatusCode.Forbidden
 ```json
 {
   "Status": "Error",
-  "Message": "No token, please signIn",
-  "Code": {
-    "Value": "403",
-    "Status": "Forbidden"
-  }
+  "Message": "No token, please signIn"
 } 
 ```
 
-Сессия юзера была завершена админом
+Сессия юзера была завершена админом: HttpStatusCode.Unauthorized
 ```json
 {
-  "Status": "Deleted",
-  "Message": "No client with login ${username} in clients list, relogin please",
-  "Code": {
-    "Value": "400",
-    "Status": "Bad Request"
-  }
+  "Status": "Logout",
+  "Message": "Your session was destroyed"
 } 
 ```
