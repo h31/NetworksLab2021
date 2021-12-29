@@ -11,6 +11,5 @@ const val CD_URL = "/api/v1/terminal/cd"
 const val WHO_URL = "/api/v1/terminal/who"
 const val KILL_URL = "/api/v1/terminal/kill"
 const val LOGOUT_URL = "/api/v1/terminal/logout"
-const val LS_WITHOUT_ARGS = ""
 
 fun getURL(request: String) = "$HTTP_PREF$HOST:$PORT$request"

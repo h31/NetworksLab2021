@@ -5,8 +5,8 @@ import com.monkeys.models.Message
 import com.monkeys.models.MessageModel
 import org.ktorm.database.Database
 import org.ktorm.dsl.*
+import java.lang.IllegalArgumentException
 import java.sql.SQLException
-import java.sql.Statement
 import java.time.Instant
 import java.util.*
 import kotlin.collections.ArrayList
@@ -46,10 +46,9 @@ class UserController {
             }
         } catch (e: SQLException) {
             e.printStackTrace()
-            throw Exception("Something went wrong, please try again")
+            throw SQLException("Something went wrong, please try again")
         }
     }
-
 
     fun getActiveUsers(name: String): List<String> {
         try {
@@ -61,12 +60,11 @@ class UserController {
                     UserTable.active eq true
                 }.map { res.add(it[UserTable.name]!!) }
                 return res
-            } else {
-                throw Exception("You have been inactive for 1 hour. Login again")
             }
+            throw Exception("You have been inactive for 1 hour. Login again")
         } catch (e: SQLException) {
             e.printStackTrace()
-            throw Exception("Something went wrong, please try again")
+            throw SQLException("Something went wrong, please try again")
         }
     }
 
@@ -84,13 +82,12 @@ class UserController {
                     }
                     return true
                 }
-                throw Exception("No such sub theme found")
-            } else {
-                throw Exception("You have been inactive for 1 hour. Login again")
+                throw IllegalArgumentException("No such sub theme found")
             }
+            throw Exception("You have been inactive for 1 hour. Login again")
         } catch (e: SQLException) {
             e.printStackTrace()
-            throw Exception("Something went wrong, please try again")
+            throw SQLException("Something went wrong, please try again")
         }
     }
 
@@ -117,13 +114,12 @@ class UserController {
                         }
                     return res
                 }
-                throw Exception("No such sub theme found")
-            } else {
-                throw Exception("You have been inactive for 1 hour. Login again")
+                throw IllegalArgumentException("No such sub theme found")
             }
+            throw Exception("You have been inactive for 1 hour. Login again")
         } catch (e: SQLException) {
             e.printStackTrace()
-            throw Exception("Something went wrong, please try again")
+            throw SQLException("Something went wrong, please try again")
         }
     }
 
@@ -139,12 +135,11 @@ class UserController {
                     }
                 }
                 return true
-            } else {
-                throw Exception("You have been inactive for 1 hour. You have already been logged out")
             }
+            throw Exception("You have been inactive for 1 hour. You have already been logged out")
         } catch (e: SQLException) {
             e.printStackTrace()
-            throw Exception("Something went wrong, please try again")
+            throw SQLException("Something went wrong, please try again")
         }
     }
 

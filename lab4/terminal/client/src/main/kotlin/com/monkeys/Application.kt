@@ -14,28 +14,29 @@ class Application {
         val regOrAuth = scanner.nextLine()
         if (regOrAuth != "1" && regOrAuth != "2") {
             print("Invalid input. Try to connect again")
-        } else {
-            if (regOrAuth.toInt() == 1) {
-                terminalService = regOrLoginUser(
-                    "Create a login: ",
-                    "Create a password: "
-                )
-                if (terminalService.reg() && terminalService.auth())
-                    startTerminal()
-                else
-                    println("Sorry! You were not registered")
-            } else {
-                terminalService = regOrLoginUser(
-                    "Enter login: ",
-                    "Enter password: "
-                )
-                if (terminalService.auth())
-                    startTerminal()
-                else
-                    println("Incorrect username or password. Try to connect again")
-
-            }
+            return
         }
+        if (regOrAuth.toInt() == 1) {
+            terminalService = regOrLoginUser(
+                "Create a login: ",
+                "Create a password: "
+            )
+            if (terminalService.reg() && terminalService.auth())
+                startTerminal()
+            else
+                println("Sorry! You were not registered")
+        } else {
+            terminalService = regOrLoginUser(
+                "Enter login: ",
+                "Enter password: "
+            )
+            if (terminalService.auth())
+                startTerminal()
+            else
+                println("Incorrect username or password. Try to connect again")
+
+        }
+
     }
 
     private suspend fun startTerminal() {
@@ -58,36 +59,20 @@ class Application {
     }
 
     private suspend fun callLs(command: List<String>) {
-        when (command.size) {
-            1 -> {
-                val ls = terminalService.getDirContent(LS_WITHOUT_ARGS)
-                if (ls.first) {
-                    ls.second.forEach {
-                        println(it)
-                    }
-                } else {
-                    println("Bad credentials")
+        if (command.size != 1 || command.size != 2) {
+            try {
+                val ls = terminalService.getDirContent(command[1] ?: "")
+                ls.forEach {
+                    println(it)
                 }
+            } catch (e: Exception) {
+                println(e)
             }
-            2 -> {
-                if (command[1].contains("/"))
-                    println("You can use the command ls no further than 1 folder")
-                else {
-                    val ls = terminalService.getDirContent(command[1])
-                    if (ls.first) {
-                        ls.second.forEach {
-                            println(it)
-                        }
-                    } else {
-                        println("Bad credentials")
-                    }
-                }
-            }
-            else -> {
-                println("Wrong command")
-            }
+        } else {
+            println("Wrong command")
         }
     }
+
 
     private suspend fun callCd(command: List<String>) {
         when (command.size) {
@@ -163,6 +148,6 @@ class Application {
         val login = scanner.nextLine()
         print(psw_str)
         val psw = scanner.nextLine()
-        return TerminalService(login, psw, "user")
+        return TerminalService(login, psw)
     }
 }

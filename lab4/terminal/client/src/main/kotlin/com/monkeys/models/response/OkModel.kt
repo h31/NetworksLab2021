@@ -1,3 +1,3 @@
-package com.monkeys.terminal.models.response
+package com.monkeys.models.response
 
 interface OkModel

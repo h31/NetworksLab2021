@@ -18,7 +18,8 @@ fun Route.auth(controller: AuthController) {
             if (res != "Error. Incorrect login or password") {
                 call.respond(
                     status = HttpStatusCode.OK,
-                    message = OkAuth(res))
+                    message = OkAuth(res)
+                )
             } else {
                 //User is not found
                 call.respond(

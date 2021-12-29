@@ -1,10 +1,9 @@
-package com.monkeys.terminal.models.response
+package com.monkeys.models.response
 
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class AuthModel(
-    val msg: String,
+data class AuthOkModel(
     val jwt: String,
     val location: String
 ) : OkModel

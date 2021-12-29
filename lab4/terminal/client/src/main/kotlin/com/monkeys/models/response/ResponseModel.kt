@@ -1,9 +1,6 @@
-package com.monkeys.terminal.models.response
+package com.monkeys.models.response
 
-import io.ktor.http.*
-
-interface ResponseModel {
+interface ResponseModel<T> {
     val status: String
-    val message: OkModel
-    val code: HttpStatusCode
+    val message: T
 }

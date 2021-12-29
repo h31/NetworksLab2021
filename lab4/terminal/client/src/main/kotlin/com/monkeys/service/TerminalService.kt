@@ -2,10 +2,10 @@ package com.monkeys.service
 
 import com.google.gson.FieldNamingPolicy
 import com.monkeys.*
+import com.monkeys.models.AuthModel
 import com.monkeys.models.CdRequest
 import com.monkeys.models.KillRequest
-import com.monkeys.terminal.models.AuthModel
-import com.monkeys.terminal.models.response.*
+import com.monkeys.models.response.*
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -13,17 +13,16 @@ import io.ktor.client.features.json.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import java.lang.Exception
 
-class TerminalService(private val name: String,
-                      private val psw: String,
-                      val role: String) {
+class TerminalService(
+    private val name: String,
+    private val psw: String
+) {
 
     private var token: String = ""
     private var location: String = ""
 
     private val httpClient: HttpClient = HttpClient(CIO) {
-        expectSuccess = false
         install(JsonFeature) {
             serializer = GsonSerializer() {
                 setPrettyPrinting()
@@ -36,54 +35,52 @@ class TerminalService(private val name: String,
     suspend fun reg(): Boolean {
         val response = httpClient.post<HttpResponse>(getURL(SIGN_UP_URL)) {
             contentType(ContentType.Application.Json)
-            body = AuthModel(name, psw, role)
+            body = AuthModel(name, psw)
         }
-        val receive = response.receive<ResponseAuthModel>()
-        val message = receive.message
-        val msg = message.msg
-        token = message.jwt
-        location = message.location
-        if (msg == "Bad credentials") {
-            return false
+        if (response.status == HttpStatusCode.OK) {
+            val receive = response.receive<AuthOkModel>()
+            token = receive.jwt
+            location = receive.location
+            return true
         }
-        return true
+        return false
     }
 
     suspend fun auth(): Boolean {
         val response = httpClient.post<HttpResponse>(getURL(SIGN_IN_URL)) {
             contentType(ContentType.Application.Json)
-            body = AuthModel(name, psw, role)
+            body = AuthModel(name, psw)
         }
-        val receive = response.receive<ResponseAuthModel>()
-        val message = receive.message
-        val msg = message.msg
-        token = message.jwt
-        location = message.location
-        if (msg == "Bad credentials") {
-            return false
+        if (response.status == HttpStatusCode.OK) {
+            return  true
         }
-        return true
+        return false
     }
 
+
     //ls
-    suspend fun getDirContent(dir: String): Pair<Boolean, List<String>> {
-        val response = httpClient.get<HttpResponse>(getURL(LS_URL + dir)) {
+    suspend fun getDirContent(dir: String): List<String> {
+        val response = httpClient.post<HttpResponse>(getURL(LS_URL + dir)) {
             headers {
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
             }
             contentType(ContentType.Application.Json)
+            body = CdRequest(dir, location)
         }
-        val receive = response.receive<ResponseListOfStringsModel>()
-        val message = receive.message
-        val msg = message.msg
-        return if (response.status.value == 200 && !checkDeleted(receive.status)) {
-            val resp = message.response
-            Pair(true, resp)
-        } else {
-            if (receive.status == "Deleted")
+        when (response.status) {
+            HttpStatusCode.OK -> {
+                val receive = response.receive<OkResponseModel<List<String>>>()
+                return receive.message
+            }
+            HttpStatusCode.Unauthorized -> {
+                val receive = response.receive<ErrorResponseModel<String>>()
                 stopClient()
-            println(msg)
-            Pair(false, ArrayList())
+                throw Exception(message = receive.message)
+            }
+            else -> {
+                val receive = response.receive<ErrorResponseModel<String>>()
+                throw Exception(message = receive.message)
+            }
         }
     }
 
@@ -94,46 +91,47 @@ class TerminalService(private val name: String,
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
             }
             contentType(ContentType.Application.Json)
-            body = CdRequest(dir)
+            body = CdRequest(dir, location)
         }
-        val receive = response.receive<ResponseStringModel>()
-        val message = receive.message
-        if (response.status.value == 200 && !checkDeleted(receive.status))
-            location = message.msg
-        if (receive.status == "Deleted")
-            stopClient()
-        return message.msg
+        when (response.status) {
+            HttpStatusCode.OK -> {
+                val receive = response.receive<OkResponseModel<String>>()
+                return receive.message
+            }
+            HttpStatusCode.Unauthorized -> {
+                val receive = response.receive<ErrorResponseModel<String>>()
+                stopClient()
+                throw Exception(message = receive.message)
+            }
+            else -> {
+                val receive = response.receive<ErrorResponseModel<String>>()
+                throw Exception(message = receive.message)
+            }
+        }
     }
 
     //who
-    suspend fun getCurrUsersAndDirs(): Pair<Boolean, List<Pair<String, String>>> {
+    suspend fun getCurrUsersAndDirs(): List<String> {
         val response = httpClient.get<HttpResponse>(getURL(WHO_URL)) {
             headers {
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
             }
         }
-        val receive = response.receive<ResponseListOfPairsModel>()
-        val message = receive.message
-        val msg = message.msg
-        return if (response.status.value == 200) {
-            val resp = message.response
-            Pair(true, resp)
-        } else {
-            println(msg)
-            Pair(false, ArrayList())
-        }
-    }
-
-    //logout
-    suspend fun logout(): String {
-        val response = httpClient.get<HttpResponse>(getURL(LOGOUT_URL)) {
-            headers {
-                append(HttpHeaders.Authorization, TOKEN_PREF + token)
+        when (response.status) {
+            HttpStatusCode.OK -> {
+                val receive = response.receive<OkResponseModel<List<String>>>()
+                return receive.message
+            }
+            HttpStatusCode.Unauthorized -> {
+                val receive = response.receive<ErrorResponseModel<String>>()
+                stopClient()
+                throw Exception(message = receive.message)
+            }
+            else -> {
+                val receive = response.receive<ErrorResponseModel<String>>()
+                throw Exception(message = receive.message)
             }
         }
-        val receive = response.receive<ResponseStringModel>()
-        val message = receive.message
-        return message.msg
     }
 
     //kill
@@ -145,9 +143,45 @@ class TerminalService(private val name: String,
             contentType(ContentType.Application.Json)
             body = KillRequest(user)
         }
-        val receive = response.receive<ResponseStringModel>()
-        val message = receive.message
-        return message.msg
+        when (response.status) {
+            HttpStatusCode.OK -> {
+                val receive = response.receive<OkResponseModel<String>>()
+                return receive.message
+            }
+            HttpStatusCode.Unauthorized -> {
+                val receive = response.receive<ErrorResponseModel<String>>()
+                stopClient()
+                throw Exception(message = receive.message)
+            }
+            else -> {
+                val receive = response.receive<ErrorResponseModel<String>>()
+                throw Exception(message = receive.message)
+            }
+        }
+    }
+
+    //logout
+    suspend fun logout(): String {
+        val response = httpClient.get<HttpResponse>(getURL(LOGOUT_URL)) {
+            headers {
+                append(HttpHeaders.Authorization, TOKEN_PREF + token)
+            }
+        }
+        when (response.status) {
+            HttpStatusCode.OK -> {
+                val receive = response.receive<OkResponseModel<String>>()
+                return receive.message
+            }
+            HttpStatusCode.Unauthorized -> {
+                val receive = response.receive<ErrorResponseModel<String>>()
+                stopClient()
+                throw Exception(message = receive.message)
+            }
+            else -> {
+                val receive = response.receive<ErrorResponseModel<String>>()
+                throw Exception(message = receive.message)
+            }
+        }
     }
 
     fun getClient(): HttpClient = httpClient
@@ -164,16 +198,7 @@ class TerminalService(private val name: String,
         try {
             httpClient.close()
         } catch (e: Exception) {
-
+            e.printStackTrace()
         }
-    }
-
-    fun checkDeleted(status: String): Boolean {
-        if (status == "Deleted") {
-            println("You was killed")
-            stopClient()
-            return true
-        }
-        return false
     }
 }

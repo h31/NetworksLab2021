@@ -6,9 +6,9 @@ import com.monkeys.api.api
 import com.monkeys.auth.auth
 import com.monkeys.controller.AuthController
 import com.monkeys.controller.UserController
+import com.monkeys.models.AuthModel
 import io.ktor.server.netty.*
 import com.monkeys.repo.AuthRepo
-import com.monkeys.models.AuthModel
 import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.auth.jwt.*
