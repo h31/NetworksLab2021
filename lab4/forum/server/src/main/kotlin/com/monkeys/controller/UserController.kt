@@ -42,7 +42,7 @@ class UserController {
                 res[main] = sub
                 res
             } else {
-                throw Exception("You have been inactive for 1 hour. Login again")
+                throw IllegalAccessException("You have been inactive for 1 hour. Login again")
             }
         } catch (e: SQLException) {
             e.printStackTrace()
@@ -61,7 +61,7 @@ class UserController {
                 }.map { res.add(it[UserTable.name]!!) }
                 return res
             }
-            throw Exception("You have been inactive for 1 hour. Login again")
+            throw IllegalAccessException("You have been inactive for 1 hour. Login again")
         } catch (e: SQLException) {
             e.printStackTrace()
             throw SQLException("Something went wrong, please try again")
@@ -84,7 +84,7 @@ class UserController {
                 }
                 throw IllegalArgumentException("No such sub theme found")
             }
-            throw Exception("You have been inactive for 1 hour. Login again")
+            throw IllegalAccessException("You have been inactive for 1 hour. Login again")
         } catch (e: SQLException) {
             e.printStackTrace()
             throw SQLException("Something went wrong, please try again")
@@ -116,7 +116,7 @@ class UserController {
                 }
                 throw IllegalArgumentException("No such sub theme found")
             }
-            throw Exception("You have been inactive for 1 hour. Login again")
+            throw IllegalAccessException("You have been inactive for 1 hour. Login again")
         } catch (e: SQLException) {
             e.printStackTrace()
             throw SQLException("Something went wrong, please try again")
@@ -136,7 +136,7 @@ class UserController {
                 }
                 return true
             }
-            throw Exception("You have been inactive for 1 hour. You have already been logged out")
+            throw IllegalAccessException("You have been inactive for 1 hour. You have already been logged out")
         } catch (e: SQLException) {
             e.printStackTrace()
             throw SQLException("Something went wrong, please try again")

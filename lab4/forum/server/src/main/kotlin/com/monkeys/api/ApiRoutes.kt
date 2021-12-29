@@ -8,6 +8,7 @@ import io.ktor.http.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
+import java.sql.SQLException
 
 fun Route.api(controller: UserController) {
     route("/forum") {
@@ -23,7 +24,7 @@ fun Route.api(controller: UserController) {
                             message = OkHierarchy(res)
                         )
                     } catch (e: Exception) {
-                        sendErrors(call, e.message!!)
+                        sendErrors(call, e)
                     }
                 }
 
@@ -36,7 +37,7 @@ fun Route.api(controller: UserController) {
                             message = OKActivityUsers(res)
                         )
                     } catch (e: Exception) {
-                        sendErrors(call, e.message!!)
+                        sendErrors(call, e)
                     }
                 }
 
@@ -50,7 +51,7 @@ fun Route.api(controller: UserController) {
                             message = "Success"
                         )
                     } catch (e: Exception) {
-                        sendErrors(call, e.message!!)
+                        sendErrors(call, e)
                     }
                 }
 
@@ -67,7 +68,7 @@ fun Route.api(controller: UserController) {
                             message = OkListOfMessage(res)
                         )
                     } catch (e: Exception) {
-                        sendErrors(call, e.message!!)
+                        sendErrors(call, e)
                     }
                 }
 
@@ -80,7 +81,7 @@ fun Route.api(controller: UserController) {
                             message = "You have successfully logged out"
                         )
                     } catch (e: Exception) {
-                        sendErrors(call, e.message!!)
+                        sendErrors(call, e)
                     }
                 }
             }
@@ -88,24 +89,24 @@ fun Route.api(controller: UserController) {
     }
 }
 
-suspend fun sendErrors(call: ApplicationCall, msg: String) {
-    if (msg == "You have been inactive for 1 hour. Login again" ||
-        msg == "You have been inactive for 1 hour. You have already been logged out"
-    ) {
-        call.respond(
-            status = HttpStatusCode.Unauthorized,
-            message = msg
-        )
-    } else {
-        if (msg == "No such sub theme found") {
+suspend fun sendErrors(call: ApplicationCall, e: Exception) {
+    when (e.javaClass) {
+        IllegalAccessException().javaClass -> {
+            call.respond(
+                status = HttpStatusCode.Unauthorized,
+                message = e.message!!
+            )
+        }
+        IllegalArgumentException().javaClass -> {
             call.respond(
                 status = HttpStatusCode.NotFound,
-                message = msg
+                message = e.message!!
             )
-        } else {
+        }
+        SQLException().javaClass -> {
             call.respond(
                 status = HttpStatusCode.BadRequest,
-                message = msg
+                message = e.message!!
             )
         }
     }
