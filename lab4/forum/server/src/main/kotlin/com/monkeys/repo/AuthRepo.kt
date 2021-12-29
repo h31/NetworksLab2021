@@ -35,7 +35,12 @@ class AuthRepo {
 
     //try to register new user
     fun signUp(login: String, password: String): Boolean {
-        getConnection()!!.insert(UserTable) {
+        val connection = getConnection()!!
+        if (connection.from(UserTable).select().where {
+                UserTable.name eq login
+            }.totalRecords == 0)
+            return false
+        connection.insert(UserTable) {
             set(it.name, login)
             set(it.psw, password)
             set(it.active, true)

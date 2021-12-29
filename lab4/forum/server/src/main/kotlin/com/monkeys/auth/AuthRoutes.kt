@@ -35,7 +35,7 @@ fun Route.auth(controller: AuthController) {
                     status = HttpStatusCode.OK,
                     message = res)
             } else {
-                if (res == "Something went wrong. Try to register again")
+                if (res == "Something went wrong")
                     call.respond(
                         status = HttpStatusCode.BadRequest,
                         message = res)

@@ -20,10 +20,11 @@ class AuthController (private val repo: AuthRepo) {
     //register
     fun signUp(model: AuthModel): String {
         return try {
-            repo.signUp(model.login, model.psw)
-            "Success signup"
+            if (repo.signUp(model.login, model.psw))
+                "Success signup"
+            "A client with the same name already exists"
         } catch (e: SQLException) {
-            e.message.toString()
+            "Something went wrong"
         }
     }
 
