@@ -7,34 +7,19 @@ import java.io.File
 
 class UserController() {
 
-    fun ls(baseLocation: String, locationToLs: String): List<String>? {
-        val path = File(baseLocation, locationToLs)
-        return if (path.isDirectory) {
+    fun ls(baseLocation: String, locationToLs: String): Map<String, Boolean>? {
+        val path = resolvePath(baseLocation, locationToLs)
+        return if (path != null) {
             val res = getCorrectListOfFiles(path)
-            res?.sorted()
+            res?.toSortedMap()
         } else {
-            val newPath = File(locationToLs)
-            return if (newPath.isDirectory) {
-                val res = getCorrectListOfFiles(newPath)
-                res?.sorted()
-            } else {
-                null
-            }
+            null
         }
     }
 
     fun cd(baseLocation: String, locationToCd: String): String? {
-        val path = File(baseLocation, locationToCd)
-        return if (path.isDirectory) {
-            path.absolutePath
-        } else {
-            val newPath = File(locationToCd)
-            return if (newPath.isDirectory) {
-                newPath.absolutePath
-            } else {
-                null
-            }
-        }
+        val path = resolvePath(baseLocation, locationToCd)
+        return path?.canonicalPath
     }
 
     fun who(): List<String> = getActiveUsers()
@@ -48,19 +33,23 @@ class UserController() {
         killUser(userName)
     }
 
-    private fun getCorrectListOfFiles(dir : File) : List<String>? {
+    private fun getCorrectListOfFiles(dir : File) : Map<String, Boolean>? {
         val list = dir.listFiles()
-        val res = mutableListOf<String>()
-        if (list != null) {
-            res.addAll(list.toList().map {
-                if (it.isFile) {
-                    "[F]" + it.name
-                } else {
-                    "[D]" + it.name
+        return list?.toList()?.associateBy({it.name}, {it.isDirectory})
+    }
 
-                }
-            })
-        } else return null
-        return res
+    private fun resolvePath(base: String, changed: String): File? {
+        var path = File(changed)
+        if (path.isAbsolute) {
+            if (!path.isDirectory) {
+                return null
+            }
+        } else {
+            path = File(base, changed)
+            if (!path.isDirectory) {
+                return null
+            }
+        }
+        return path
     }
 }
