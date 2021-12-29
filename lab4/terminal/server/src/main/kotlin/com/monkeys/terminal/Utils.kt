@@ -59,14 +59,18 @@ fun getActiveUsers() : List<String> {
 
 fun killUser(userName: String) {
     DbConnection().getConnection().use { connection ->
-        val statement = connection!!.createStatement()
-        statement.execute("UPDATE users SET is_active=false WHERE LOGIN='$userName';")
+        val ps = connection!!.prepareStatement("UPDATE users SET is_active=false WHERE LOGIN=?;").apply {
+            setString(1, userName)
+        }
+        ps.execute()
     }
 }
 
 fun activateUser(userName: String) {
     DbConnection().getConnection().use { connection ->
-        val statement = connection!!.createStatement()
-        statement.execute("UPDATE users SET is_active=true WHERE LOGIN='$userName';")
+        val statement = connection!!.prepareStatement("UPDATE users SET is_active=true WHERE LOGIN=?;").apply {
+            setString(1, userName)
+        }
+        statement.execute()
     }
 }
