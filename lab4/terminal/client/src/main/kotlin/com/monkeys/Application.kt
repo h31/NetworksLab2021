@@ -53,34 +53,39 @@ class Application {
                 "who" -> callWho(command)
                 "kill" -> callKill(command)
                 "logout" -> callLogout(command)
-                else -> println("You entered the wrong command")
+                else -> println("Wrong command")
             }
         }
     }
 
     private suspend fun callLs(command: List<String>) {
-        if (command.size != 1 || command.size != 2) {
-            try {
-                val ls = terminalService.getDirContent(command[1] ?: "")
-                ls.forEach {
-                    println(it)
-                }
-            } catch (e: Exception) {
-                println(e)
-            }
-        } else {
+        if (command.size != 1 && command.size != 2) {
             println("Wrong command")
+            return
+        }
+        var dir = ""
+        if (command.size == 2)
+            dir = command[1]
+        try {
+            val ls = terminalService.getDirContent(dir)
+            ls.forEach {
+                println(it)
+            }
+        } catch (e: Exception) {
+            println(e.message)
         }
     }
 
 
     private suspend fun callCd(command: List<String>) {
         when (command.size) {
-            1 -> println(terminalService.getCurrentDir() + "> ")
+            1 -> return
             2 -> {
-                val msg = terminalService.getChangeDir(command[1])
-                if (msg == "Wrong location to cd")
-                    println(msg)
+                try {
+                    terminalService.getChangeDir(command[1])
+                } catch (e: Exception) {
+                    println(e.message)
+                }
             }
             else -> {
                 println("Wrong command")
@@ -90,20 +95,14 @@ class Application {
 
     private suspend fun callWho(command: List<String>) {
         if (command.size == 1) {
-            val ls = terminalService.getCurrUsersAndDirs()
-            var biggestLength = 0
-            if (ls.first) {
-                val list = ls.second
-                list.forEach {
-                    if (it.first.length > biggestLength)
-                        biggestLength = it.first.length
+            try {
+                val who = terminalService.getCurrUsersAndDirs()
+                who.forEach {
+                    println(it)
                 }
-                biggestLength += 3
-                list.forEach {
-                    println(it.first.padEnd(biggestLength, ' ') + it.second)
-                }
-            } else
-                println("Bad credentials")
+            } catch (e: Exception) {
+                println(e.message)
+            }
         } else {
             println("Wrong command")
         }
@@ -111,19 +110,10 @@ class Application {
 
     private suspend fun callKill(command: List<String>) {
         if (command.size == 2) {
-            when (val msg = terminalService.kill(command[1])) {
-                "${command[1]} was killed" -> {
-                    if (command[1] == terminalService.getLogin()) {
-                        println(msg)
-                        terminalService.stopClient()
-                    } else
-                        println(msg)
-                }
-                "You have not enough rights" -> {
-                    println(msg)
-                }
-                else ->
-                    println("Unsuccessful logout")
+            try {
+                println(terminalService.kill(command[1]))
+            } catch (e: Exception) {
+                println(e.message)
             }
         } else
             println("Wrong command")
@@ -132,12 +122,7 @@ class Application {
     private suspend fun callLogout(command: List<String>) {
         if (command.size == 1) {
             val msg = terminalService.logout()
-            if (msg == "You was killed (logout successful)") {
-                println(msg)
-                terminalService.stopClient()
-            } else {
-                println("Unsuccessful logout")
-            }
+            println(msg)
         } else {
             println("Wrong command")
         }

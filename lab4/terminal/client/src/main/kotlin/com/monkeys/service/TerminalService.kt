@@ -12,6 +12,7 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.features.json.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.client.utils.EmptyContent.contentType
 import io.ktor.http.*
 
 class TerminalService(
@@ -23,6 +24,7 @@ class TerminalService(
     private var location: String = ""
 
     private val httpClient: HttpClient = HttpClient(CIO) {
+        expectSuccess = false
         install(JsonFeature) {
             serializer = GsonSerializer() {
                 setPrettyPrinting()
@@ -38,10 +40,7 @@ class TerminalService(
             body = AuthModel(name, psw)
         }
         if (response.status == HttpStatusCode.OK) {
-            val receive = response.receive<AuthOkModel>()
-            token = receive.jwt
-            location = receive.location
-            return true
+            return  true
         }
         return false
     }
@@ -52,7 +51,10 @@ class TerminalService(
             body = AuthModel(name, psw)
         }
         if (response.status == HttpStatusCode.OK) {
-            return  true
+            val receive = response.receive<OkResponseModel<AuthOkModel>>()
+            token = receive.message.jwt
+            location = receive.message.location
+            return true
         }
         return false
     }
@@ -60,12 +62,12 @@ class TerminalService(
 
     //ls
     suspend fun getDirContent(dir: String): List<String> {
-        val response = httpClient.post<HttpResponse>(getURL(LS_URL + dir)) {
+        val response = httpClient.post<HttpResponse>(getURL(LS_URL)) {
             headers {
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
             }
             contentType(ContentType.Application.Json)
-            body = CdRequest(dir, location)
+            body = CdRequest(location, dir)
         }
         when (response.status) {
             HttpStatusCode.OK -> {
@@ -75,11 +77,11 @@ class TerminalService(
             HttpStatusCode.Unauthorized -> {
                 val receive = response.receive<ErrorResponseModel<String>>()
                 stopClient()
-                throw Exception(message = receive.message)
+                throw Exception(receive.message)
             }
             else -> {
                 val receive = response.receive<ErrorResponseModel<String>>()
-                throw Exception(message = receive.message)
+                throw Exception(receive.message)
             }
         }
     }
@@ -91,21 +93,22 @@ class TerminalService(
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
             }
             contentType(ContentType.Application.Json)
-            body = CdRequest(dir, location)
+            body = CdRequest(location, dir)
         }
         when (response.status) {
             HttpStatusCode.OK -> {
                 val receive = response.receive<OkResponseModel<String>>()
+                location = receive.message
                 return receive.message
             }
             HttpStatusCode.Unauthorized -> {
                 val receive = response.receive<ErrorResponseModel<String>>()
                 stopClient()
-                throw Exception(message = receive.message)
+                throw Exception(receive.message)
             }
             else -> {
                 val receive = response.receive<ErrorResponseModel<String>>()
-                throw Exception(message = receive.message)
+                throw Exception(receive.message)
             }
         }
     }
@@ -125,11 +128,11 @@ class TerminalService(
             HttpStatusCode.Unauthorized -> {
                 val receive = response.receive<ErrorResponseModel<String>>()
                 stopClient()
-                throw Exception(message = receive.message)
+                throw Exception(receive.message)
             }
             else -> {
                 val receive = response.receive<ErrorResponseModel<String>>()
-                throw Exception(message = receive.message)
+                throw Exception(receive.message)
             }
         }
     }
@@ -151,11 +154,15 @@ class TerminalService(
             HttpStatusCode.Unauthorized -> {
                 val receive = response.receive<ErrorResponseModel<String>>()
                 stopClient()
-                throw Exception(message = receive.message)
+                throw Exception(receive.message)
+            }
+            HttpStatusCode.Forbidden -> {
+                val receive = response.receive<ErrorResponseModel<String>>()
+                throw Exception(receive.message)
             }
             else -> {
                 val receive = response.receive<ErrorResponseModel<String>>()
-                throw Exception(message = receive.message)
+                throw Exception(receive.message)
             }
         }
     }
@@ -170,16 +177,17 @@ class TerminalService(
         when (response.status) {
             HttpStatusCode.OK -> {
                 val receive = response.receive<OkResponseModel<String>>()
+                stopClient()
                 return receive.message
             }
             HttpStatusCode.Unauthorized -> {
                 val receive = response.receive<ErrorResponseModel<String>>()
                 stopClient()
-                throw Exception(message = receive.message)
+                throw Exception(receive.message)
             }
             else -> {
                 val receive = response.receive<ErrorResponseModel<String>>()
-                throw Exception(message = receive.message)
+                throw Exception(receive.message)
             }
         }
     }
@@ -194,7 +202,7 @@ class TerminalService(
         return name
     }
 
-    fun stopClient() {
+    private fun stopClient() {
         try {
             httpClient.close()
         } catch (e: Exception) {
