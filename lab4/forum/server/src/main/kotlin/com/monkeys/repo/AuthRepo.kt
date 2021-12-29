@@ -38,7 +38,7 @@ class AuthRepo {
         val connection = getConnection()!!
         if (connection.from(UserTable).select().where {
                 UserTable.name eq login
-            }.totalRecords == 0)
+            }.totalRecords == 1)
             return false
         connection.insert(UserTable) {
             set(it.name, login)

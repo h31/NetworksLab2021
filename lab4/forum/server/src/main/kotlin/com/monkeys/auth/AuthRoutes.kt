@@ -24,7 +24,8 @@ fun Route.auth(controller: AuthController) {
                 //User is not found
                 call.respond(
                     status = HttpStatusCode.Unauthorized,
-                    message = res)
+                    message = res
+                )
             }
         }
 
@@ -33,17 +34,14 @@ fun Route.auth(controller: AuthController) {
             if (res == "Success signup") {
                 call.respond(
                     status = HttpStatusCode.OK,
-                    message = res)
+                    message = res
+                )
             } else {
-                if (res == "Something went wrong")
-                    call.respond(
-                        status = HttpStatusCode.BadRequest,
-                        message = res)
-                else
-                    //prohibited in client creation
-                    call.respond(
-                        status = Forbidden,
-                        message = res)
+                //prohibited in client creation
+                call.respond(
+                    status = Forbidden,
+                    message = res
+                )
             }
         }
 
