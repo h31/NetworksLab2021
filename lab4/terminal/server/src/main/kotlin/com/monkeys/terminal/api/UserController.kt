@@ -33,23 +33,21 @@ class UserController() {
         killUser(userName)
     }
 
-    private fun getCorrectListOfFiles(dir : File) : Map<String, Boolean>? {
+    private fun getCorrectListOfFiles(dir: File): Map<String, Boolean>? {
         val list = dir.listFiles()
-        return list?.toList()?.associateBy({it.name}, {it.isDirectory})
+        return list?.toList()?.associateBy({ it.name }, { it.isDirectory })
     }
 
     private fun resolvePath(base: String, changed: String): File? {
         var path = File(changed)
-        if (path.isAbsolute) {
-            if (!path.isDirectory) {
-                return null
-            }
-        } else {
+        if (!path.isAbsolute) {
             path = File(base, changed)
-            if (!path.isDirectory) {
-                return null
-            }
         }
-        return path
+        return if (!path.isDirectory) {
+            null
+        } else {
+            path
+        }
+
     }
 }

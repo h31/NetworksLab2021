@@ -8,9 +8,11 @@ class AuthRepo {
 
     fun signIn(login: String, password: String): AuthModel? {
         DbConnection().getConnection().use { connection ->
-            val statement = connection!!.createStatement()
-            val resSet =
-                statement.executeQuery("SELECT * FROM users WHERE (LOGIN='$login' AND PASSWORD='$password');")
+            val ps = connection!!.prepareStatement("SELECT * FROM users WHERE (LOGIN=? AND PASSWORD=?);").apply {
+                setString(1, login)
+                setString(2, password)
+            }
+            val resSet = ps.executeQuery()
             return if (resSet.next()) {
                 val role = resSet.getString("role")
                 AuthModel(login, "", role)
@@ -23,8 +25,12 @@ class AuthRepo {
     fun signUp(login: String, password: String, role: String): Boolean {
         DbConnection().getConnection().use { connection ->
             return try {
-                val statement = connection!!.createStatement()
-                statement.execute("INSERT INTO users(LOGIN, PASSWORD, ROLE) VALUES ('$login', '$password', '$role');")
+                val ps = connection!!.prepareStatement("INSERT INTO users(LOGIN, PASSWORD, ROLE) VALUES (?, ?, ?);").apply {
+                    setString(1, login)
+                    setString(2, password)
+                    setString(3, role)
+                }
+                ps.execute()
                 true
             } catch (e: Exception) {
                 println("Some problems with registration new user $login")

@@ -9,16 +9,19 @@ const val BASE_PATH_HEADER = "Base-path"
 
 fun isClientLogin(login: String): Boolean {
     DbConnection().getConnection().use { connection ->
-        val statement = connection!!.createStatement()
+        val tzUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
         val instantMinusHour = Instant.now().minusMillis(3600000)
-        val timestampMinusHour = if (instantMinusHour != null) Timestamp.from(instantMinusHour) else null
+        val timestampMinusHour = Timestamp.from(instantMinusHour)
+        val ps = connection!!.prepareStatement(
+            "SELECT * FROM users WHERE (LOGIN=? AND is_active=true AND (active_last, active_last) OVERLAPS (?, INTERVAL '1 hour'));"
+        ).apply {
+            setString(1, login)
+            setTimestamp(2, timestampMinusHour, tzUTC)
+        }
+
         val resSet =
-            statement.executeQuery(
-                "SELECT * FROM users WHERE (LOGIN='$login' AND is_active=true AND (active_last, active_last) OVERLAPS ('$timestampMinusHour', INTERVAL '1 hour'));"
-            )
-        resSet.next()
-        //return resSet.next()
-        return true
+            ps.executeQuery()
+        return resSet.next()
     }
 }
 
@@ -26,7 +29,7 @@ fun updateUserLastActive(login: String) {
     DbConnection().getConnection().use { connection ->
         val tzUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
         val instant = Instant.now()
-        val timestampNow = if (instant != null) Timestamp.from(instant) else null
+        val timestampNow = Timestamp.from(instant)
         val ps = connection!!.prepareStatement("UPDATE users SET active_last=? WHERE LOGIN='$login';")
         ps.setTimestamp(1, timestampNow, tzUTC)
         ps.execute()
@@ -35,13 +38,17 @@ fun updateUserLastActive(login: String) {
 
 fun getActiveUsers() : List<String> {
     DbConnection().getConnection().use { connection ->
-        val statement = connection!!.createStatement()
+        val tzUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
         val instantMinusHour = Instant.now().minusMillis(3600000)
-        val timestampMinusHour = if (instantMinusHour != null) Timestamp.from(instantMinusHour) else null
+        val timestampMinusHour = Timestamp.from(instantMinusHour)
+        val ps = connection!!.prepareStatement(
+            "SELECT * FROM users WHERE (is_active=true AND (active_last, active_last) OVERLAPS (?, INTERVAL '1 hour'));"
+        ).apply {
+            setTimestamp(1, timestampMinusHour, tzUTC)
+        }
+
         val resSet =
-            statement.executeQuery(
-                "SELECT * FROM users WHERE (is_active=true AND (active_last, active_last) OVERLAPS ('$timestampMinusHour', INTERVAL '1 hour'));"
-            )
+            ps.executeQuery()
         val res = mutableListOf<String>()
         while (resSet.next()) {
             res.add(resSet.getString("login"))
