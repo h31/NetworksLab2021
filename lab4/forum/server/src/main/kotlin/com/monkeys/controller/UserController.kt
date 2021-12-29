@@ -19,7 +19,9 @@ class UserController {
             val res = TreeMap<String, List<String>>()
             val table = ArrayList<Pair<String, String>>()
             updateInactiveUsers(connection)
-            if (checkActive(connection, name)) {
+            if (!checkActive(connection, name)) {
+                throw IllegalAccessException("You have been inactive for 1 hour. Login again")
+            } else {
                 connection.from(MainThemeTable)
                     .innerJoin(SubThemeTable, on = MainThemeTable.id eq SubThemeTable.mainThemeId)
                     .select(MainThemeTable.themeName, SubThemeTable.themeName)
@@ -41,8 +43,6 @@ class UserController {
                 }
                 res[main] = sub
                 res
-            } else {
-                throw IllegalAccessException("You have been inactive for 1 hour. Login again")
             }
         } catch (e: SQLException) {
             e.printStackTrace()
@@ -55,13 +55,13 @@ class UserController {
             val connection = getConnection()!!
             val res = ArrayList<String>()
             updateInactiveUsers(connection)
-            if (checkActive(connection, name)) {
-                connection.from(UserTable).select().where {
-                    UserTable.active eq true
-                }.map { res.add(it[UserTable.name]!!) }
-                return res
+            if (!checkActive(connection, name)) {
+                throw IllegalAccessException("You have been inactive for 1 hour. Login again")
             }
-            throw IllegalAccessException("You have been inactive for 1 hour. Login again")
+            connection.from(UserTable).select().where {
+                UserTable.active eq true
+            }.map { res.add(it[UserTable.name]!!) }
+            return res
         } catch (e: SQLException) {
             e.printStackTrace()
             throw SQLException("Something went wrong, please try again")
@@ -72,19 +72,19 @@ class UserController {
         try {
             val connection = getConnection()!!
             updateInactiveUsers(connection)
-            if (checkActive(connection, name)) {
-                if (checkIsAThemeExists(connection, msg.subTheme)) {
-                    connection.insert(MessageTable) {
-                        set(it.text, msg.msg)
-                        set(it.userName, name)
-                        set(it.time, Instant.now())
-                        set(it.subTheme, msg.subTheme)
-                    }
-                    return true
-                }
+            if (!checkActive(connection, name)) {
+                throw IllegalAccessException("You have been inactive for 1 hour. Login again")
+            }
+            if (!checkIsAThemeExists(connection, msg.subTheme)) {
                 throw IllegalArgumentException("No such sub theme found")
             }
-            throw IllegalAccessException("You have been inactive for 1 hour. Login again")
+            connection.insert(MessageTable) {
+                set(it.text, msg.msg)
+                set(it.userName, name)
+                set(it.time, Instant.now())
+                set(it.subTheme, msg.subTheme)
+            }
+            return true
         } catch (e: SQLException) {
             e.printStackTrace()
             throw SQLException("Something went wrong, please try again")
@@ -96,27 +96,27 @@ class UserController {
             val connection = getConnection()!!
             val res = ArrayList<Message>()
             updateInactiveUsers(connection)
-            if (checkActive(connection, name)) {
-                if (checkIsAThemeExists(connection, theme)) {
-                    connection.from(MessageTable)
-                        .select(MessageTable.time, MessageTable.userName, MessageTable.text)
-                        .where {
-                            MessageTable.subTheme eq theme
-                        }
-                        .map {
-                            res.add(
-                                Message(
-                                    it[MessageTable.time]!!.toString(),
-                                    it[MessageTable.userName]!!,
-                                    it[MessageTable.text]!!
-                                )
-                            )
-                        }
-                    return res
-                }
+            if (!checkActive(connection, name)) {
+                throw IllegalAccessException("You have been inactive for 1 hour. Login again")
+            }
+            if (!checkIsAThemeExists(connection, theme)) {
                 throw IllegalArgumentException("No such sub theme found")
             }
-            throw IllegalAccessException("You have been inactive for 1 hour. Login again")
+            connection.from(MessageTable)
+                .select(MessageTable.time, MessageTable.userName, MessageTable.text)
+                .where {
+                    MessageTable.subTheme eq theme
+                }
+                .map {
+                    res.add(
+                        Message(
+                            it[MessageTable.time]!!.toString(),
+                            it[MessageTable.userName]!!,
+                            it[MessageTable.text]!!
+                        )
+                    )
+                }
+            return res
         } catch (e: SQLException) {
             e.printStackTrace()
             throw SQLException("Something went wrong, please try again")
@@ -127,16 +127,16 @@ class UserController {
         try {
             val connection = getConnection()!!
             updateInactiveUsers(connection)
-            if (checkActive(connection, name)) {
-                connection.update(UserTable) {
-                    set(it.active, false)
-                    where {
-                        UserTable.name eq name
-                    }
-                }
-                return true
+            if (!checkActive(connection, name)) {
+                throw IllegalAccessException("You have been inactive for 1 hour. You have already been logged out")
             }
-            throw IllegalAccessException("You have been inactive for 1 hour. You have already been logged out")
+            connection.update(UserTable) {
+                set(it.active, false)
+                where {
+                    UserTable.name eq name
+                }
+            }
+            return true
         } catch (e: SQLException) {
             e.printStackTrace()
             throw SQLException("Something went wrong, please try again")

@@ -13,8 +13,11 @@ import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.auth.jwt.*
 import io.ktor.features.*
+import io.ktor.http.*
+import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.serialization.*
+import java.sql.SQLException
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
@@ -22,6 +25,27 @@ fun Application.configure() {
 
     install(ContentNegotiation) {
         json()
+    }
+
+    install(StatusPages) {
+        exception<IllegalAccessException> { cause ->
+            call.respond(
+                status = HttpStatusCode.Unauthorized,
+                message = cause.message!!
+            )
+        }
+        exception<IllegalArgumentException> { cause ->
+            call.respond(
+                status = HttpStatusCode.NotFound,
+                message = cause.message!!
+            )
+        }
+        exception<SQLException> { cause ->
+            call.respond(
+                status = HttpStatusCode.BadRequest,
+                message = cause.message!!
+            )
+        }
     }
 
     install(Authentication) {

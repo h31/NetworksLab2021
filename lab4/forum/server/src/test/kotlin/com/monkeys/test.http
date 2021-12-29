@@ -58,6 +58,12 @@ GET http://0.0.0.0:8080/forum/request/message-list/qerv
 Content-Type: application/json
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsInBzdyI6IjEyMzQiLCJpc3MiOiJ5YW5hIiwibG9naW4iOiJ5YW5hIn0.hx0WNc-_Sx7Eu2CijBhni-KMEaMVQ9fntS_UHzNxx74
 
+### list_err
+
+GET http://0.0.0.0:8080/forum/request/message-list/qerv5
+Content-Type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJBdXRoZW50aWNhdGlvbiIsInBzdyI6IjEyMzQiLCJpc3MiOiJ5YW5hIiwibG9naW4iOiJ5YW5hIn0.hx0WNc-_Sx7Eu2CijBhni-KMEaMVQ9fntS_UHzNxx74
+
 ###
 
 GET http://0.0.0.0:8080/forum/request/message-list
