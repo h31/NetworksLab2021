@@ -38,12 +38,12 @@ class Application {
         }
     }
 
-    suspend fun startForum() {
+    private suspend fun startForum() {
         println()
         println("You have successfully logged in and can watch forum:")
         val themes = forumService.hierarchy()
         if (themes != null) {
-            printThemesBeauty(themes)
+            themesPrettyPrint(themes)
             println()
             printHelp()
             while (forumService.getClient().isActive) {
@@ -85,7 +85,7 @@ class Application {
     private suspend fun watchThemesList() {
         val res = forumService.hierarchy()
         if (res != null) {
-            printThemesBeauty(res)
+            themesPrettyPrint(res)
         }
     }
 
@@ -105,15 +105,15 @@ class Application {
         }
     }
 
-    private fun regOrLoginUser(loginStr: String, pswStr: String): ForumService {
-        print(loginStr)
+    private fun regOrLoginUser(loginString: String, passwordString: String): ForumService {
+        print(loginString)
         val login = scanner.nextLine()
-        print(pswStr)
-        val psw = scanner.nextLine()
-        return ForumService(login, psw)
+        print(passwordString)
+        val password = scanner.nextLine()
+        return ForumService(login, password)
     }
 
-    private fun printThemesBeauty(themes: Map<String, List<String>>) {
+    private fun themesPrettyPrint(themes: Map<String, List<String>>) {
         for (theme in themes) {
             println(theme.key)
             for(subTheme in theme.value) {

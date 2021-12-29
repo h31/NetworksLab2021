@@ -6,8 +6,10 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.features.json.*
+import io.ktor.client.features.json.serializer.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.client.utils.EmptyContent.contentType
 import io.ktor.http.*
 
 class ForumService(private val login: String, private val password: String) {
@@ -17,11 +19,7 @@ class ForumService(private val login: String, private val password: String) {
     private val httpClient: HttpClient = HttpClient(CIO) {
         expectSuccess = false
         install(JsonFeature) {
-            serializer = GsonSerializer() {
-                setPrettyPrinting()
-                setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE)
-                serializeNulls()
-            }
+            serializer = KotlinxSerializer()
         }
     }
 
@@ -64,7 +62,7 @@ class ForumService(private val login: String, private val password: String) {
             contentType(ContentType.Application.Json)
         }
         return if (response.status == HttpStatusCode.OK) {
-            response.receive<HierarchyResponse>().response
+            response.receive<HierarchyResponse>().hierarchy
         } else {
             val error = response.receive<String>()
             println(error)
@@ -116,14 +114,21 @@ class ForumService(private val login: String, private val password: String) {
         }
     }
 
-    suspend fun logout():Boolean {
+    suspend fun logout() : Boolean {
         val response = httpClient.delete<HttpResponse>(getURL(LOGOUT_REQUEST)) {
             headers {
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
             }
             contentType(ContentType.Application.Json)
         }
-        return response.status == HttpStatusCode.OK
+        return if (response.status == HttpStatusCode.OK) {
+            httpClient.close()
+            true
+        } else {
+            val error = response.receive<String>()
+            print(error)
+            false
+        }
 
     }
 
