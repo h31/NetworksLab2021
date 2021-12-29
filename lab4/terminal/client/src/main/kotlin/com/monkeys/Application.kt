@@ -69,7 +69,10 @@ class Application {
         try {
             val ls = terminalService.getDirContent(dir)
             ls.forEach {
-                println(it)
+                if (it.value)
+                    println("[D] " + it.key)
+                else
+                    println("[F] " + it.key)
             }
         } catch (e: Exception) {
             println(e.message)

@@ -60,7 +60,7 @@ class TerminalService(
 
 
     //ls
-    suspend fun getDirContent(dir: String): List<String> {
+    suspend fun getDirContent(dir: String): Map<String, Boolean> {
         val response = httpClient.post<HttpResponse>(getURL(LS_URL)) {
             headers {
                 append(HttpHeaders.Authorization, TOKEN_PREF + token)
@@ -70,7 +70,7 @@ class TerminalService(
         }
         when (response.status) {
             HttpStatusCode.OK -> {
-                val receive = response.receive<OkResponseModel<List<String>>>()
+                val receive = response.receive<OkResponseModel<Map<String, Boolean>>>()
                 return receive.message
             }
             HttpStatusCode.Unauthorized -> {
