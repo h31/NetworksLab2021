@@ -3,10 +3,10 @@ import re
 import socket
 import threading
 import datetime as dt
-
+import time
 
 HEADER = 10
-#IP = 'localhost'
+READ = 10000
 IP = '185.183.98.98'
 PORT = 6121
 ENCODING = 'utf-8'
@@ -40,11 +40,15 @@ def receive_message(sock):
             if not len(message_header):
                 return False
             message_length = int(message_header.decode(ENCODING))
-            read_length = message_length
-            data = sock.recv(read_length)
-            while len(data) < message_length:
-                read_length -= len(data)
-                data += sock.recv(read_length)
+            if message_length > READ:
+                data = sock.recv(READ)
+                while len(data) < message_length:
+                    diff = message_length - len(data)
+                    data += sock.recv(diff) if diff < READ else sock.recv(READ)
+                return {'header': message_header,
+                        'data': data}
+            data = sock.recv(message_length)
+            time.sleep(0.1)
             return {'header': message_header,
                     'data': data}
         except Exception:

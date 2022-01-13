@@ -2,11 +2,11 @@ import re
 import socket
 import threading
 import datetime as dt
-
+import time
 
 HEADER = 10
-IP = 'localhost'
-#IP = '185.183.98.98'
+READ = 10000
+IP = '185.183.98.98'
 PORT = 6121
 ENCODING = 'utf-8'
 
@@ -23,7 +23,7 @@ def main():
     print(f'Listening for connections on {IP}:{PORT}...')
     while True:
         client_socket, client_address = server.accept()
-        user = receive_message(client_socket)
+        user = receive_message(client_socket, user=True)
         if user is False:
             continue
         clients[client_socket] = user
@@ -32,18 +32,25 @@ def main():
         threading.Thread(target=server_work, args=(client_socket,)).start()
 
 
-def receive_message(sock):
+def receive_message(sock, user=False):
     while True:
         try:
+            sock.settimeout(None)
+            if user:
+                sock.settimeout(0.1)
             message_header = sock.recv(HEADER)
             if not len(message_header):
                 return False
             message_length = int(message_header.decode(ENCODING))
-            read_length = message_length
-            data = sock.recv(read_length)
-            while len(data) < message_length:
-                read_length -= len(data)
-                data += sock.recv(read_length)
+            if message_length > READ:
+                data = sock.recv(READ)
+                while len(data) < message_length:
+                    diff = message_length - len(data)
+                    data += sock.recv(diff) if diff < READ else sock.recv(READ)
+                return {'header': message_header,
+                        'data': data}
+            data = sock.recv(message_length)
+            time.sleep(0.1)
             return {'header': message_header,
                     'data': data}
         except Exception:
