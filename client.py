@@ -39,18 +39,17 @@ def receive_message(sock):
             message_header = sock.recv(HEADER)
             if not len(message_header):
                 return False
+            bytes_recd = 0
+            all_data = []
             message_length = int(message_header.decode(ENCODING))
-            if message_length > READ:
-                data = sock.recv(READ)
-                while len(data) < message_length:
-                    diff = message_length - len(data)
-                    data += sock.recv(diff) if diff < READ else sock.recv(READ)
-                return {'header': message_header,
-                        'data': data}
-            data = sock.recv(message_length)
-            time.sleep(0.1)
+            while bytes_recd < message_length:
+                data = sock.recv(min(READ, message_length - bytes_recd))
+                if data == b'':
+                    return
+                all_data.append(data)
+                bytes_recd += len(data)
             return {'header': message_header,
-                    'data': data}
+                    'data': b''.join(all_data)}
         except Exception:
             return
 

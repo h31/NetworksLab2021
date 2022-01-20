@@ -2,7 +2,6 @@ import re
 import socket
 import threading
 import datetime as dt
-import time
 
 HEADER = 10
 READ = 10000
@@ -23,36 +22,41 @@ def main():
     print(f'Listening for connections on {IP}:{PORT}...')
     while True:
         client_socket, client_address = server.accept()
-        user = receive_message(client_socket, user=True)
-        if user is False:
-            continue
-        clients[client_socket] = user
-        print(f"New connection from {client_address[0]}:{client_address[1]},"
-              f" Username: {user['data'].decode(ENCODING)}")
-        threading.Thread(target=server_work, args=(client_socket,)).start()
+        threading.Thread(
+            target=user_connect,
+            args=(client_socket, client_address)
+        ).start()
 
 
-def receive_message(sock, user=False):
+def user_connect(client_socket, client_address):
+    user = receive_message(client_socket)
+    if user is False:
+        client_socket.shutdown(socket.SHUT_RDWR)
+        client_socket.close()
+        exit(0)
+    clients[client_socket] = user
+    print(f"New connection from {client_address[0]}:{client_address[1]},"
+          f" Username: {user['data'].decode(ENCODING)}")
+    server_work(client_socket)
+
+
+def receive_message(sock):
     while True:
         try:
-            sock.settimeout(None)
-            if user:
-                sock.settimeout(0.1)
             message_header = sock.recv(HEADER)
             if not len(message_header):
                 return False
+            bytes_recd = 0
+            all_data = []
             message_length = int(message_header.decode(ENCODING))
-            if message_length > READ:
-                data = sock.recv(READ)
-                while len(data) < message_length:
-                    diff = message_length - len(data)
-                    data += sock.recv(diff) if diff < READ else sock.recv(READ)
-                return {'header': message_header,
-                        'data': data}
-            data = sock.recv(message_length)
-            time.sleep(0.1)
+            while bytes_recd < message_length:
+                data = sock.recv(min(READ, message_length - bytes_recd))
+                if data == b'':
+                    return
+                all_data.append(data)
+                bytes_recd += len(data)
             return {'header': message_header,
-                    'data': data}
+                    'data': b''.join(all_data)}
         except Exception:
             return
 
