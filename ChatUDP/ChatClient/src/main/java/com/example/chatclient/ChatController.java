@@ -47,7 +47,7 @@ public class ChatController {
 
         Thread t = new Thread(() -> {
             while (true) {
-                String sInp = receive(1024);
+                String sInp = receive(65536);
                 Map<String, String> data = coder.decodeData(sInp);
                 String type = data.get("type");
                 switch (type) {

@@ -22,7 +22,7 @@ public class ChatServer {
 
 
         while (true) {
-            byte[] receivingDataBuffer = new byte[1024];
+            byte[] receivingDataBuffer = new byte[65536];
             DatagramPacket inputPacket = new DatagramPacket(receivingDataBuffer, receivingDataBuffer.length);
             ss.receive(inputPacket);
             try {
