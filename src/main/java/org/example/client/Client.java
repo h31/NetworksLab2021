@@ -27,10 +27,6 @@ public class Client {
         try {
             this.socket = new Socket(ip, port);
             logger.info("Socket connection");
-        } catch (IOException e) {
-            logger.error("Socket failed");
-        }
-        try {
             inputUser = new BufferedReader(new InputStreamReader(System.in));
             in = new BufferedInputStream(socket.getInputStream());
             out = new BufferedOutputStream(socket.getOutputStream());
@@ -39,7 +35,8 @@ public class Client {
             new ReadMsg().start();
             new WriteMsg().start();
         } catch (IOException e) {
-            Client.this.downService();
+            logger.error("Socket failed");
+            downService();
         }
     }
 

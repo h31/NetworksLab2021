@@ -46,7 +46,7 @@ public class Server {
         private void send(String message, byte[] content) throws IOException {
             out.write(message.getBytes(StandardCharsets.UTF_8));
             out.flush();
-            out.write(Arrays.copyOf(content, content.length));
+            out.write(content);
             out.flush();
         }
 
