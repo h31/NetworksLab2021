@@ -1,33 +1,52 @@
 ## Converter API
 - POST /login
-  - FORM{"login": "<login>", "password": "<password>"}
+  - REQUEST {"login": "<login>", "password": "<password>"}
   - Responses:
     - Code: 200
-      - JSON{"answer": "Success"}
+      - "Success"
     - Code: 401
-      - JSON{"answer": "Failed"}
+      - "Failed"
 - GET /logout
   - Responses:
     - Code: 200
-      - JSON{"answer": "Logged out"}
+      - "Logged out"
     - Code: 401
-      - JSON{"answer": 'You are not logged in'}
-- GET /converter
-  {"cmd": "default"}
-  - Response:
-      - JSON{"answer": "<answer>"}
-  {"cmd": "ls"}
-  - Response:
-      - JSON{"answer": "<answer>"}
-  {"cmd": "rate", "currency": "<currency_ticker>"}
+      -<Unauthorized>
+- GET /default
   - Responses:
     - Code: 200
-      - JSON{"answer": "<answer>", "time": <time>}
-    - Code: other
-      - JSON{"answer": "<answer>"}
-  {"cmd": "convert", "amount": "<amount>", "from": "<currency_ticker>", "to": "<currency_ticker>"}
+      -<default currency>
+    - Code: 401
+      -<Unauthorized>
+- GET /ls
   - Responses:
     - Code: 200
-      - JSON{"answer": "<answer>", "time": <time>}
-    - Code: other
-      - JSON{"answer": "<answer>"}
+      -<string with currency list>
+    - Code: 401
+      -<Unauthorized>
+    - Code: 404
+      - "Unknown currency"
+    - Code: 505
+      - "No connection to the database"
+- GET /rate
+  - REQUEST {"currency": "<currency>"}
+  - Responses:
+    - Code: 200
+      - JSON {"rate": "<rate>", "time": <time>}
+    - Code: 401
+      -<Unauthorized>
+    - Code: 404
+      - "Unknown currency"
+    - Code: 505
+      - "No connection to the database"
+- GET /convert
+  - REQUEST {"amount": "<amount>", "from": "<currency from>", "to": "<curremcy to>"}
+  - Responses:
+    - Code: 200
+      - JSON {"amount": "<amount>", "time": <time>}
+    - Code: 401
+      -<Unauthorized>
+    - Code: 404
+      - "Unknown currency"
+    - Code: 505
+      - "No connection to the database"

@@ -1,6 +1,8 @@
 import socket
+
 from flask import Flask, request
-from flask_login import LoginManager, UserMixin, current_user, login_user, logout_user
+from flask_login import LoginManager, UserMixin, current_user, login_user, logout_user, login_required
+
 from converter import Converter
 
 app = Flask(__name__)
@@ -30,47 +32,58 @@ def login():
             user.id = login
             login_user(user)
     if current_user.is_authenticated:
-        return {"answer": "Success"}, 200
+        return "Success", 200
     else:
-        return {"answer": "Failed"}, 401
+        return "Failed", 401
 
 
 @app.route('/logout')
+@login_required
 def logout():
-    if current_user.is_authenticated:
-        logged_in_users.remove(current_user.get_id())
-        logout_user()
-        return {"answer": "Logged out"}, 200
-    else:
-        return {"answer": 'You are not logged in'}, 401
+    logged_in_users.remove(current_user.get_id())
+    logout_user()
+    return "Logged out", 200
 
 
-@app.route('/converter')
-def converter():
-    if not current_user.is_authenticated:
-        return {"answer": 'You are not logged in'}, 401
+@app.route('/default')
+@login_required
+def get_default_currency():
+    return converter.default_currency, 200
 
-    args = request.args
-    match args.get("cmd"):
-        case "default":
-            return {"answer": converter.get_default_currency()}, 200
-        case "ls":
-            result = converter.get_currency_list()
-            return {"answer": result["list"]}, result["status_code"]
-        case "rate":
-            rate = converter.get_currency_exchange_rate(args.get("currency"))
-            if rate["status_code"] == 200:
-                return {"time": converter.get_last_update_time(), "answer": rate["rate"]}, 200
-            else:
-                return {"answer": rate["rate"]}, rate["status_code"]
-        case "convert":
-            result = converter.convert(float(args.get("amount")), args.get("from"), args.get("to"))
-            if result["status_code"] == 200:
-                return {"time": converter.get_last_update_time(), "answer": result["result"]}, 200
-            else:
-                return {"answer": result["result"]}, result["status_code"]
-        case _:
-            return {"answer": "Invalid command"}, 400
+
+@app.route('/ls')
+@login_required
+def get_currency_list():
+    return make_response(converter.get_currency_list())
+
+
+@app.route('/rate')
+@login_required
+def get_currency_exchange_rate():
+    return make_response({
+        "rate": converter.get_currency_exchange_rate(request.args.get("currency")),
+        "time": converter.time
+    })
+
+
+@app.route('/convert')
+@login_required
+def convert():
+    return make_response({
+        "amount": converter.convert(float(request.args.get("amount")),
+                                    request.args.get("from"), request.args.get("to")),
+        "time": converter.time
+    })
+
+
+def make_response(default):
+    match converter.error:
+        case 0:
+            return default, 200
+        case 1:
+            return "Unknown currency", 404
+        case 2:
+            return "No connection to the database", 505
 
 
 def get_local_IP():

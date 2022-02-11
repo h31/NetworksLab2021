@@ -1,62 +1,65 @@
-from enum import Enum
+import re
 from getpass import getpass
 
-import re
 import requests
 
 
-class RequestType(Enum):
-    GET = 0
-    POST = 1
-
-
-def make_request(request_type, route, args=None):
-    try:
-        if request_type == RequestType.POST:
-            r = session.post("http://" + addr + "/" + route, args)
-        else:
-            r = session.get("http://" + addr + "/" + route, params=args)
-    except requests.exceptions.ConnectionError:
-        return {"status_code": 503, "data": {"answer": "Server is disconnected"}}
-    return {"status_code": r.status_code, "data": r.json()}
-
-
 def verify_command(string):
-    string = string.strip()
-    if re.fullmatch("(exit|default|ls|rate [a-zA-Z]+|convert ([0-9]+[.|])?[0-9]+( [a-zA-Z]+){2})", string):
-        return string.split(" ")
-    else:
-        return False
+    m = re.match("(?P<cmd>exit|default|ls)", string)
+    if m is not None:
+        return [m.group("cmd")]
+
+    m = re.match("rate( )+(?P<currency>[A-Za-z]+)", string)
+    if m is not None:
+        return ["rate", m.group("currency")]
+
+    m = re.match("convert( )+(?P<amount>([0-9]+[.|])?[0-9]+)( )+(?P<from>[A-Za-z]+)( )+(?P<to>[A-Za-z]+)", string)
+    if m is not None:
+        return ["convert", m.group("amount"), m.group("from"), m.group("to")]
+
+    return False
+
+
+def get_request(route, params=None):
+    try:
+        r = session.get(addr + route, params=params)
+        if r.status_code == 401:
+            exit("Login failed")
+        else:
+            return r
+    except requests.exceptions.ConnectionError:
+        exit("Server is disconnected")
+
+
+def post_request(route, args=None):
+    try:
+        r = session.post(addr + route, args)
+        if r.status_code == 401:
+            exit("Login failed")
+        else:
+            return r
+    except requests.exceptions.ConnectionError:
+        exit("Server is disconnected")
 
 
 if __name__ == "__main__":
-    addr = input("Введите адрес сервера, для использования 192.168.56.1:5000 нажмите enter: ")
+    addr = input("Введите адрес сервера, для использования http://192.168.56.1:5000/ нажмите enter: ")
     if addr == "":
-        addr = "192.168.56.1:5000"
+        addr = "http://192.168.56.1:5000/"
     login = input("Логин: ")
     password = getpass(prompt='Пароль: ')  # hidden input
 
     session = requests.Session()
-    r = make_request(RequestType.POST, "login", {'login': login, 'password': password})
-    match r["status_code"]:
-        case 200:
-            print("Успешная авторизация")
-        case 401:
-            exit("Авторизация не пройдена")
-        case 503:
-            exit(r["data"]["answer"])
-        case _:
-            exit(r["data"]["answer"])
+    r = post_request("login", {'login': login, 'password': password})
+    print("Успешная авторизация")
 
-    r = make_request(RequestType.GET, "converter", {"cmd": "default"})
-    if r["status_code"] == 503:
-        exit(r["data"]["answer"])
-    default_currency = r["data"]["answer"]
+    r = get_request("default")
+    default_currency = r.text
 
     print("\nДоступные команды: default, ls, rate <currency>, convert <amount> <from> <to>, exit")
     print("Валюта по умолчанию", default_currency)
     while True:
-        cmd = verify_command(input("\n>> "))
+        cmd = verify_command(input("\n>> ").strip())
         if cmd is False:
             print("Неверная команда")
             continue
@@ -64,29 +67,23 @@ if __name__ == "__main__":
             case "exit":
                 break
             case "default" | "ls":
-                r = make_request(RequestType.GET, "converter", {"cmd": cmd[0]})
-                if r["status_code"] == 503:
-                    exit(r["data"]["answer"])
-                print(r["data"]["answer"])
+                r = get_request(cmd[0])
+                if r.status_code != 200:
+                    print("Error: ", end="")
+                print(r.text)
             case "rate":
-                r = make_request(RequestType.GET, "converter", {"cmd": cmd[0], "currency": cmd[1]})
-                match r["status_code"]:
-                    case 200:
-                        print(f"{default_currency} = {r['data']['answer']} {cmd[1].upper()} ({r['data']['time']})")
-                    case 503:
-                        exit(r["data"]["answer"])
-                    case _:
-                        print(r["data"]["answer"])
+                r = get_request("rate", {"currency": cmd[1]})
+                if r.status_code != 200:
+                    print(f"Error: {r.text}")
+                else:
+                    answer = r.json()
+                    print(f"1 {default_currency} = {answer['rate']} {cmd[1].upper()} ({answer['time']})")
             case "convert":
-                r = make_request(RequestType.GET, "converter", {"cmd": cmd[0], "amount": cmd[1],
-                                                                "from": cmd[2], "to": cmd[3]})
-                match r["status_code"]:
-                    case 200:
-                        print(
-                            f"{cmd[1]} {cmd[2].upper()} = {r['data']['answer']} {cmd[3].upper()} ({r['data']['time']})")
-                    case 503:
-                        exit(r["data"]["answer"])
-                    case _:
-                        print(r["data"]["answer"])
+                r = get_request("convert", {"amount": cmd[1], "from": cmd[2], "to": cmd[3]})
+                if r.status_code != 200:
+                    print(f"Error: {r.text}")
+                else:
+                    answer = r.json()
+                    print(f"{cmd[1]} {cmd[2].upper()} = {answer['amount']} {cmd[3].upper()} ({answer['time']})")
 
-    make_request(RequestType.GET, "logout")
+    session.get(addr + "logout")
