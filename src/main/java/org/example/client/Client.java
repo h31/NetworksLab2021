@@ -49,13 +49,14 @@ public class Client {
 
     private void downService() {
         try {
-            if (!socket.isClosed()) {
+            if (socket != null && !socket.isClosed()) {
                 socket.close();
                 writer.close();
                 in.close();
                 out.close();
             }
         } catch (IOException ex) {
+            logger.error("something went wrong", ex);
         }
     }
 
@@ -73,7 +74,7 @@ public class Client {
                     for (int i = 0; i < 5; i++) {
                         line = readLine(in);
                         if (line.equals(STOP_WORD)) {
-                            Client.this.downService();
+                            downService();
                             break;
                         }
                         switch (i) {
@@ -100,7 +101,11 @@ public class Client {
                         byte[] content = new byte[attSize];
                         in.readNBytes(content, 0, attSize);
                         String[] f = attName.split("\\.");
-                        File file = File.createTempFile(f[0], "." + f[1]);
+                        StringBuilder suffix = new StringBuilder();
+                        for (int i = 1; i < f.length; i++) {
+                            suffix.append(".").append(f[i]);
+                        }
+                        File file = File.createTempFile(f[0], suffix.toString());
                         BufferedOutputStream fileReader = new BufferedOutputStream(new FileOutputStream(file));
                         fileReader.write(content);
                         fileReader.flush();
@@ -109,7 +114,7 @@ public class Client {
                     }
                 }
             } catch (IOException e) {
-                Client.this.downService();
+                downService();
             }
         }
     }
