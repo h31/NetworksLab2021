@@ -1,5 +1,6 @@
 import socket
 import threading
+import time
 
 host = '127.0.0.1'
 port = 9090
@@ -7,7 +8,6 @@ port = 9090
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((host, port))
 server.listen()
-
 
 clients = []
 nicknames = []
@@ -19,13 +19,16 @@ def broadcast(message):
 def handle(client):
     while True:
         try:
-            message = client.recv(1024)
-            broadcast(message)           
+            time_now = time.strftime('%H:%M:%S', time.localtime())
+            message = client.recv(16384).decode('utf-8')
+            new_message = ("[{}]".format(time_now) + message).encode('utf-8') 
+            broadcast(new_message)           
         except:
             index = clients.index(client)
             clients.remove(client)
             client.close()
             nickname = nicknames[index]
+            print('{} left the chat!'.format(nickname))
             broadcast('{} left the chat!'.format(nickname).encode('utf-8'))
             nicknames.remove(nickname)
             break
@@ -47,4 +50,5 @@ def receive():
         thread = threading.Thread(target=handle, args=(client,))
         thread.start()
 
+print('Server started')
 receive()
