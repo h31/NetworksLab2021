@@ -1,0 +1,61 @@
+## Roulette
+-POST /login
+  -REQUEST {"login": "<login>", "password": "<password>", "is_croupier": "<is_croupier>"}
+  -Responses:
+    -Code: 200
+      -"Success"
+    -Code: 401
+      -"Failed"
+    -Code: 441
+      -"You are already logged in"
+    -Code: 435
+      -"The croupier already exists"
+-GET /logout
+  -Responses:
+    -Code: 200
+      -"Logged out"
+    -Code: 401
+      -Unauthorized
+-GET /status
+  -Responses:
+    -Code: 200
+      -JSON{"username": "<username>", "money": "<money>", "is_croupier": "<is_croupier>"}
+    -Code: 401
+      -Unauthorized
+-GET /results
+  -Responses:
+    -Code: 200
+      -JSON{"number": "<number>", "usernames": list<username>, "types": list<type>, "amounts": list<amount>, "results": list<result>}
+    -Code: 204
+      -"No results"
+    -Code: 401
+      -Unauthorized
+-GET /bets
+  -Responses:
+    -Code: 200
+      -JSON{"usernames": list<username>, "types": list<type>, "amounts": list<amount>}
+    -Code: 204
+      -"No bets"
+    -Code: 401
+      -Unauthorized
+-POST /new
+  -REQUEST {"amount": "<amount>", "type": "<type>"}
+  -Responses:
+    -Code: 200
+      -"The bet accepted"
+    -Code: 401
+      -Unauthorized
+    -Code: 403
+      -"You are croupier"
+    -Code: 444
+      -"Incorrect type or amount"
+    -Code: 445
+      -"There is not enough money in the account"
+-GET /spin
+  -Responses:
+    -Code: 200
+      -<number>
+    -Code: 401
+      -Unauthorized
+    -Code: 403
+      -"You are not a croupier"
