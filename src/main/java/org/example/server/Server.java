@@ -1,11 +1,13 @@
 package org.example.server;
 
-import org.example.server.util.Util;
 import org.example.util.NtpPacket;
 
 import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
+
+import static org.example.server.util.Util.pack;
+import static org.example.server.util.Util.unpack;
 
 public class Server implements Runnable {
 
@@ -33,12 +35,12 @@ public class Server implements Runnable {
                 socket.receive(clientPacket);
                 long receiveTime = System.currentTimeMillis();
 
-                NtpPacket clientRequest = Util.unpack(buf);
+                NtpPacket clientRequest = unpack(buf);
 
                 InetAddress clientAddress = clientPacket.getAddress();
                 int clientPort = clientPacket.getPort();
 
-                byte[] byteArray = Util.pack(clientRequest, receiveTime, hostAddress).toByteArray();
+                byte[] byteArray = pack(clientRequest, receiveTime, hostAddress).toByteArray();
 
                 DatagramPacket packet = new DatagramPacket(byteArray, byteArray.length, clientAddress, clientPort);
                 socket.send(packet);

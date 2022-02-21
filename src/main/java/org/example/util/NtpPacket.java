@@ -53,5 +53,4 @@ public class NtpPacket implements Serializable {
                 .putLong(transmitTimestamp);
         return byteBuffer.array();
     }
-
 }
