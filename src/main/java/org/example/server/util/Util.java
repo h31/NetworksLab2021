@@ -1,20 +1,21 @@
-package org.example.util;
+package org.example.server.util;
+
+import org.example.util.NtpPacket;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 
-public class Utils {
+public class Util {
     private static final long OFFSET_MILLISECONDS_1900_TO_1970 = (365 * 70 + 17) * 24L * 60L * 60L * 1000L;
     private static final byte LEAP_INDICATOR = 0;
-    private static final byte MODE = 4;
+    private static final byte MODE_SERVER = 4;
     private static final byte STRATUM = 2;
-    private static final byte POLL = 0;
-    private static final byte PRECISION = 20;
+    private static final byte PRECISION = -23;
     private static final int ROOT_DELAY = 0;
-    private static final int ROOT_DISPERSION = 4;
+    private static final int ROOT_DISPERSION = 0;
 
-    public static NtpPacket pack(NtpPacket clientNtpPacket, long timeOfReceive, byte[] hostAddress) {
+    public static NtpPacket pack(NtpPacket clientNtpPacket, long receiveTime, byte[] hostAddress) {
         NtpPacket serverNtpPacket = new NtpPacket();
 
         long receiveTimestamp = convertToNtpTimestamp(System.currentTimeMillis());
@@ -22,16 +23,16 @@ public class Utils {
 
         serverNtpPacket.setLeapIndicator(LEAP_INDICATOR);
         serverNtpPacket.setVersionNumber(clientNtpPacket.getVersionNumber());
-        serverNtpPacket.setMode(MODE);
+        serverNtpPacket.setMode(MODE_SERVER);
         serverNtpPacket.setStratum(STRATUM);
-        serverNtpPacket.setPoll(POLL);
+        serverNtpPacket.setPoll(clientNtpPacket.getPoll());
         serverNtpPacket.setPrecision(PRECISION);
         serverNtpPacket.setRootDelay(ROOT_DELAY);
         serverNtpPacket.setRootDispersion(ROOT_DISPERSION);
         serverNtpPacket.setReferenceIdentifier(serverAddress);
         serverNtpPacket.setReferenceTimestamp(receiveTimestamp);
         serverNtpPacket.setOriginateTimestamp(clientNtpPacket.getOriginateTimestamp());
-        serverNtpPacket.setReceiveTimestamp(convertToNtpTimestamp(timeOfReceive));
+        serverNtpPacket.setReceiveTimestamp(convertToNtpTimestamp(receiveTime));
         serverNtpPacket.setTransmitTimestamp(convertToNtpTimestamp(System.currentTimeMillis()));
 
         return serverNtpPacket;
@@ -47,11 +48,11 @@ public class Utils {
         clientNtpPacket.setPoll(buf[2]);
         clientNtpPacket.setPrecision(buf[3]);
 
-        byte[] clientTransmitByteArray = Arrays.copyOfRange(buf, 40, 48);
+        byte[] clientOriginateByteArray = Arrays.copyOfRange(buf, 40, 48);
 
-        long clientTransmitTimestamp = ByteBuffer.wrap(clientTransmitByteArray).getLong();
+        long clientOriginateTimestamp = ByteBuffer.wrap(clientOriginateByteArray).getLong();
 
-        clientNtpPacket.setTransmitTimestamp(clientTransmitTimestamp);
+        clientNtpPacket.setOriginateTimestamp(clientOriginateTimestamp);
 
         return clientNtpPacket;
     }

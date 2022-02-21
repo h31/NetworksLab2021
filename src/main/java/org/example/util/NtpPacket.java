@@ -3,6 +3,7 @@ package org.example.util;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 @Data
 public class NtpPacket implements Serializable {
@@ -19,5 +20,38 @@ public class NtpPacket implements Serializable {
     private long originateTimestamp; // время, когда пакет был отправлен
     private long receiveTimestamp; // время получения пакета сервером
     private long transmitTimestamp; // время отправки пакета с сервера клиенту
+
+    @Override
+    public String toString() {
+        return "Leap indicator: " + leapIndicator +
+                "\nVersion number: " + versionNumber +
+                "\nMode: " + mode +
+                "\nStratum: " + stratum +
+                "\nPoll: " + poll +
+                "\nPrecision: " + precision +
+                "\nRoot delay: " + rootDelay +
+                "\nRoot dispersion: " + rootDispersion +
+                "\nRef id: " + referenceIdentifier +
+                "\nReference: " + referenceTimestamp +
+                "\nOriginate: " + originateTimestamp +
+                "\nReceive: " + receiveTimestamp +
+                "\nTransmit: " + transmitTimestamp;
+    }
+
+    public byte[] toByteArray() {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(48)
+                .put((byte) (leapIndicator | versionNumber | mode))
+                .put(stratum)
+                .put(poll)
+                .put(precision)
+                .putInt(rootDelay)
+                .putInt(rootDispersion)
+                .putInt(referenceIdentifier)
+                .putLong(referenceTimestamp)
+                .putLong(originateTimestamp)
+                .putLong(receiveTimestamp)
+                .putLong(transmitTimestamp);
+        return byteBuffer.array();
+    }
 
 }
