@@ -17,7 +17,7 @@ file_end = '37e3f4a8-b8c9-4f22-ad4d-8bd81e686822'
 length_of_message = len(f"file{file_end}")
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client.connect((hostL, 55555))
-lenght = 10
+lenght = 65535
 making_connection = False
 p_number = 0
 

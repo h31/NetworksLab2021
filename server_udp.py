@@ -14,7 +14,7 @@ length_of_message = len(f"file{file_end}")
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server.bind((hostL, port))
 u_sockets = []
-lenght = 10
+lenght = 65535
 
 
 def broadcast(message, addres):
@@ -30,7 +30,6 @@ def broadcast(message, addres):
 # def handle(message, address):
 def handle():
     global u_sockets
-    buffer = 0
     while True:
         full_mes = ''.encode(code_table)
         message = ''.encode(code_table)
@@ -40,7 +39,6 @@ def handle():
             u_sockets.append(address)
         else:
             full_mes += message
-            # это часть модернизируется с целью успешного получения всего сообщения при выкладке сервера удаленно
             while not file_end.encode(code_table) in full_mes:
                 message, address = server.recvfrom(lenght)
                 full_mes += message
@@ -48,12 +46,11 @@ def handle():
                 time_zone = full_mes[
                             full_mes.find('<'.encode(code_table)) + 1: full_mes.find('>'.encode(code_table))]
                 now_time = datetime.now(timezone(time_zone)).strftime(
-                    "%Y-%m-%d %H:%M")  # время сервера измененное в соответствии с tz пользователя
+                    "%Y-%m-%d %H:%M")
                 message_send = '<'.encode(code_table) + now_time.encode(code_table) + '> '.encode(code_table) \
                                + full_mes[
                                  full_mes.find('>'.encode(code_table)) + 1:]
                 broadcast(message_send, address)
-                print("sev2")
 
 
 thread = threading.Thread(target=handle)
