@@ -18,16 +18,20 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         System.out.println("Client joined - " + ctx);
         channels.add(ctx.channel());
     }
+
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg){
-        System.out.println("Server received - " + msg);
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
         for (Channel c : channels) {
             RequestData requestData = (RequestData) msg;
-            ResponseData responseData = new ResponseData();
-            responseData.setText(requestData.getText());
-            responseData.setNickname(((RequestData) msg).getNickName());
             String time = new SimpleDateFormat("HH:mm:ss").format(new Date());
-            responseData.setTime(time);
+            ResponseData responseData = ResponseData.builder()
+                    .text(requestData.getText())
+                    .nickname(requestData.getNickName())
+                    .time(time)
+                    .fileAttach(requestData.isFileAttach())
+                    .contentLength(requestData.getContentLength())
+                    .content(requestData.getContent())
+                    .build();
             c.writeAndFlush(responseData);
         }
     }

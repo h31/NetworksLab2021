@@ -8,7 +8,9 @@ import lombok.ToString;
 @Setter
 @ToString
 public class RequestData {
-    private int intValue;
     private String nickName;
     private String text;
+    private boolean fileAttach;
+    private int contentLength;
+    private byte[] content;
 }
