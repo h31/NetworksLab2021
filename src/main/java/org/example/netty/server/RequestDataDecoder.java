@@ -1,21 +1,22 @@
-package org.example.netty;
+package org.example.netty.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
+import org.example.netty.RequestData;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+
+import static org.example.netty.Util.writeFileContent;
 
 public class RequestDataDecoder extends ReplayingDecoder<RequestData> {
 
     private static final Charset charset = StandardCharsets.UTF_8;
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws IOException {
+    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         RequestData data = new RequestData();
         int textLength = in.readInt();
         data.setText(in.readCharSequence(textLength, charset).toString());
@@ -24,17 +25,7 @@ public class RequestDataDecoder extends ReplayingDecoder<RequestData> {
         boolean isFileAttach = in.readBoolean();
         data.setFileAttach(isFileAttach);
         if (isFileAttach) {
-            ByteArrayOutputStream stringByteArray = new ByteArrayOutputStream();
-            int contentLength = in.readInt();
-            data.setContentLength(contentLength);
-            int attNameLength = in.readInt();
-            data.setAttName(in.readCharSequence(attNameLength, charset).toString());
-            for (int i = 0; i < contentLength; i++) {
-                byte contentByte = in.readByte();
-                stringByteArray.write(contentByte);
-            }
-            data.setContent(stringByteArray.toByteArray());
-            stringByteArray.close();
+            writeFileContent(data, in, charset);
         }
         out.add(data);
     }

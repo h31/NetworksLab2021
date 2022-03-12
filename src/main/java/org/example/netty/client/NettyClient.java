@@ -1,4 +1,4 @@
-package org.example.netty;
+package org.example.netty.client;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -6,6 +6,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.extern.slf4j.Slf4j;
+import org.example.netty.RequestData;
+import org.slf4j.event.Level;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -16,14 +18,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
-public class NettyClient {
+public record NettyClient(String host, int port) {
 
     private static final Pattern pattern = Pattern.compile(" ?-a (.*)$");
     private static final String STOP_WORD = "stop";
 
-    public static void main(String[] args) {
-        String host = "localhost";
-        int port = 8080;
+    public void start() {
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         Scanner scanner = new Scanner(System.in);
         System.out.println("Please enter your name: ");
@@ -71,7 +71,7 @@ public class NettyClient {
                             msg.setAttName(file.getName());
                             msg.setContent(content);
                         } catch (IOException ex) {
-                            log.error("error" + ex);
+                            log.error(String.valueOf(Level.ERROR), ex.getMessage());
                         }
                         channel.writeAndFlush(msg);
                     }
@@ -85,7 +85,7 @@ public class NettyClient {
             }
             f.channel().closeFuture().sync();
         } catch (InterruptedException ex) {
-            log.error("error" + ex);
+            log.error(String.valueOf(Level.ERROR), ex.getMessage());
         } finally {
             workerGroup.shutdownGracefully();
         }

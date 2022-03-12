@@ -1,8 +1,9 @@
-package org.example.netty;
+package org.example.netty.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
+import org.example.netty.ResponseData;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -19,7 +20,7 @@ public class ResponseDataEncoder extends MessageToByteEncoder<ResponseData> {
         out.writeInt(msg.getTime().length());
         out.writeCharSequence(msg.getTime(), charset);
         out.writeBoolean(msg.isFileAttach());
-        if (msg.getContentLength() != 0) {
+        if (msg.isFileAttach()) {
             out.writeInt(msg.getContentLength());
             out.writeInt(msg.getAttName().length());
             out.writeCharSequence(msg.getAttName(), charset);

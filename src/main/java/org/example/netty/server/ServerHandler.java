@@ -1,8 +1,10 @@
-package org.example.netty;
+package org.example.netty.server;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.example.netty.RequestData;
+import org.example.netty.ResponseData;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

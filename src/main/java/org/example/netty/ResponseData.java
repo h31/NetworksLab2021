@@ -8,7 +8,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ResponseData {
+public class ResponseData extends RequestData {
     private String nickname;
     private String text;
     private String time;
