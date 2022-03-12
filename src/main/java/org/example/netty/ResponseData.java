@@ -14,5 +14,6 @@ public class ResponseData {
     private String time;
     private boolean fileAttach;
     private int contentLength;
+    private String attName;
     private byte[] content;
 }

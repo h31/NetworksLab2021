@@ -21,6 +21,8 @@ public class ResponseDataEncoder extends MessageToByteEncoder<ResponseData> {
         out.writeBoolean(msg.isFileAttach());
         if (msg.getContentLength() != 0) {
             out.writeInt(msg.getContentLength());
+            out.writeInt(msg.getAttName().length());
+            out.writeCharSequence(msg.getAttName(), charset);
             out.writeBytes(msg.getContent());
         }
     }

@@ -28,6 +28,8 @@ public class ResponseDataDecoder extends ReplayingDecoder<ResponseData> {
             ByteArrayOutputStream stringByteArray = new ByteArrayOutputStream();
             int contentLength = in.readInt();
             data.setContentLength(contentLength);
+            int attNameLength = in.readInt();
+            data.setAttName(in.readCharSequence(attNameLength, charset).toString());
             for (int i = 0; i < contentLength; i++) {
                 byte contentByte = in.readByte();
                 stringByteArray.write(contentByte);

@@ -12,5 +12,6 @@ public class RequestData {
     private String text;
     private boolean fileAttach;
     private int contentLength;
+    private String attName;
     private byte[] content;
 }

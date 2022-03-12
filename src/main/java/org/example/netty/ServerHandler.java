@@ -30,6 +30,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                     .time(time)
                     .fileAttach(requestData.isFileAttach())
                     .contentLength(requestData.getContentLength())
+                    .attName(requestData.getAttName())
                     .content(requestData.getContent())
                     .build();
             c.writeAndFlush(responseData);

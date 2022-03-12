@@ -68,6 +68,7 @@ public class NettyClient {
                             content = fileReader.readAllBytes();
                             msg.setFileAttach(true);
                             msg.setContentLength(content.length);
+                            msg.setAttName(file.getName());
                             msg.setContent(content);
                         } catch (IOException ex) {
                             log.error("error" + ex);
