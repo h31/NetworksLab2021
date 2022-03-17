@@ -37,22 +37,6 @@ public class ChatController {
     private PrintWriter pw;
     private Coder coder = new Coder();
 
-    static byte[] readBytes(InputStream stream, int dataSize) throws IOException {
-        int totalBytesRead = 0;
-        byte[] data = new byte[dataSize];
-
-        while (totalBytesRead < dataSize) {
-            int bytesRemaining = dataSize - totalBytesRead;
-            int bytesRead = stream.read(data, totalBytesRead, bytesRemaining);
-
-            if (bytesRead == -1) {
-                throw new IOException("Socket is closed");
-            }
-            totalBytesRead += bytesRead;
-        }
-        return data;
-    }
-
     private void addMessage(String message) {
         Platform.runLater(() -> {
             messages.add(message);
@@ -63,9 +47,9 @@ public class ChatController {
         });
     }
 
-//    private ChatClient chatClient = new ChatClient(chatArea, messages);
     public ChatController() {
         try {
+//            Socket s = new Socket(InetAddress.getByName("networkslab-ivt.ftp.sh"), 8777);
             Socket s = new Socket(InetAddress.getLocalHost(), 8777);
             InputStream is = s.getInputStream();
             Scanner sc = new Scanner(s.getInputStream());
@@ -110,7 +94,8 @@ public class ChatController {
                                     )
                             );
                             try {
-                                byte[] bytes = readBytes(is, Integer.parseInt(data.get("filesize")));
+                                byte[] bytes = new byte[Integer.parseInt(data.get("filesize"))];
+                                is.read(bytes, 0, bytes.length);
                                 String path = "files/" + data.get("filename");
                                 FileOutputStream fos = new FileOutputStream(path);
                                 fos.write(bytes);

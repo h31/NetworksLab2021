@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 public class Coder {
+    // { "type": "init", "nickname": "guest1"}
+    // "type=init&nickname=guest1"
     public String encodeData(Map<String, String> data) {
         List<String> params = new ArrayList<>();
         for (Map.Entry<String, String> e : data.entrySet()) {

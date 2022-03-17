@@ -4,23 +4,6 @@ import java.net.Socket;
 import java.time.Instant;
 import java.util.*;
 
-class Reader {
-    static byte[] readBytes(InputStream stream, int dataSize) throws IOException {
-        int totalBytesRead = 0;
-        byte[] data = new byte[dataSize];
-
-        while (totalBytesRead < dataSize) {
-            int bytesRemaining = dataSize - totalBytesRead;
-            int bytesRead = stream.read(data, totalBytesRead, bytesRemaining);
-
-            if (bytesRead == -1) {
-                throw new IOException("Socket is closed");
-            }
-            totalBytesRead += bytesRead;
-        }
-        return data;
-    }
-}
 
 class Session implements Runnable {
     private static int count = 0;
@@ -115,7 +98,9 @@ class Session implements Runnable {
                 data.put("filesize", input.get("filesize"));
                 String output = coder.encodeData(data);
                 System.out.println("reading bytes...");
-                byte[] bytes = Reader.readBytes(is, Integer.parseInt(input.get("filesize")));
+
+                byte[] bytes = new byte [Integer.parseInt(input.get("filesize"))];
+                int bytesread = is.read(bytes, 0, bytes.length);
                 System.out.println("bytes received: " + Arrays.toString(bytes));
                 for (Session s : sessions) {
                     if (s != this) {
@@ -133,7 +118,7 @@ class Session implements Runnable {
                 break;
             }
             case "error":
-                // TODO
+                System.out.println("Error: " + input.get("message"));
                 break;
         }
     }
