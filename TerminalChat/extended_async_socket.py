@@ -1,3 +1,4 @@
+import asyncio
 import socket
 
 
@@ -10,15 +11,17 @@ class ChatSocket:
         else:
             self.sock = sock
 
-    def chat_send(self, msg):
-        self.sock.sendall(msg)
+    async def chat_send(self, msg):
+        loop = asyncio.get_event_loop()
+        await loop.sock_sendall(self.sock, msg)
 
-    def chat_receive(self):
+    async def chat_receive(self):
+        loop = asyncio.get_event_loop()
         chunks = []
         bytes_recd = 0
         len_recd = 10
         while bytes_recd < len_recd:
-            chunk = self.sock.recv(min(len_recd - bytes_recd, 2048))
+            chunk = await loop.sock_recv(self.sock, (min(len_recd - bytes_recd, 2048)))
             if chunk == b'':
                 raise ConnectionError("socket connection broken")
             if bytes_recd == 0:

@@ -1,35 +1,32 @@
-from extended_socket import ChatSocket
-import client_thread
-import threading
+import asyncio
 import socket
+
+from request_handler import RequestHandler
+from extended_async_socket import ChatSocket
+
+serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+serversocket.bind(('localhost', 1024))
+serversocket.setblocking(False)
+serversocket.listen(5)
 
 names = dict()
 
 
-if __name__ == '__main__':
-    serversocket = None
-    try:
-        serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    except OSError:
-        exit(-1)
-    try:
-        serversocket.bind(('localhost', 1024))
-        semaphore = threading.BoundedSemaphore(1)
-        serversocket.listen(5)
-    except OSError:
-        serversocket.close()
-        exit(-1)
+async def run_server():
+    event_loop = asyncio.get_event_loop()
     while serversocket.fileno() != -1:
         try:
-            (clientsocket, address) = serversocket.accept()
+            (clientsocket, address) = await event_loop.sock_accept(serversocket)
+            print('Client connected from', address)
+            clientsocket = ChatSocket(clientsocket)
+            ct = RequestHandler(clientsocket, serversocket, names)
+            event_loop.create_task(ct.run())
         except OSError:
-            print('Server is closed')
-            serversocket.close()
-            exit(0)
-        print('Client connected from', address)
-        clientsocket = ChatSocket(clientsocket)
-        ct = client_thread.ClientThread(clientsocket, semaphore, serversocket)
-        ct.start()
+            break
 
 
+asyncio.run(run_server())
 
+print('Server is closed')
+serversocket.close()
+exit(0)
