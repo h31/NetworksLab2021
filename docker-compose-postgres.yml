@@ -1,0 +1,13 @@
+version: '3.7'
+services:
+  db:
+    image: postgres:13-alpine3.14
+    command: [ "postgres", "-c", "log_statement=all" ]
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=vacancy
+      - POSTGRES_USER=vacancy_user
+      - POSTGRES_PASSWORD=pass
+    volumes:
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
