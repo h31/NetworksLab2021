@@ -14,9 +14,15 @@ import javax.validation.constraints.NotNull;
 public class UserDTO {
 
     @NotNull
-    private String login;
+    private String username;
 
     @NotNull
     private String password;
 
+    private String token;
+
+    public UserDTO(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
 }
