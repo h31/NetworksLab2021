@@ -1,6 +1,8 @@
 import socket
 import threading
 import time
+from commands import Command
+from messages import Message
 
 
 FORMAT = "utf-8"
@@ -9,12 +11,6 @@ PORT = 5050
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
 
-DISCONNECT_COMMAND = "!DISCONNECT"
-LOGIN_COMMAND = "!LOGIN"
-ADD_FILE_COMMAND = "!ATTACH"
-
-LOGIN_ERROR_MESSAGE = "YOU ARE NOT LOGGED INTO THE SERVER. RERUN THE EXECUTABLE FILE"
-CONNECTION_ENDED_MESSAGE = "YOU ARE DISCONNECTED FROM THE SERVER"
 
 clients_list = {}
 clients_online = []
@@ -23,30 +19,11 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
 mutex = threading.Lock()
 
-""""
-helps to get user's login by his socket
-"""
-
 
 def get_login_by_conn(conn):
     for login in clients_list:
         if clients_list[login] == conn:
             return login
-
-
-"""
-Assesses utc time for sending it to the user
-"""
-
-
-def get_utc_time():
-    current_time = time.asctime()
-    offset = time.timezone
-    temp = time.strptime(current_time)
-    temp = time.mktime(temp)
-    temp += offset
-    temp = time.ctime(temp)
-    return temp
 
 
 """
@@ -57,10 +34,11 @@ This function is needed to remove the disconnected users from the server. Also n
 def disconnect(conn):
     for login in clients_list:
         if clients_list[login] == conn:
-            print(f"[{login}] DISCONNECTED FROM THE SERVER")
-            assembly_message_to_send(conn, type='service', msg=CONNECTION_ENDED_MESSAGE)
             if login in clients_online:
                 clients_online.remove(login)
+            print(f"[{login}] DISCONNECTED FROM THE SERVER")
+            assembly_message_to_send(conn, msg_type='service', msg=Message.CONNECTION_ENDED_MESSAGE.value)
+    return 0
 
 
 """
@@ -76,36 +54,24 @@ def get_message(conn):
         else:
             msg_length = int(msg_length)
             msg = conn.recv(msg_length)
-            try:
-                new = msg.decode(FORMAT)
-                return new
-            except UnicodeDecodeError:
-                return msg
-
+            new = msg.decode(FORMAT)
+            return new
     except ConnectionResetError:
         disconnect(conn)
         return -1
 
 
-"""
-Previous function's analog for files
-"""
-
-
 def get_file(conn):
     file_length = conn.recv(HEADER).decode(FORMAT)
-    print(f"file length is {file_length}")
     if not file_length:
         return -1
     else:
         file_length = int(file_length)
-        print(file_length)
         file = b""
         current_length = 0
         while current_length < file_length:
             file += conn.recv(file_length - current_length)
             current_length = len(file)
-            print(f"Current file length is {current_length}")
     return file
 
 
@@ -127,44 +93,31 @@ def send_message(conn, msg):
         conn.send(send_length)
         conn.send(message)
     except ConnectionResetError:
-        disconnect(conn)
+        return -1
 
 
-"""
-Extends the send function. Using her, send ur message or file in the required format
-"""
-
-
-def assembly_message_to_send(conn, type, msg, nickname=None, file_name=None):
-    send_message(conn=conn, msg=type)
-    if type == 'usual' and nickname is not None:
-        t = get_utc_time()
-        send_message(conn=conn, msg=t)
+def assembly_message_to_send(conn, msg_type, msg, nickname=None, file_name=None):
+    send_message(conn=conn, msg=msg_type)
+    if msg_type == 'usual' and nickname is not None:
         send_message(conn=conn, msg=nickname)
         send_message(conn=conn, msg=msg)
-    elif type == 'file' and file_name is not None:
+    elif msg_type == 'file' and file_name is not None:
         send_message(conn, file_name)
         send_message(conn, msg)
-    elif type == 'service':
+    elif msg_type == 'service':
         send_message(conn, msg)
-
-
-"""
-Parses the received message and determines what to do with it depends in its type. If message is text returns it, if 
-command returns number, if file returns its name and the file itself
-"""
 
 
 def received_message_assembly(conn):
-    type = get_message(conn)
+    msg_type = get_message(conn)
     msg = get_message(conn)
-    if type == 'usual':
+    if msg_type == 'usual':
         return msg
-    elif type == 'service':
-        if msg == DISCONNECT_COMMAND:
+    elif msg_type == 'service':
+        if msg == Command.DISCONNECT_COMMAND.value:
             disconnect(conn)
             return -1
-        elif msg == LOGIN_COMMAND:
+        elif msg == Command.LOGIN_COMMAND.value:
             login = get_message(conn)
             if login in clients_online:
                 return -1
@@ -172,7 +125,7 @@ def received_message_assembly(conn):
                 clients_list[login] = conn
                 clients_online.append(login)
                 return 1
-    elif type == 'file':
+    elif msg_type == 'file':
         name = msg
         file = get_file(conn)
         print(f"<{time.asctime()}> [{get_login_by_conn(conn)}] is sending a file {name}")
@@ -185,46 +138,40 @@ to handle client if it is right. When user disconnects closing the connection.
 """
 
 
-def handle_client(conn, addr):
-    global connected
-    connected = True
+def handle_client(conn, address):
     if received_message_assembly(conn) != 1:
-        assembly_message_to_send(conn, type='service', msg=LOGIN_ERROR_MESSAGE)
-        connected = False
+        assembly_message_to_send(conn, msg_type='service', msg=Message.LOGIN_ERROR_MESSAGE.value)
+        conn.close()
     else:
         login = get_login_by_conn(conn)
-    if connected:
         print(f"\nNEW CONNECTION: {login} connected", end='\n')
         print(f"THE NUMBER OF CURRENT CONNECTIONS {threading.activeCount() - 1}")
         assembly_message_to_send(conn, 'service', "You are logged in")
 
-    while connected:
+    while True:
         message = received_message_assembly(conn)
         if message == -1:
-            connected = False
             break
         elif type(message) == str:
             t = time.asctime()
             print(f"<{t}> [{login}] {message}")
             for man in clients_online:
-                mutex.acquire()
-                assembly_message_to_send(conn=clients_list[man], type='usual', msg=message, nickname=login)
-                mutex.release()
+                with mutex:
+                    assembly_message_to_send(conn=clients_list[man], msg_type='usual', msg=message, nickname=login)
         else:
             for man in clients_online:
                 if man != login:
-                    mutex.acquire()
-                    assembly_message_to_send(conn=clients_list[man], type='file', msg=message[1], file_name=message[0])
-                    assembly_message_to_send(conn=clients_list[man], type='service', msg=f"You've got a file named "
-                                                                                        f"{message[0]} from {login}")
-                    mutex.release()
+                    with mutex:
+                        assembly_message_to_send(conn=clients_list[man], msg_type='file', msg=message[1],
+                                                 file_name=message[0])
+                        assembly_message_to_send(conn=clients_list[man], msg_type='service',
+                                                 msg=f"You've got a file named {message[0]} from {login}")
                 else:
-                    mutex.acquire()
-                    assembly_message_to_send(conn=clients_list[man], type='service', msg=f"Your file {message[0]} has "
-                                                                                        f"been delivered")
-                    mutex.release()
-
-        connected = login in clients_online
+                    with mutex:
+                        assembly_message_to_send(conn=clients_list[man], msg_type='service', msg=f"Your file {message[0]} "
+                                                                                             f"has been delivered")
+        if login not in clients_online:
+            break
     conn.close()
 
 
@@ -237,8 +184,8 @@ def start():
     server.listen()
     print(f'SERVER IS LISTENING ON {SERVER}')
     while True:
-        conn, addr = server.accept()  # Blocking and waiting for the new connection
-        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        conn, address = server.accept()  # Blocking and waiting for the new connection
+        thread = threading.Thread(target=handle_client, args=(conn, address))
         thread.start()
 
 
