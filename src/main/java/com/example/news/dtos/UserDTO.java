@@ -1,5 +1,6 @@
 package com.example.news.dtos;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ public class UserDTO {
     @NotNull
     private String password;
 
+    @JsonIgnore
     private String token;
 
     public UserDTO(String username, String password) {

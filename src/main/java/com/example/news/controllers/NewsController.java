@@ -2,7 +2,6 @@ package com.example.news.controllers;
 
 
 import com.example.news.dtos.NewsDTO;
-import com.example.news.dtos.UserDTO;
 import com.example.news.services.NewsService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -16,7 +15,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@Api("news adder API")
+@Api("NewsController")
 @RequestMapping("/api/v1/news")
 public class NewsController {
     private final NewsService newsService;

@@ -3,6 +3,7 @@ package com.example.news.services;
 import com.example.news.config.jwt.JWTUtil;
 import com.example.news.dtos.UserDTO;
 import com.example.news.entities.User;
+import com.example.news.exception.UserAlreadyExistException;
 import com.example.news.repositories.UsersRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,9 +21,12 @@ public class UserService {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     public UserDTO registryUser(UserDTO userDTO) {
+        if (usersRepository.existsByUsername(userDTO.getUsername()).isPresent()) {
+            throw new UserAlreadyExistException();
+        }
         User user = new User();
         user.setUsername(userDTO.getUsername());
-        user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+        user.setPassword(bCryptPasswordEncoder.encode(userDTO.getPassword()));
         return createDTO(usersRepository.save(user));
     }
 
@@ -34,6 +38,8 @@ public class UserService {
 
         String jwtToken = jwtUtil.generateToken(userDetails);
         UserDTO response = new UserDTO();
+        response.setUsername(userDTO.getUsername());
+        response.setPassword(userDTO.getPassword());
         response.setToken(jwtToken);
         return response;
     }

@@ -11,9 +11,9 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
 @Configuration
 @Slf4j
@@ -22,7 +22,23 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class AppSecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final UserDetailService userDetailService;
+
     private final JWTRequestFilter filter;
+
+    private static final String[] AUTH_WHITELIST = {
+            "/v2/api-docs",
+            "/swagger-resources",
+            "/swagger-resources/**",
+            "/configuration/ui",
+            "/configuration/security",
+            "/swagger-ui.html",
+            "/webjars/**",
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/registration",
+            "/login",
+            "/logout"
+    };
 
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder() {
@@ -42,17 +58,21 @@ public class AppSecurityConfig extends WebSecurityConfigurerAdapter {
                 .passwordEncoder(bCryptPasswordEncoder());
     }
 
+    private LogoutSuccessHandler logoutSuccessHandler() {
+        return (httpServletRequest, httpServletResponse, authentication) -> httpServletResponse.setStatus(200);
+    }
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/registration", "/login").not().fullyAuthenticated()
+                .antMatchers(AUTH_WHITELIST).permitAll()
                 .antMatchers("/api/v1/news/**").hasRole("USER")
-                .anyRequest().authenticated()
-                .and().httpBasic();
+                .and()
+                .logout()
+                .logoutSuccessHandler(logoutSuccessHandler()).deleteCookies("token");
 
-        http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);
     }
 }
