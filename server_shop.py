@@ -16,7 +16,7 @@ def hello_world():
 @app.route("/users", methods=["GET", "POST"])
 def registration():
     if request.method == "GET":
-        return json.dumps(storage['users'])
+        return jsonify(storage['users'])
     elif request.method == "POST":
         form = json.loads(request.data)
         if "name" not in form or "balance" not in form:
@@ -28,7 +28,7 @@ def registration():
 @app.route("/products", methods=["GET", "POST"])
 def reg_product():
     if request.method == "GET":
-        return json.dumps(storage['products'])
+        return jsonify(storage['products'])
     elif request.method == "POST":
         form = json.loads(request.data)
         if "name" not in form or "price" not in form:
