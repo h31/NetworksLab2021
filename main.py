@@ -30,15 +30,9 @@ def main():
 @route('/createAccount', method='POST')
 def createAccount():
     result = json.loads(request.body.getvalue().decode('utf-8'))
-    currentUserId = result["userId"]
     userGroup = result["userGroup"]
     userName = result["userName"]
     userPassword = result["userPassword"]
-    query = "select from users where userId=%s"%currentUserId
-    dbCur.execute(query)
-    currentUser = dbCur.fetchall()
-    if currentUser[1] != 10:
-        return "Operation not allowed!"
     query = "INSERT INTO users (userGroup, userName, userPassword) VALUES ('%s', '%s', '%s');"%(userGroup,userName,userPassword)
     dbCur.execute(query)
     dbConnection.commit()
@@ -48,33 +42,28 @@ def createAccount():
 @route('/removeAccount', method='POST')
 def removeAccount():
     result = json.loads(request.body.getvalue().decode('utf-8'))
-    currentUserId = result["userId"]
     userId = result['userId']
-    query = "select * from users where userId=%s" % currentUserId
-    dbCur.execute(query)
-    currentUser = dbCur.fetchall()
-    if currentUser[1] != 10:
-        response.status=400
-        return "Operation not allowed!"
     query = "delete from users where userId='%s'"%userId
     dbCur.execute(query)
     dbConnection.commit()
     response.status = 200
     return 'Выполнено'
 
-@route('/printUser', method='POST')
+@route('/printUser', method='GET')
 def printUsers():
     result = json.loads(request.body.getvalue().decode('utf-8'))
     currentUserId = result["userId"]
     query = "select * from users where userId='%s'" % currentUserId
     dbCur.execute(query)
     currentUser = dbCur.fetchall()
-    if currentUser[1] != 10:
+    if len(currentUser)==0 or currentUser[0][1] != '10':
         response.status = 400
         return "Operation not allowed!"
-    query = 'select * from users'
-    dbCur.execute(query)
-    return(json.dumps(dbCur.fetchall()))
+    else:
+        response.status = 200
+        query = 'select * from users'
+        dbCur.execute(query)
+        return(json.dumps(dbCur.fetchall()))
 
 
 @route('/logIn',method='POST')
@@ -90,21 +79,30 @@ def logIn():
         return "Wrong username or password"
     else:
         response.status = 200
-        return "Successfully login!"
+        userFullInfo = {
+            'userId': userInfo[0][0],
+            'userGroup': userInfo[0][1]
+        }
+        return (json.dumps(userFullInfo))
 
 
 
 @route('/changePrice', method='POST')
 def changePrice():
     # Execute when user increase price
-    result = json.loads(request.body.getvalue().deсode('utf-8'))
+    result = json.loads(request.body.getvalue())
     id = result['itemId']
-    price = result['itemPrice']
-    query = "update items set itemPrice='%s' where itemId='%s'"%(price,id)
+    summ = result['itemPrice']
+    query = "select * from items where itemId=%s"%id
+    dbCur.execute(query)
+    itemPrice = dbCur.fetchone()[2]
+    newPrice = itemPrice + summ;
+    query = "update items set itemPrice='%s' where itemId='%s'"%(newPrice,id)
     dbCur.execute(query)
     dbConnection.commit()
     response.status = 200
     return 'Выполнено'
+
 
 @route('/printItems', method='GET')
 def printItems():
@@ -112,13 +110,17 @@ def printItems():
     dbCur.execute(query)
     return(json.dumps(dbCur.fetchall()))
 
+def exitApp():
+    dbConnection.close()
+# Clear sockets on exit
+
 @route('/addItem', method='POST')
 def addItem():
     # Execute when admin add item to exchange
     result = json.loads(request.body.getvalue().decode('utf-8'))
     name = result['name']
     price = result['price']
-    query = "insert into items (name, price) values ('%s' '%s')"%(name,price)
+    query = "insert into items (itemName, itemPrice) values ('%s', '%s')"%(name,price)
     dbCur.execute(query)
     dbConnection.commit()
     response.status = 200
