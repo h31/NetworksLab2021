@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
+import javax.validation.constraints.NotNull;
+
 @Getter
 @Setter
 @RequiredArgsConstructor
@@ -12,8 +14,10 @@ import lombok.Setter;
 public class NewsDTO {
     private Long id;
 
+    @NotNull
     private String theme;
 
+    @NotNull
     private String name;
 
     private String text;
