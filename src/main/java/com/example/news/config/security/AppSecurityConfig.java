@@ -1,6 +1,7 @@
 package com.example.news.config.security;
 
 import com.example.news.config.jwt.JWTRequestFilter;
+import com.example.news.config.jwt.LoggedOutJwtTokenCache;
 import com.example.news.services.UserDetailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
+import javax.servlet.http.Cookie;
+
 @Configuration
 @Slf4j
 @RequiredArgsConstructor
@@ -24,6 +27,7 @@ public class AppSecurityConfig extends WebSecurityConfigurerAdapter {
     private final UserDetailService userDetailService;
 
     private final JWTRequestFilter filter;
+    private final LoggedOutJwtTokenCache loggedOutJwtTokenCache;
 
     private static final String[] AUTH_WHITELIST = {
             "/v2/api-docs",
@@ -58,8 +62,18 @@ public class AppSecurityConfig extends WebSecurityConfigurerAdapter {
                 .passwordEncoder(bCryptPasswordEncoder());
     }
 
-    private LogoutSuccessHandler logoutSuccessHandler() {
-        return (httpServletRequest, httpServletResponse, authentication) -> httpServletResponse.setStatus(200);
+
+    @Bean
+    public LogoutSuccessHandler logoutSuccessHandler() {
+        return (httpServletRequest, httpServletResponse, authentication) -> {
+            Cookie[] cookies = httpServletRequest.getCookies();
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals("token")) {
+                    loggedOutJwtTokenCache.putTokenInBlackList(cookie.getValue());
+                }
+            }
+            httpServletResponse.setStatus(200);
+        };
     }
 
     @Override
@@ -71,7 +85,8 @@ public class AppSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/api/v1/news/**").hasRole("USER")
                 .and()
                 .logout()
-                .logoutSuccessHandler(logoutSuccessHandler()).deleteCookies("token");
+                .logoutSuccessHandler(logoutSuccessHandler())
+                .deleteCookies("JSESSIONID");
 
         http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);
     }

@@ -22,6 +22,7 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 
     private final UserDetailService userDetailService;
     private final JWTUtil jwtUtil;
+    private final LoggedOutJwtTokenCache loggedOutJwtTokenCache;
 
     @Override
     protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse,
@@ -32,7 +33,7 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 
         if (cookies != null) {
             for (Cookie cookie : cookies) {
-                if (cookie.getName().equals("token")) {
+                if (cookie.getName().equals("token") && !loggedOutJwtTokenCache.getTokenBlackList().containsKey(cookie.getValue())) {
                     token = cookie.getValue();
                     username = jwtUtil.extractUsername(token);
                 }
@@ -51,6 +52,6 @@ public class JWTRequestFilter extends OncePerRequestFilter {
             }
         }
 
-        filterChain.doFilter(httpServletRequest,httpServletResponse);
+        filterChain.doFilter(httpServletRequest, httpServletResponse);
     }
 }

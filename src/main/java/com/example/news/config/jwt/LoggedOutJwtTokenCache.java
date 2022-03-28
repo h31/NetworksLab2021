@@ -15,27 +15,27 @@ import java.util.concurrent.TimeUnit;
 @Getter
 public class LoggedOutJwtTokenCache {
 
-    private final ExpiringMap<String, String> tokenEventMap;
+    private final ExpiringMap<String, String> tokenBlackList;
     private final JWTUtil jwtUtil;
 
     @Autowired
     public LoggedOutJwtTokenCache(JWTUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
-        this.tokenEventMap = ExpiringMap.builder()
+        this.tokenBlackList = ExpiringMap.builder()
                 .variableExpiration()
                 .maxSize(1000)
                 .build();
     }
 
-    public void markLogoutEventForToken(String token) {
-        if (tokenEventMap.containsKey(token)) {
+    public void putTokenInBlackList(String token) {
+        if (tokenBlackList.containsKey(token)) {
             log.info(String.format("Log out token for user [%s] is already present in the cache", jwtUtil.extractUsername(token)));
 
         } else {
             Date tokenExpiryDate = jwtUtil.extractExpiration(token);
             long ttlForToken = getTTLForToken(tokenExpiryDate);
-            log.info("Logout token cached" + jwtUtil.extractUsername(token), ttlForToken, tokenExpiryDate);
-            tokenEventMap.put(token, jwtUtil.extractUsername(token), ttlForToken, TimeUnit.SECONDS);
+            log.info("Logout token cached " + jwtUtil.extractUsername(token), ttlForToken, tokenExpiryDate);
+            tokenBlackList.put(token, jwtUtil.extractUsername(token), ttlForToken, TimeUnit.SECONDS);
         }
     }
 
