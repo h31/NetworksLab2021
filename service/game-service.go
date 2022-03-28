@@ -78,22 +78,47 @@ func (p *gameService) MakeBet(c *gin.Context) []model.Bet {
 	var newBet model.Bet
 	newBet.PlayerName = c.Param("name")
 	newBet.Type = c.Param("type")
-	newBet.Amount, _ = strconv.ParseFloat(c.Param("amount"), 64)
-	newBet.Status = ""
-	for _, v := range p.bets {
-		if v.PlayerName == newBet.PlayerName {
-			log.Println("Error. This player already made the bet!")
+	_, err := strconv.Atoi(newBet.Type)
+	if newBet.Type == "even" || newBet.Type == "odd" || err == nil {
+		newBet.Amount, err = strconv.ParseFloat(c.Param("amount"), 64)
+		if err != nil {
+			log.Printf("Error. Wrong amount of bet type.")
+			return []model.Bet{}
+		}
+		newBet.Status = ""
+		exist := false
+		for _, v := range p.players {
+			if v.Name == newBet.PlayerName {
+				exist = true
+				if newBet.Amount > v.Balance {
+					log.Println("Error. You don't have enough money!.")
+					return []model.Bet{}
+				}
+				break
+			}
+		}
+		if exist {
+			for _, v := range p.bets {
+				if v.PlayerName == newBet.PlayerName {
+					log.Println("Error. This player already made the bet!")
+					return p.bets
+				}
+			}
+			for i := range p.players {
+				if p.players[i].Name == newBet.PlayerName {
+					p.players[i].Balance -= newBet.Amount
+				}
+			}
+			p.bets = append(p.bets, newBet)
 			return p.bets
+		} else {
+			log.Printf("Error. This player is not on the list of players.")
+			return []model.Bet{}
 		}
+	} else {
+		log.Printf("Error. Wrong bet type.")
+		return []model.Bet{}
 	}
-	for i := range p.players {
-		if p.players[i].Name == newBet.PlayerName {
-			p.players[i].Balance -= newBet.Amount
-		}
-	}
-	p.bets = append(p.bets, newBet)
-	p.croupier.BetList = append(p.croupier.BetList, newBet)
-	return p.bets
 }
 
 func (p *gameService) StartGame(c *gin.Context) []model.Bet {
@@ -127,7 +152,7 @@ func (p *gameService) GetPrize(c *gin.Context) model.Player {
 	player.Name = c.Param("name")
 	player.Balance, _ = strconv.ParseFloat(c.Param("balance"), 64)
 
-	for _, bet := range p.bets {
+	for j, bet := range p.bets {
 		if bet.PlayerName == player.Name {
 			if bet.Amount > 0 {
 				log.Printf("It seems, that %s won some money! Congratulations!", player.Name)
@@ -138,6 +163,11 @@ func (p *gameService) GetPrize(c *gin.Context) model.Player {
 			for i := range p.players {
 				if p.players[i].Name == player.Name {
 					p.players[i].Balance = player.Balance
+					p.bets = append(p.bets[:j], p.bets[j+1:]...)
+					if len(p.bets) == 0 {
+						p.croupier.Start = false
+						log.Println("We can start a new game!")
+					}
 					return p.players[i]
 				}
 			}

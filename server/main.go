@@ -17,7 +17,6 @@ func main() {
 	s.GET("/players", func(c *gin.Context) {
 		c.JSON(http.StatusOK, p.FindPlayers())
 	})
-	//выдача клиенту ставок
 	s.GET("/bets", func(c *gin.Context) {
 		c.JSON(http.StatusOK, p.FindBets())
 	})

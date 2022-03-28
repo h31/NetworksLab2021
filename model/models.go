@@ -9,10 +9,8 @@ type Bet struct {
 type Player struct {
 	Name    string  `json:"name"`
 	Balance float64 `json:"balance"`
-	Bet     float64 `json:"bet"`
 }
 type Croupier struct {
-	Name    string `json:"name"`
-	BetList []Bet  `json:"bets"`
-	Start   bool   `json:"start"`
+	Name  string `json:"name"`
+	Start bool   `json:"start"`
 }
