@@ -26,3 +26,4 @@ pip install -r requirements.txt
 ```
 python manage.py runserver 8000:8000
 ```
+Документация находится по адресу (http://127.0.0.1:8000/api/redoc)
