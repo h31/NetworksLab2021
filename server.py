@@ -1,31 +1,35 @@
 import socket
+import threading
 import time
 
 FORMAT = 'UTF-8'
-host = socket.gethostbyname(socket.gethostname())
-server = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-server.bind((host,10000))
+host = '127.0.0.1'
+port = 55555
 users = []
-
-exitApp = False
-while not exitApp:
-        try:
-            data, tempUser = server.recvfrom(16384)
-            if tempUser not in users:
-                users.append(tempUser)
-                print("Connected with {}".format(str(tempUser)))
-            current_time = time.strftime('%H:%M:%S', time.localtime())
-            new_message = ("[{}]".format(current_time) + data.decode(FORMAT)).encode(FORMAT)
-            for user in users:
-                server.sendto(new_message, user)
-            if "left the chat!" in data.decode(FORMAT):
-                print("{} left the chat!".format(str(tempUser)))
-                users.remove(tempUser)
-        except:
-            print("Server shutdown!")
-            for user in users:
-                server.sendto("Server shutdown!".encode(FORMAT), user)
-            exitApp = True
-
+user = []
+server = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+server.bind((host,port))
 print("Server started")
-server.close()
+
+def broadcast(message, addr):
+    for user in users:
+        if user != addr:
+            server.sendto(message, user)
+
+def handle_client():
+    while True:
+            data, addr = server.recvfrom(65535)
+            if addr not in users:
+                users.append(addr)
+                print("Connected with {}".format(str(addr)))
+            else:
+                time_now = time.strftime('%H:%M:%S', time.localtime())
+                new_message = ("[{}]".format(time_now) + data.decode(FORMAT)).encode(FORMAT)
+                broadcast(new_message, user)
+                if "left the chat!" in data.decode(FORMAT):
+                    print("{} left the chat!".format(str(addr)))
+                    users.remove(addr)
+
+
+thread = threading.Thread(target=handle_client)
+thread.start()
