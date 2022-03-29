@@ -1,0 +1,21 @@
+{% extends 'base_template.html' %}
+
+{% block content %}
+    <p>Личный кабинет {{ username }}</p>
+    <p>У вас на счету {{ count }}</p>
+<form action="/lk/<{{ username }}>" method="post">
+<p><label>Имя пользователя </label> <input type="text" name="username" value="" placeholder="Кому перевод" required />
+<p><label>Сумма: </label> <input type="number" name="amount" value="" placeholder="Сумма перевода" required />
+<p><input type="submit" value="Перевести деньги">
+</form>
+
+    {% for msg in get_flashed_messages() %}
+    <div>{{ msg }}</div>
+    {% endfor %}
+<p></p>
+<form onSubmit="return confirm('Вы действительно хотите выйти из аккаунта?');" method="post">
+<input name="exit" type="submit" value="Выйти из аккаунта">
+</form>
+
+
+{% endblock %}
