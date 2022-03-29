@@ -1,1 +1,1 @@
-# client for Dmitri Zagorodnov Server
+# client for Dmitry Zagorodnov Server
