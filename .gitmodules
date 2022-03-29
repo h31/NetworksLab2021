@@ -1,8 +1,0 @@
-[submodule "SimpleConsoleChatServer"]
-	path = SimpleConsoleChatServer
-	url = https://github.com/daniilpeshkov/SimpleConsoleChatServer.git
-	branch = master
-[submodule "SimpleConsoleChatClient"]
-	path = SimpleConsoleChatClient
-	url = https://github.com/daniilpeshkov/SimpleConsoleChatClient.git
-	branch = master
