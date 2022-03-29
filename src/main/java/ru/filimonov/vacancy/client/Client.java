@@ -47,15 +47,14 @@ public class Client {
         requestDTO.setPassword(password);
         HttpEntity<AuthenticationDto> request = new HttpEntity<>(requestDTO);
         String url = this.server + REGISTRATION_URL;
-        boolean incorrectUser = true;
-        while (incorrectUser) {
+        while (true) {
             try {
                 ResponseEntity response = restTemplate.exchange(
                         url + "?username=" + requestDTO.getUsername() + "&password=" + requestDTO.getPassword(),
                         HttpMethod.POST, request, AuthenticationDto.class);
-                incorrectUser = false;
                 System.out.println("Successfully registration: " + response.getBody());
                 login();
+                return;
             } catch (UserAlreadyExistsException e) {
                 System.out.println("User with this name already exists");
             }
