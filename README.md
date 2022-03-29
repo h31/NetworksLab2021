@@ -12,7 +12,7 @@
 ```
 Запуск сервера происходит исполнением main.py
 
-## Формат данных и структура БД
+## Формат данных
 ```
 users:
 { userId - индекс
@@ -27,7 +27,7 @@ items:
 # 4.2 - Клиент Сторона
 Запуск сервера происходит исполнением client.py
 
-## Формат данных и структура БД
+## Формат данных
 ```
 userInfo:
 { userId - индекс юзера
@@ -35,4 +35,31 @@ userInfo:
   userName - имя юзера
   userPassword - пароль юзера}
 ```
-
+## Структура БД
+```
+Items:
+(
+  itemId integer
+  constraint items_pk
+  primary key,
+  itemName text,
+  itemPrice integer
+)
+```
+```
+Users:
+(
+  userId integer 
+  constraint items_pk
+  primary key,
+  userGroup text,
+  userName text,
+  userPassword text
+)
+```
+```
+Info:
+(
+  exchangeVersion text
+)
+```
