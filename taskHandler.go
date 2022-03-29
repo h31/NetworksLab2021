@@ -48,7 +48,7 @@ func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(respJson)
 }
 
-func AllTasksHandler(w http.ResponseWriter, r *http.Request) {
+func AllTasksHandler(w http.ResponseWriter, _ *http.Request) {
 	respJson, _ := json.Marshal(MakeTaskIDList())
 	w.Write(respJson)
 }
