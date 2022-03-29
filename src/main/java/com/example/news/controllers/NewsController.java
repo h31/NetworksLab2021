@@ -24,7 +24,7 @@ public class NewsController {
             value = "all news",
             notes = "finds all news that contain the text specified in the parameter"
     )
-    @GetMapping("/find")
+    @GetMapping("/search")
     public ResponseEntity<List<NewsDTO>> findNews(@RequestParam String text) {
         return new ResponseEntity<>(newsService.findNews(text), HttpStatus.OK);
     }
@@ -33,7 +33,7 @@ public class NewsController {
             value = "all themes",
             notes = "find all themes in db"
     )
-    @GetMapping("/findAllThemes")
+    @GetMapping("/search/all_themes")
     public ResponseEntity<List<String>> findAllThemes() {
         return new ResponseEntity<>(newsService.findAllThemes(), HttpStatus.OK);
     }
@@ -42,7 +42,7 @@ public class NewsController {
             value = "all news by theme",
             notes = "find all news by theme in db"
     )
-    @GetMapping("/findNewsByTheme")
+    @GetMapping("/search/theme")
     public ResponseEntity<List<String>> findNewsByTheme(@RequestParam String theme) {
         return new ResponseEntity<>(newsService.findNewsByTheme(theme), HttpStatus.OK);
     }
@@ -51,7 +51,7 @@ public class NewsController {
             value = "create new",
             notes = "create new with some parameters"
     )
-    @PostMapping("/createNew")
+    @PostMapping("/")
     public ResponseEntity<NewsDTO> createNew(@Validated @RequestBody NewsDTO newsDTO) {
         return new ResponseEntity<>(newsService.createNews(newsDTO), HttpStatus.OK);
     }

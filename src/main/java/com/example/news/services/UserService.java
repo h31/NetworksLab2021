@@ -23,7 +23,7 @@ public class UserService {
 
     @Transactional()
     public UserDTO registryUser(UserDTO userDTO) {
-        if (usersRepository.existsByUsername(userDTO.getUsername()).isPresent()) {
+        if (usersRepository.existsByUsername(userDTO.getUsername()).isEmpty()) {
             throw new UserAlreadyExistException();
         }
         User user = new User();
