@@ -6,18 +6,20 @@ HOST ='http://localhost:4567'
 def addProduct():
     data = {}
     login = "admin"
-    password = input('Введите пароль:')
+    password = input('Введите пароль администратора:')
     name = input('Введите название продукта:')
     price = input('Введите цену продукта:')
     count = input('Введите количество продукта:')
     data['name'] = name
     data['price'] = price
     data['count'] = count
-    response = requests.post(HOST + '/product', data=json.dumps(data), auth=(login, password))
+    data['login'] = login
+    data['password'] = password
+    response = requests.post(HOST + '/product', data=json.dumps(data))
     if response.status_code == 200:
         print("Вы успешно добавили продукт!")
     else:
-        print(response.text)
+        print(json.loads(response.text))
 
 
 def increaseProduct():
@@ -27,11 +29,13 @@ def increaseProduct():
     id = input("Введите идентификатор продукта:")
     count = input("Введите количество продукта:")
     data['add'] = count
-    response = requests.put(HOST + '/product/' + id, data=json.dumps(data), auth=(login, password))
+    data['login'] = login
+    data['password'] = password
+    response = requests.put(HOST + '/product/' + id, data=json.dumps(data))
     if response.status_code == 200:
         print("Количество продукта увеличено")
     else:
-        print(response.text)
+        print(json.loads(response.text))
 
 
 def getProductData():
@@ -41,7 +45,15 @@ def getProductData():
     if product["status"] == "success":
         print("Продукт" + str(product["data"]))
     else:
-        print(response.text)
+        print(json.loads(response.text))
+
+def getProducts():
+    response = requests.get(HOST + '/product')
+    product = json.loads(response.text)
+    if product["status"] == "success":
+        print("Список продуктов:" + str(product["data"]))
+    else:
+        print(json.loads(response.text))
 
 
 def order():
@@ -55,7 +67,7 @@ def order():
     if product["status"] == "success":
         print(str(product["data"]))
     else:
-        print(response.text)
+        print(json.loads(response.text))
 
 
 def service():
@@ -67,6 +79,8 @@ def service():
             order()
         if command.strip(' ') == 'increase product':
             increaseProduct()
+        if command.strip(' ') == 'get product':
+            getProducts()    
         if command.strip(' ') == 'get product data':
             getProductData()
 
