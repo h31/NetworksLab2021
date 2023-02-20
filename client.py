@@ -1,9 +1,12 @@
 import socket
 import threading
 import sys
+from datetime import datetime
+
 
 FORMAT = 'UTF-8'
 name = input("Please enter your name: ")
+user_timezone = datetime.now().astimezone().strftime('%z')
 user = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 user.connect(('localhost', 10000))
 
@@ -24,7 +27,7 @@ def message_send():
     while True:
         try:
             mes = input("")
-            message = '{}:{}'.format(name, mes)
+            message = '{}:{};{}'.format(name, mes, user_timezone)
             user.send(message.encode(FORMAT))
         except:
             sys.exit(0)
